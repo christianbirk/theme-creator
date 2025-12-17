@@ -17,7 +17,8 @@ export interface VariableCategory {
 export const defaultCategories: VariableCategory[] = [
   { id: 'brand-colors', name: 'Brand Colors', icon: 'Palette', variables: [] },
   { id: 'neutral-colors', name: 'Neutral Colors', icon: 'Circle', variables: [] },
-  { id: 'color-combinations', name: 'Color Combinations', icon: 'Layers', variables: [] },
+  { id: 'light-bg-tones', name: 'Light Background Tones', icon: 'Sun', variables: [] },
+  { id: 'dark-bg-tones', name: 'Dark Background Tones', icon: 'Moon', variables: [] },
   { id: 'typography', name: 'Typography', icon: 'Type', variables: [] },
   { id: 'layout', name: 'Layout & Spacing', icon: 'LayoutGrid', variables: [] },
   { id: 'borders', name: 'Borders & Radius', icon: 'Square', variables: [] },

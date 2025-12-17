@@ -65,15 +65,20 @@ function categorizeVariable(name: string): string {
     return 'neutral-colors';
   }
 
-  // Status Colors (Light/Dark Background variants)
-  if (lowerName.includes('-bg-dark') || 
-      (lowerName.includes('button') && (lowerName.includes('background') || lowerName.includes('color'))) ||
+  // Dark Background Tones
+  if (lowerName.includes('-bg-dark') || lowerName.includes('on-bg-dark')) {
+    return 'dark-bg-tones';
+  }
+
+  // Light Background Tones (color combinations for light backgrounds)
+  if ((lowerName.includes('button') && (lowerName.includes('background') || lowerName.includes('color'))) ||
       lowerName.includes('icon-background') || lowerName.includes('icon-color') ||
       lowerName.includes('label-background') || lowerName.includes('label-color') ||
       lowerName.includes('link-color') || lowerName.includes('font-base-color') ||
       lowerName.includes('font-heading-color') || lowerName.includes('lead-color') ||
-      lowerName.includes('pre-heading-color')) {
-    return 'color-combinations';
+      lowerName.includes('pre-heading-color') || lowerName.includes('boxed-border') ||
+      lowerName.includes('module-heading-border') || lowerName.includes('universal-accent-color')) {
+    return 'light-bg-tones';
   }
 
   // Typography
