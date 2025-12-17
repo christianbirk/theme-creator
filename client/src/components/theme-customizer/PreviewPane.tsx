@@ -456,10 +456,14 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
           </Button>
         </div>
 
-        {loadedUrl && (
+        {loadedUrl ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>Loaded:</span>
             <span className="truncate font-mono">{loadedUrl}</span>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">
+            Note: External URLs only work with sites that use GoBasic CSS variables
           </div>
         )}
       </div>
