@@ -1,13 +1,12 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { HexColorPicker } from 'react-colorful';
 import { RotateCcw } from 'lucide-react';
 import { CSSVariable } from './types';
 
@@ -30,16 +29,13 @@ export function ColorPicker({
   colorOptions = [],
   isBaseColor = false,
 }: ColorPickerProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   const isModified = value !== defaultValue;
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onChange(defaultValue);
   }, [defaultValue, onChange]);
-
-  const formatLabel = (name: string) => {
-    return name.replace(/^--/, '').replace(/-/g, ' ');
-  };
 
   const getResolvedColor = useCallback((val: string): string => {
     if (!val) return '#cccccc';
@@ -62,49 +58,14 @@ export function ColorPicker({
 
   const resolvedColor = useMemo(() => getResolvedColor(value), [value, getResolvedColor]);
 
-  if (isBaseColor) {
-    return (
-      <div className="flex items-center gap-3 py-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm truncate capitalize" data-testid={`color-label-${label}`}>
-              {label}
-            </span>
-            {isModified && (
-              <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-            )}
-          </div>
-          {description && (
-            <span className="text-xs text-muted-foreground">{description}</span>
-          )}
-        </div>
-
-        <div
-          className="w-8 h-8 rounded-md border-2 border-input flex-shrink-0"
-          style={{ backgroundColor: value }}
-          data-testid={`color-swatch-${label}`}
-        />
-
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-60 h-8 font-mono text-xs"
-          placeholder="#000000"
-          data-testid={`color-input-${label}`}
-        />
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleReset}
-          className={`h-8 w-8 ${!isModified ? 'invisible' : ''}`}
-          data-testid={`color-reset-${label}`}
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    );
-  }
+  // Normalize color for the picker (needs to be hex)
+  const pickerColor = useMemo(() => {
+    const color = resolvedColor;
+    if (color.startsWith('#') && (color.length === 4 || color.length === 7)) {
+      return color;
+    }
+    return '#cccccc';
+  }, [resolvedColor]);
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -122,47 +83,37 @@ export function ColorPicker({
         )}
       </div>
 
-      <div
-        className="w-8 h-8 rounded-md border-2 border-input flex-shrink-0"
-        style={{ backgroundColor: resolvedColor }}
-        data-testid={`color-swatch-${label}`}
-      />
+      <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="w-8 h-8 rounded-md border-2 border-input flex-shrink-0 cursor-pointer hover:border-primary transition-colors"
+            style={{ backgroundColor: resolvedColor }}
+            data-testid={`color-swatch-${label}`}
+          />
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-3" align="start">
+          <HexColorPicker 
+            color={pickerColor} 
+            onChange={onChange}
+          />
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="mt-2 font-mono text-xs"
+            placeholder="#000000"
+            data-testid={`color-picker-input-${label}`}
+          />
+        </PopoverContent>
+      </Popover>
 
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-60 h-8" data-testid={`color-select-${label}`}>
-          <SelectValue placeholder="Select color">
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-4 h-4 rounded border border-input flex-shrink-0"
-                style={{ backgroundColor: resolvedColor }}
-              />
-              <span className="truncate capitalize text-xs">
-                {value.match(/var\(([^)]+)\)/) 
-                  ? formatLabel(value.match(/var\(([^)]+)\)/)?.[1] || value)
-                  : value
-                }
-              </span>
-            </div>
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {colorOptions.map((colorVar) => (
-            <SelectItem 
-              key={colorVar.name} 
-              value={`var(${colorVar.name})`}
-              data-testid={`color-option-${colorVar.name}`}
-            >
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-4 h-4 rounded border border-input flex-shrink-0"
-                  style={{ backgroundColor: colorVar.value }}
-                />
-                <span className="capitalize">{formatLabel(colorVar.name)}</span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-60 h-8 font-mono text-xs"
+        placeholder="#000000"
+        data-testid={`color-input-${label}`}
+      />
 
       <Button
         variant="ghost"
