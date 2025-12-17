@@ -19,6 +19,8 @@ interface NumberInputProps {
   description?: string;
   weightOptions?: CSSVariable[];
   isBaseFontWeight?: boolean;
+  lineHeightOptions?: CSSVariable[];
+  isBaseLineHeight?: boolean;
 }
 
 export function NumberInput({ 
@@ -29,10 +31,17 @@ export function NumberInput({
   description,
   weightOptions = [],
   isBaseFontWeight = false,
+  lineHeightOptions = [],
+  isBaseLineHeight = false,
 }: NumberInputProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const isModified = value !== defaultValue;
   const isVarReference = value.startsWith('var(');
+
+  // Determine which options to use (weight or line-height)
+  const referenceOptions = weightOptions.length > 0 ? weightOptions : lineHeightOptions;
+  const isBaseValue = isBaseFontWeight || isBaseLineHeight;
+  const hasReferenceOptions = referenceOptions.length > 0;
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -43,8 +52,8 @@ export function NumberInput({
     return name.replace(/^--/, '').replace(/-/g, ' ');
   };
 
-  const handleSelectWeight = useCallback((weightVar: CSSVariable) => {
-    onChange(`var(${weightVar.name})`);
+  const handleSelectReference = useCallback((refVar: CSSVariable) => {
+    onChange(`var(${refVar.name})`);
     setPickerOpen(false);
   }, [onChange]);
 
@@ -56,8 +65,27 @@ export function NumberInput({
     return value;
   }, [value, isVarReference]);
 
-  // If base font weight or no weight options, show simple input
-  if (isBaseFontWeight || weightOptions.length === 0) {
+  // Determine placeholder based on type
+  const placeholder = weightOptions.length > 0 
+    ? 'Select weight...' 
+    : lineHeightOptions.length > 0 
+      ? 'Select line-height...' 
+      : 'Enter value...';
+
+  const customPlaceholder = weightOptions.length > 0 
+    ? 'e.g., 400, 700' 
+    : lineHeightOptions.length > 0 
+      ? 'e.g., 1.5, 1.2' 
+      : 'Enter value';
+
+  const customHelpText = weightOptions.length > 0 
+    ? 'Enter a custom font weight (100-900)' 
+    : lineHeightOptions.length > 0 
+      ? 'Enter a custom line height value' 
+      : 'Enter a custom value';
+
+  // If base value or no reference options, show simple input
+  if (isBaseValue || !hasReferenceOptions) {
     return (
       <div className="flex items-center gap-3 py-2">
         <div className="flex-1 min-w-0">
@@ -95,7 +123,7 @@ export function NumberInput({
     );
   }
 
-  // Show reference picker for font weight references
+  // Show reference picker
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 min-w-0">
@@ -122,31 +150,31 @@ export function NumberInput({
             {isVarReference ? (
               <span className="capitalize text-muted-foreground">{displayValue}</span>
             ) : (
-              <span>{value || 'Select weight...'}</span>
+              <span>{value || placeholder}</span>
             )}
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-3" align="start">
-          <Tabs defaultValue={isVarReference ? "reference" : "custom"} className="w-[220px]">
+          <Tabs defaultValue={isVarReference ? "reference" : "custom"} className="w-[240px]">
             <TabsList className="w-full">
               <TabsTrigger value="reference" className="flex-1 text-xs">Reference</TabsTrigger>
               <TabsTrigger value="custom" className="flex-1 text-xs">Custom</TabsTrigger>
             </TabsList>
             <TabsContent value="reference" className="mt-2">
-              <ScrollArea className="h-[120px]">
+              <ScrollArea className="h-[200px]">
                 <div className="space-y-1">
-                  {weightOptions.map((weightVar) => (
+                  {referenceOptions.map((refVar) => (
                     <button
-                      key={weightVar.name}
+                      key={refVar.name}
                       type="button"
-                      onClick={() => handleSelectWeight(weightVar)}
+                      onClick={() => handleSelectReference(refVar)}
                       className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-left text-sm hover-elevate ${
-                        value === `var(${weightVar.name})` ? 'bg-accent' : ''
+                        value === `var(${refVar.name})` ? 'bg-accent' : ''
                       }`}
-                      data-testid={`weight-option-${weightVar.name}`}
+                      data-testid={`reference-option-${refVar.name}`}
                     >
-                      <span className="capitalize truncate">{formatLabel(weightVar.name)}</span>
-                      <span className="text-xs text-muted-foreground font-mono">{weightVar.value}</span>
+                      <span className="capitalize truncate">{formatLabel(refVar.name)}</span>
+                      <span className="text-xs text-muted-foreground font-mono truncate max-w-[100px]">{refVar.value}</span>
                     </button>
                   ))}
                 </div>
@@ -157,11 +185,11 @@ export function NumberInput({
                 value={isVarReference ? '' : value}
                 onChange={(e) => onChange(e.target.value)}
                 className="font-mono text-xs"
-                placeholder="e.g., 400, 700"
-                data-testid={`weight-custom-input-${label}`}
+                placeholder={customPlaceholder}
+                data-testid={`number-custom-input-${label}`}
               />
               <p className="text-xs text-muted-foreground mt-2">
-                Enter a custom font weight (100-900)
+                {customHelpText}
               </p>
             </TabsContent>
           </Tabs>

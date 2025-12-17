@@ -12,6 +12,7 @@ import { SizeInput } from './SizeInput';
 import { FontPicker } from './FontPicker';
 import { NumberInput } from './NumberInput';
 import { StringInput } from './StringInput';
+import { LinkStyleSelect } from './LinkStyleSelect';
 
 // Subsections that are only visible in expert mode
 const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors'];
@@ -83,6 +84,20 @@ export function ControlPanel({
     );
   }, [variables]);
 
+  // Base line height options (--font-*-line-height)
+  const baseLineHeightOptions = useMemo(() => {
+    return variables.filter(v => 
+      v.name.match(/^--font-(xsmall|small|normal|xnormal|medium|xmedium|large|xlarge|xxlarge)-line-height$/)
+    );
+  }, [variables]);
+
+  // Base border radius options (--universal-border-radius)
+  const baseBorderRadiusOptions = useMemo(() => {
+    return variables.filter(v => 
+      v.name === '--universal-border-radius'
+    );
+  }, [variables]);
+
   const isBaseColor = useCallback((variable: CSSVariable) => {
     return variable.subSection === 'identity-colors' || variable.subSection === 'neutral-colors';
   }, []);
@@ -98,6 +113,16 @@ export function ControlPanel({
 
   const isBaseFontWeight = useCallback((variable: CSSVariable) => {
     return !!variable.name.match(/^--font-(base|heading)-weight$/);
+  }, []);
+
+  // Check if a variable is a base line height definition
+  const isBaseLineHeight = useCallback((variable: CSSVariable) => {
+    return !!variable.name.match(/^--font-(xsmall|small|normal|xnormal|medium|xmedium|large|xlarge|xxlarge)-line-height$/);
+  }, []);
+
+  // Check if a variable is a base border radius definition
+  const isBaseBorderRadius = useCallback((variable: CSSVariable) => {
+    return variable.name === '--universal-border-radius';
   }, []);
 
   const sections = useMemo(() => {
@@ -174,6 +199,21 @@ export function ControlPanel({
     return variable.name.includes('font-weight') && !isBaseFontWeight(variable);
   }, [isBaseFontWeight]);
 
+  // Check if a variable is a line-height reference
+  const isLineHeightReference = useCallback((variable: CSSVariable) => {
+    return variable.name.includes('line-height') && !isBaseLineHeight(variable);
+  }, [isBaseLineHeight]);
+
+  // Check if a variable is a border-radius reference
+  const isBorderRadiusReference = useCallback((variable: CSSVariable) => {
+    return variable.name.includes('border-radius') && !isBaseBorderRadius(variable);
+  }, [isBaseBorderRadius]);
+
+  // Check if a variable is the link-style variable
+  const isLinkStyleVariable = useCallback((variable: CSSVariable) => {
+    return variable.name === '--link-style';
+  }, []);
+
   const renderVariableInput = (variable: CSSVariable) => {
     const displayName = formatVariableName(variable.name);
     
@@ -203,6 +243,12 @@ export function ControlPanel({
           />
         );
       case 'size':
+        // Determine which size options to use
+        const sizeOptions = isFontSizeReference(variable) 
+          ? baseFontSizeOptions 
+          : isBorderRadiusReference(variable) 
+            ? baseBorderRadiusOptions 
+            : [];
         return (
           <SizeInput
             key={variable.name}
@@ -210,7 +256,7 @@ export function ControlPanel({
             defaultValue={variable.defaultValue}
             onChange={(value) => onVariableChange(variable.name, value)}
             label={displayName}
-            sizeOptions={isFontSizeReference(variable) ? baseFontSizeOptions : []}
+            sizeOptions={sizeOptions}
             isBaseFontSize={isBaseFontSize(variable)}
           />
         );
@@ -229,6 +275,20 @@ export function ControlPanel({
             />
           );
         }
+        // Check if this is a line-height reference
+        if (isLineHeightReference(variable)) {
+          return (
+            <NumberInput
+              key={variable.name}
+              value={variable.value}
+              defaultValue={variable.defaultValue}
+              onChange={(value) => onVariableChange(variable.name, value)}
+              label={displayName}
+              lineHeightOptions={baseLineHeightOptions}
+              isBaseLineHeight={isBaseLineHeight(variable)}
+            />
+          );
+        }
         return (
           <NumberInput
             key={variable.name}
@@ -239,6 +299,18 @@ export function ControlPanel({
           />
         );
       default:
+        // Handle link-style as a select
+        if (isLinkStyleVariable(variable)) {
+          return (
+            <LinkStyleSelect
+              key={variable.name}
+              value={variable.value}
+              defaultValue={variable.defaultValue}
+              onChange={(value) => onVariableChange(variable.name, value)}
+              label={displayName}
+            />
+          );
+        }
         return (
           <StringInput
             key={variable.name}
