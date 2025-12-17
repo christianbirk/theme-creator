@@ -61,8 +61,43 @@ export function ControlPanel({
     );
   }, [variables]);
 
+  // Base font size options (--font-xsmall, --font-small, --font-normal, etc.)
+  const baseFontSizeOptions = useMemo(() => {
+    return variables.filter(v => 
+      v.subSection === 'font-sizes' && 
+      v.name.match(/^--font-(xsmall|small|normal|xnormal|medium|xmedium|large|xlarge|xxlarge)$/)
+    );
+  }, [variables]);
+
+  // Base font family options (--font-base-family, --font-heading-family)
+  const baseFontFamilyOptions = useMemo(() => {
+    return variables.filter(v => 
+      v.name.match(/^--font-(base|heading)-family$/)
+    );
+  }, [variables]);
+
+  // Base font weight options (--font-base-weight, --font-heading-weight)
+  const baseFontWeightOptions = useMemo(() => {
+    return variables.filter(v => 
+      v.name.match(/^--font-(base|heading)-weight$/)
+    );
+  }, [variables]);
+
   const isBaseColor = useCallback((variable: CSSVariable) => {
     return variable.subSection === 'identity-colors' || variable.subSection === 'neutral-colors';
+  }, []);
+
+  // Check if a variable is a base font size/weight/family definition
+  const isBaseFontSize = useCallback((variable: CSSVariable) => {
+    return !!variable.name.match(/^--font-(xsmall|small|normal|xnormal|medium|xmedium|large|xlarge|xxlarge)$/);
+  }, []);
+
+  const isBaseFontFamily = useCallback((variable: CSSVariable) => {
+    return !!variable.name.match(/^--font-(base|heading)-family$/);
+  }, []);
+
+  const isBaseFontWeight = useCallback((variable: CSSVariable) => {
+    return !!variable.name.match(/^--font-(base|heading)-weight$/);
   }, []);
 
   const sections = useMemo(() => {
@@ -124,6 +159,21 @@ export function ControlPanel({
     }
   }, [onImportSCSS]);
 
+  // Check if a variable is a font-size reference (not a base definition)
+  const isFontSizeReference = useCallback((variable: CSSVariable) => {
+    return variable.name.includes('font-size') && !isBaseFontSize(variable);
+  }, [isBaseFontSize]);
+
+  // Check if a variable is a font-family reference
+  const isFontFamilyReference = useCallback((variable: CSSVariable) => {
+    return variable.name.includes('font-family') && !isBaseFontFamily(variable);
+  }, [isBaseFontFamily]);
+
+  // Check if a variable is a font-weight reference
+  const isFontWeightReference = useCallback((variable: CSSVariable) => {
+    return variable.name.includes('font-weight') && !isBaseFontWeight(variable);
+  }, [isBaseFontWeight]);
+
   const renderVariableInput = (variable: CSSVariable) => {
     const displayName = formatVariableName(variable.name);
     
@@ -148,6 +198,8 @@ export function ControlPanel({
             defaultValue={variable.defaultValue}
             onChange={(value) => onVariableChange(variable.name, value)}
             label={displayName}
+            fontOptions={baseFontFamilyOptions}
+            isBaseFontFamily={isBaseFontFamily(variable)}
           />
         );
       case 'size':
@@ -158,9 +210,25 @@ export function ControlPanel({
             defaultValue={variable.defaultValue}
             onChange={(value) => onVariableChange(variable.name, value)}
             label={displayName}
+            sizeOptions={isFontSizeReference(variable) ? baseFontSizeOptions : []}
+            isBaseFontSize={isBaseFontSize(variable)}
           />
         );
       case 'number':
+        // Check if this is a font-weight reference
+        if (isFontWeightReference(variable)) {
+          return (
+            <NumberInput
+              key={variable.name}
+              value={variable.value}
+              defaultValue={variable.defaultValue}
+              onChange={(value) => onVariableChange(variable.name, value)}
+              label={displayName}
+              weightOptions={baseFontWeightOptions}
+              isBaseFontWeight={isBaseFontWeight(variable)}
+            />
+          );
+        }
         return (
           <NumberInput
             key={variable.name}
