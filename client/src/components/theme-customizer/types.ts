@@ -15,23 +15,69 @@ export interface VariableCategory {
 }
 
 export const defaultCategories: VariableCategory[] = [
-  { id: 'brand-colors', name: 'Brand Colors', icon: 'Palette', variables: [] },
+  // Colors section
+  { id: 'color-by-scss', name: 'Color by SCSS', icon: 'Palette', variables: [] },
+  { id: 'colors', name: 'Colors', icon: 'Palette', variables: [] },
+  { id: 'identity-colors', name: 'Identity Colors', icon: 'Palette', variables: [] },
   { id: 'neutral-colors', name: 'Neutral Colors', icon: 'Circle', variables: [] },
-  { id: 'light-bg-tones', name: 'Light Background Tones', icon: 'Sun', variables: [] },
-  { id: 'dark-bg-tones', name: 'Dark Background Tones', icon: 'Moon', variables: [] },
+  
+  // Color Combinations section
+  { id: 'colors-combinations', name: 'Color Combinations', icon: 'Layers', variables: [] },
+  { id: 'light-background-tones', name: 'Light Background Tones', icon: 'Sun', variables: [] },
+  { id: 'dark-background-tones', name: 'Dark Background Tones', icon: 'Moon', variables: [] },
+  
+  // Typography section
   { id: 'typography', name: 'Typography', icon: 'Type', variables: [] },
-  { id: 'layout', name: 'Layout & Spacing', icon: 'LayoutGrid', variables: [] },
-  { id: 'borders', name: 'Borders & Radius', icon: 'Square', variables: [] },
-  { id: 'shadows', name: 'Shadows', icon: 'Layers', variables: [] },
-  { id: 'header-footer', name: 'Header & Footer', icon: 'PanelTop', variables: [] },
+  { id: 'font-sizes', name: 'Font Sizes', icon: 'Type', variables: [] },
+  { id: 'line-heights-(pre-multiplied)', name: 'Line Heights', icon: 'AlignLeft', variables: [] },
+  { id: 'base', name: 'Base', icon: 'Type', variables: [] },
+  { id: 'headings', name: 'Headings', icon: 'Heading', variables: [] },
+  { id: 'pre-heading', name: 'Pre-Heading', icon: 'Type', variables: [] },
+  { id: 'lead', name: 'Lead', icon: 'Type', variables: [] },
+  { id: 'links', name: 'Links', icon: 'Link', variables: [] },
+  
+  // Layout and Spacing section
+  { id: 'layout-and-spacing', name: 'Layout and Spacing', icon: 'LayoutGrid', variables: [] },
+  { id: 'grid', name: 'Grid', icon: 'Grid3x3', variables: [] },
+  { id: 'universals', name: 'Universals', icon: 'Settings', variables: [] },
+  { id: 'boxed', name: 'Boxed', icon: 'Square', variables: [] },
+  { id: 'highlighted', name: 'Highlighted', icon: 'Highlighter', variables: [] },
+  { id: 'alternate-module-heading', name: 'Alternate Module Heading', icon: 'Heading', variables: [] },
+  
+  // Header, Body and Footer section
+  { id: 'header,-body-and-footer', name: 'Header, Body and Footer', icon: 'PanelTop', variables: [] },
+  { id: 'header', name: 'Header', icon: 'PanelTop', variables: [] },
+  { id: 'body', name: 'Body', icon: 'Square', variables: [] },
+  { id: 'footer', name: 'Footer', icon: 'PanelBottom', variables: [] },
+  
+  // Navigation section
   { id: 'navigation', name: 'Navigation', icon: 'Menu', variables: [] },
+  { id: 'main-navigation', name: 'Main Navigation', icon: 'Menu', variables: [] },
+  { id: 'burger-navigation', name: 'Burger Navigation', icon: 'Menu', variables: [] },
+  { id: 'mega-menu', name: 'Mega Menu', icon: 'LayoutGrid', variables: [] },
+  { id: 'service-navigation', name: 'Service Navigation', icon: 'Menu', variables: [] },
+  { id: 'breadcrumb-navigation', name: 'Breadcrumb Navigation', icon: 'ChevronRight', variables: [] },
+  { id: 'left-navigation', name: 'Left Navigation', icon: 'PanelLeft', variables: [] },
   { id: 'search', name: 'Search', icon: 'Search', variables: [] },
+  
+  // Buttons section
   { id: 'buttons', name: 'Buttons', icon: 'MousePointer', variables: [] },
+  { id: 'button-outline', name: 'Button Outline', icon: 'Square', variables: [] },
+  { id: 'link-arrow', name: 'Link Arrow', icon: 'ArrowRight', variables: [] },
+  
+  // Icons section
   { id: 'icons', name: 'Icons', icon: 'Star', variables: [] },
+  
+  // Labels section
   { id: 'labels', name: 'Labels', icon: 'Tag', variables: [] },
+  
+  // Forms section
   { id: 'forms', name: 'Forms', icon: 'FormInput', variables: [] },
-  { id: 'hero-ratios', name: 'Hero & Ratios', icon: 'Image', variables: [] },
-  { id: 'transitions', name: 'Transitions', icon: 'Zap', variables: [] },
+  
+  // Hero and Ratios section
+  { id: 'hero-and-ratios', name: 'Hero and Ratios', icon: 'Image', variables: [] },
+  
+  // Fallback
   { id: 'other', name: 'Other', icon: 'Settings', variables: [] },
 ];
 

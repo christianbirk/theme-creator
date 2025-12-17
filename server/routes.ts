@@ -162,34 +162,54 @@ function categorizeVariable(name: string): string {
 
 function parseScssVariables(content: string): CSSVariable[] {
   const variables: CSSVariable[] = [];
+  const lines = content.split('\n');
   
-  const cssVarRegex = /--([a-zA-Z0-9_-]+)\s*:\s*([^;]+);/g;
-  let match;
+  let currentMainSection = 'other';
+  let currentSubSection = '';
   
-  while ((match = cssVarRegex.exec(content)) !== null) {
-    const name = `--${match[1]}`;
-    const value = match[2].trim();
-    const type = detectVariableType(name, value);
-    const category = categorizeVariable(name);
+  // Regex patterns for section detection
+  const mainSectionRegex = /\/\*\s*---\s*(.+?)\s*---\s*\*\//;
+  const subSectionRegex = /\/\*\s*([^-][^*]+[^-])\s*\*\//;
+  const slashSubSectionRegex = /\/\/+\s*$/; // Lines with just slashes like ////////////////////////////
+  const cssVarRegex = /^\s*--([a-zA-Z0-9_-]+)\s*:\s*(.+?)\s*;/;
+  const scssVarRegex = /^\s*\$([a-zA-Z0-9_-]+)\s*:\s*([^;!]+)/;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     
-    variables.push({
-      name,
-      value,
-      defaultValue: value,
-      type,
-      category,
-    });
-  }
-
-  const scssVarRegex = /\$([a-zA-Z0-9_-]+)\s*:\s*([^;!]+)(?:\s*!default)?;/g;
-  
-  while ((match = scssVarRegex.exec(content)) !== null) {
-    const name = `--${match[1]}`;
-    const value = match[2].trim();
-    const type = detectVariableType(name, value);
-    const category = categorizeVariable(name);
+    // Check for main section comment like /* --- Typography --- */
+    const mainMatch = line.match(mainSectionRegex);
+    if (mainMatch) {
+      currentMainSection = mainMatch[1].trim().toLowerCase().replace(/\s+/g, '-');
+      currentSubSection = '';
+      continue;
+    }
     
-    if (!variables.find(v => v.name === name)) {
+    // Skip slash-only lines
+    if (slashSubSectionRegex.test(line.trim())) {
+      continue;
+    }
+    
+    // Check for subsection comment like /* Light Background Tones */
+    const subMatch = line.match(subSectionRegex);
+    if (subMatch && !line.includes('---')) {
+      const subText = subMatch[1].trim();
+      if (subText && !subText.startsWith('set to') && subText.length > 2) {
+        currentSubSection = subText.toLowerCase().replace(/\s+/g, '-');
+      }
+      continue;
+    }
+    
+    // Parse CSS variable
+    const cssMatch = line.match(cssVarRegex);
+    if (cssMatch) {
+      const name = `--${cssMatch[1]}`;
+      const value = cssMatch[2].trim();
+      const type = detectVariableType(name, value);
+      
+      // Use subsection if available, otherwise main section
+      const category = currentSubSection || currentMainSection;
+      
       variables.push({
         name,
         value,
@@ -197,6 +217,26 @@ function parseScssVariables(content: string): CSSVariable[] {
         type,
         category,
       });
+      continue;
+    }
+    
+    // Parse SCSS variable
+    const scssMatch = line.match(scssVarRegex);
+    if (scssMatch) {
+      const name = `--${scssMatch[1]}`;
+      const value = scssMatch[2].trim();
+      const type = detectVariableType(name, value);
+      const category = currentSubSection || currentMainSection;
+      
+      if (!variables.find(v => v.name === name)) {
+        variables.push({
+          name,
+          value,
+          defaultValue: value,
+          type,
+          category,
+        });
+      }
     }
   }
 
