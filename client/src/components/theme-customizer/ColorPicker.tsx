@@ -29,7 +29,7 @@ export function ColorPicker({ value, defaultValue, onChange, label, description 
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono truncate" data-testid={`color-label-${label}`}>
+          <span className="text-sm truncate" data-testid={`color-label-${label}`}>
             {label}
           </span>
           {isModified && (
@@ -44,7 +44,7 @@ export function ColorPicker({ value, defaultValue, onChange, label, description 
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-28 h-8 font-mono text-xs"
+        className="w-40 h-8 font-mono text-xs"
         placeholder="#000000"
         data-testid={`color-input-${label}`}
       />

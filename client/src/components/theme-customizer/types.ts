@@ -4,6 +4,8 @@ export interface CSSVariable {
   defaultValue: string;
   type: 'color' | 'font' | 'size' | 'number' | 'string';
   category: string;
+  mainSection: string;
+  subSection: string;
   description?: string;
 }
 
@@ -14,72 +16,59 @@ export interface VariableCategory {
   variables: CSSVariable[];
 }
 
+export interface SectionStructure {
+  id: string;
+  name: string;
+  icon: string;
+  subSections: {
+    id: string;
+    name: string;
+    variables: CSSVariable[];
+  }[];
+}
+
 export const defaultCategories: VariableCategory[] = [
-  // Colors section
-  { id: 'color-by-scss', name: 'Color by SCSS', icon: 'Palette', variables: [] },
   { id: 'colors', name: 'Colors', icon: 'Palette', variables: [] },
-  { id: 'identity-colors', name: 'Identity Colors', icon: 'Palette', variables: [] },
-  { id: 'neutral-colors', name: 'Neutral Colors', icon: 'Circle', variables: [] },
-  
-  // Color Combinations section
   { id: 'colors-combinations', name: 'Color Combinations', icon: 'Layers', variables: [] },
-  { id: 'light-background-tones', name: 'Light Background Tones', icon: 'Sun', variables: [] },
-  { id: 'dark-background-tones', name: 'Dark Background Tones', icon: 'Moon', variables: [] },
-  
-  // Typography section
   { id: 'typography', name: 'Typography', icon: 'Type', variables: [] },
-  { id: 'font-sizes', name: 'Font Sizes', icon: 'Type', variables: [] },
-  { id: 'line-heights-(pre-multiplied)', name: 'Line Heights', icon: 'AlignLeft', variables: [] },
-  { id: 'base', name: 'Base', icon: 'Type', variables: [] },
-  { id: 'headings', name: 'Headings', icon: 'Heading', variables: [] },
-  { id: 'pre-heading', name: 'Pre-Heading', icon: 'Type', variables: [] },
-  { id: 'lead', name: 'Lead', icon: 'Type', variables: [] },
-  { id: 'links', name: 'Links', icon: 'Link', variables: [] },
-  
-  // Layout and Spacing section
   { id: 'layout-and-spacing', name: 'Layout and Spacing', icon: 'LayoutGrid', variables: [] },
-  { id: 'grid', name: 'Grid', icon: 'Grid3x3', variables: [] },
-  { id: 'universals', name: 'Universals', icon: 'Settings', variables: [] },
-  { id: 'boxed', name: 'Boxed', icon: 'Square', variables: [] },
-  { id: 'highlighted', name: 'Highlighted', icon: 'Highlighter', variables: [] },
-  { id: 'alternate-module-heading', name: 'Alternate Module Heading', icon: 'Heading', variables: [] },
-  
-  // Header, Body and Footer section
   { id: 'header,-body-and-footer', name: 'Header, Body and Footer', icon: 'PanelTop', variables: [] },
-  { id: 'header', name: 'Header', icon: 'PanelTop', variables: [] },
-  { id: 'body', name: 'Body', icon: 'Square', variables: [] },
-  { id: 'footer', name: 'Footer', icon: 'PanelBottom', variables: [] },
-  
-  // Navigation section
   { id: 'navigation', name: 'Navigation', icon: 'Menu', variables: [] },
-  { id: 'main-navigation', name: 'Main Navigation', icon: 'Menu', variables: [] },
-  { id: 'burger-navigation', name: 'Burger Navigation', icon: 'Menu', variables: [] },
-  { id: 'mega-menu', name: 'Mega Menu', icon: 'LayoutGrid', variables: [] },
-  { id: 'service-navigation', name: 'Service Navigation', icon: 'Menu', variables: [] },
-  { id: 'breadcrumb-navigation', name: 'Breadcrumb Navigation', icon: 'ChevronRight', variables: [] },
-  { id: 'left-navigation', name: 'Left Navigation', icon: 'PanelLeft', variables: [] },
-  { id: 'search', name: 'Search', icon: 'Search', variables: [] },
-  
-  // Buttons section
   { id: 'buttons', name: 'Buttons', icon: 'MousePointer', variables: [] },
-  { id: 'button-outline', name: 'Button Outline', icon: 'Square', variables: [] },
-  { id: 'link-arrow', name: 'Link Arrow', icon: 'ArrowRight', variables: [] },
-  
-  // Icons section
   { id: 'icons', name: 'Icons', icon: 'Star', variables: [] },
-  
-  // Labels section
   { id: 'labels', name: 'Labels', icon: 'Tag', variables: [] },
-  
-  // Forms section
   { id: 'forms', name: 'Forms', icon: 'FormInput', variables: [] },
-  
-  // Hero and Ratios section
   { id: 'hero-and-ratios', name: 'Hero and Ratios', icon: 'Image', variables: [] },
-  
-  // Fallback
   { id: 'other', name: 'Other', icon: 'Settings', variables: [] },
 ];
+
+export const sectionIcons: Record<string, string> = {
+  'colors': 'Palette',
+  'colors-combinations': 'Layers',
+  'typography': 'Type',
+  'layout-and-spacing': 'LayoutGrid',
+  'header,-body-and-footer': 'PanelTop',
+  'navigation': 'Menu',
+  'buttons': 'MousePointer',
+  'icons': 'Star',
+  'labels': 'Tag',
+  'forms': 'FormInput',
+  'hero-and-ratios': 'Image',
+};
+
+export function formatVariableName(name: string): string {
+  return name
+    .replace(/^--/, '')
+    .replace(/-/g, ' ');
+}
+
+export function formatSectionName(id: string): string {
+  return id
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+    .replace(/,\s*/g, ', ');
+}
 
 export const fontOptions = [
   'Inter',

@@ -23,7 +23,7 @@ export function StringInput({ value, defaultValue, onChange, label, description 
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono truncate" data-testid={`string-label-${label}`}>
+          <span className="text-sm truncate" data-testid={`string-label-${label}`}>
             {label}
           </span>
           {isModified && (
@@ -38,7 +38,7 @@ export function StringInput({ value, defaultValue, onChange, label, description 
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-48 h-8 font-mono text-sm"
+        className="w-40 h-8 font-mono text-sm"
         data-testid={`string-input-${label}`}
       />
 

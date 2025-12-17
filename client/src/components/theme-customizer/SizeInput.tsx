@@ -48,7 +48,7 @@ export function SizeInput({ value, defaultValue, onChange, label, description }:
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono truncate" data-testid={`size-label-${label}`}>
+          <span className="text-sm truncate" data-testid={`size-label-${label}`}>
             {label}
           </span>
           {isModified && (
@@ -65,7 +65,7 @@ export function SizeInput({ value, defaultValue, onChange, label, description }:
           type="number"
           value={parsed.number}
           onChange={(e) => handleNumberChange(parseFloat(e.target.value) || 0)}
-          className="w-20 h-8 text-center font-mono text-sm"
+          className="w-24 h-8 text-center font-mono text-sm"
           data-testid={`size-input-${label}`}
         />
 

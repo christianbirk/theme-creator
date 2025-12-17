@@ -11,6 +11,8 @@ interface CSSVariable {
   defaultValue: string;
   type: 'color' | 'font' | 'size' | 'number' | 'string';
   category: string;
+  mainSection: string;
+  subSection: string;
   description?: string;
 }
 
@@ -165,7 +167,7 @@ function parseScssVariables(content: string): CSSVariable[] {
   const lines = content.split('\n');
   
   let currentMainSection = 'other';
-  let currentSubSection = '';
+  let currentSubSection = 'general';
   
   // Regex patterns for section detection
   const mainSectionRegex = /\/\*\s*---\s*(.+?)\s*---\s*\*\//;
@@ -181,7 +183,7 @@ function parseScssVariables(content: string): CSSVariable[] {
     const mainMatch = line.match(mainSectionRegex);
     if (mainMatch) {
       currentMainSection = mainMatch[1].trim().toLowerCase().replace(/\s+/g, '-');
-      currentSubSection = '';
+      currentSubSection = 'general'; // Reset subsection when entering new main section
       continue;
     }
     
@@ -207,15 +209,14 @@ function parseScssVariables(content: string): CSSVariable[] {
       const value = cssMatch[2].trim();
       const type = detectVariableType(name, value);
       
-      // Use subsection if available, otherwise main section
-      const category = currentSubSection || currentMainSection;
-      
       variables.push({
         name,
         value,
         defaultValue: value,
         type,
-        category,
+        category: currentSubSection,
+        mainSection: currentMainSection,
+        subSection: currentSubSection,
       });
       continue;
     }
@@ -226,7 +227,6 @@ function parseScssVariables(content: string): CSSVariable[] {
       const name = `--${scssMatch[1]}`;
       const value = scssMatch[2].trim();
       const type = detectVariableType(name, value);
-      const category = currentSubSection || currentMainSection;
       
       if (!variables.find(v => v.name === name)) {
         variables.push({
@@ -234,7 +234,9 @@ function parseScssVariables(content: string): CSSVariable[] {
           value,
           defaultValue: value,
           type,
-          category,
+          category: currentSubSection,
+          mainSection: currentMainSection,
+          subSection: currentSubSection,
         });
       }
     }

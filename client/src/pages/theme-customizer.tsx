@@ -203,7 +203,6 @@ export default function ThemeCustomizer() {
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
         variables={variables}
-        baseCSS={compiledCss || undefined}
       />
     </div>
   );

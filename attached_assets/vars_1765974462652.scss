@@ -90,7 +90,7 @@
 	--font-xlarge: clamp(2rem, 4vw, 2.25rem);
 	--font-xxlarge: clamp(3rem, 5vw, 3.5rem);
 			
-	/* Line Heights */
+	/* line-heights */
 	--font-xsmall-line-height: calc(var(--font-xsmall) * 1.33);
 	--font-small-line-height: calc(var(--font-small) * 1.43);
 	--font-normal-line-height: calc(var(--font-normal) * 1.5);
@@ -131,7 +131,7 @@
 	--h5-text-transform: ;
 	--h6-text-transform: ;
 
-	/* Pre Heading */
+	/* Pre-Heading */
 	--pre-heading-family: var(--font-heading-family);
 	--pre-heading-weight: var(--font-heading-weight);
 	--pre-heading-text-transform: uppercase;
@@ -144,7 +144,7 @@
 	--lead-font-line-height: var(--font-medium-line-height);
 
 	/* Links */
-	--link-style: underline;
+	--link-style: underline; /* set to 'underline' or 'arrow' */
 
 	/* --- Layout and Spacing--- */
 
@@ -248,8 +248,6 @@
 	--search-icon-color-hover: var(--color-neutral-f);
 
 	/* --- Buttons --- */
-
-	/* Button Universal */
 	--button-universal-padding: 16px 24px;
 	--button-universal-text-transform: ;
 	--button-universal-font-size: var(--font-normal);
@@ -267,7 +265,6 @@
 
 	/* --- Icons --- */
 	
-	/* Icon Settings */
 	--icon-default-font-family: 'Font Awesome 6 Pro';
 	--icon-alternate-font-family: 'Font Awesome 6 Sharp'; 
 	--icon-default-font-size: 32px;
@@ -278,7 +275,6 @@
 
 	/* --- Labels --- */
 	
-	/* Label Settings */
 	--label-border-radius: var(--universal-border-radius);
 	--label-text-transform: ;
 	--label-font-family: ;
@@ -286,13 +282,9 @@
 	--label-padding: ;
 
 	/* --- Forms --- */
-
-	/* Form Settings */
 	--form-field-height: 52px;
 
 	/* --- Hero and Ratios --- */
-
-	/* Aspect Ratios */
 	--aspect-ratio-default: 16/9;
 	--hero-ratio-full-width: 16/5;
 	--hero-ratio-desktop: 16/7;

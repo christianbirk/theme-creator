@@ -1,11 +1,15 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Accordion } from '@/components/ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Upload, RotateCcw } from 'lucide-react';
-import { VariableGroup } from './VariableGroup';
-import { CSSVariable, VariableCategory } from './types';
+import { Search, Upload, RotateCcw, ChevronRight } from 'lucide-react';
+import { CSSVariable, VariableCategory, formatVariableName, formatSectionName, sectionIcons } from './types';
+import { ColorPicker } from './ColorPicker';
+import { SizeInput } from './SizeInput';
+import { FontPicker } from './FontPicker';
+import { NumberInput } from './NumberInput';
+import { StringInput } from './StringInput';
 
 interface ControlPanelProps {
   categories: VariableCategory[];
@@ -16,37 +20,67 @@ interface ControlPanelProps {
   onImportSCSS: (file: File) => void;
 }
 
+interface SectionData {
+  id: string;
+  name: string;
+  subSections: {
+    id: string;
+    name: string;
+    variables: CSSVariable[];
+  }[];
+}
+
 export function ControlPanel({ 
-  categories, 
   variables, 
   onVariableChange, 
   onResetAll, 
-  onResetCategory,
   onImportSCSS 
 }: ControlPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(['brand-colors']);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['colors']);
+  const [expandedSubSections, setExpandedSubSections] = useState<string[]>([]);
 
-  const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return categories.map(cat => ({
-        ...cat,
-        variables: variables.filter(v => v.category === cat.id)
-      }));
-    }
-
+  const sections = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return categories
-      .map(cat => ({
-        ...cat,
-        variables: variables.filter(v => 
-          v.category === cat.id && 
-          (v.name.toLowerCase().includes(query) || 
-           v.description?.toLowerCase().includes(query))
-        )
-      }))
-      .filter(cat => cat.variables.length > 0);
-  }, [categories, variables, searchQuery]);
+    const sectionMap = new Map<string, Map<string, CSSVariable[]>>();
+
+    variables.forEach(v => {
+      const mainSection = v.mainSection || 'other';
+      const subSection = v.subSection || 'general';
+
+      if (query && !v.name.toLowerCase().includes(query)) {
+        return;
+      }
+
+      if (!sectionMap.has(mainSection)) {
+        sectionMap.set(mainSection, new Map());
+      }
+      const subMap = sectionMap.get(mainSection)!;
+      if (!subMap.has(subSection)) {
+        subMap.set(subSection, []);
+      }
+      subMap.get(subSection)!.push(v);
+    });
+
+    const result: SectionData[] = [];
+    sectionMap.forEach((subMap, mainId) => {
+      const subSections: SectionData['subSections'] = [];
+      subMap.forEach((vars, subId) => {
+        subSections.push({
+          id: subId,
+          name: formatSectionName(subId),
+          variables: vars
+        });
+      });
+      result.push({
+        id: mainId,
+        name: formatSectionName(mainId),
+        subSections
+      });
+    });
+
+    return result;
+  }, [variables, searchQuery]);
 
   const modifiedCount = useMemo(() => 
     variables.filter(v => v.value !== v.defaultValue).length
@@ -59,6 +93,63 @@ export function ControlPanel({
       e.target.value = '';
     }
   }, [onImportSCSS]);
+
+  const renderVariableInput = (variable: CSSVariable) => {
+    const displayName = formatVariableName(variable.name);
+    
+    switch (variable.type) {
+      case 'color':
+        return (
+          <ColorPicker
+            key={variable.name}
+            value={variable.value}
+            defaultValue={variable.defaultValue}
+            onChange={(value) => onVariableChange(variable.name, value)}
+            label={displayName}
+          />
+        );
+      case 'font':
+        return (
+          <FontPicker
+            key={variable.name}
+            value={variable.value}
+            defaultValue={variable.defaultValue}
+            onChange={(value) => onVariableChange(variable.name, value)}
+            label={displayName}
+          />
+        );
+      case 'size':
+        return (
+          <SizeInput
+            key={variable.name}
+            value={variable.value}
+            defaultValue={variable.defaultValue}
+            onChange={(value) => onVariableChange(variable.name, value)}
+            label={displayName}
+          />
+        );
+      case 'number':
+        return (
+          <NumberInput
+            key={variable.name}
+            value={variable.value}
+            defaultValue={variable.defaultValue}
+            onChange={(value) => onVariableChange(variable.name, value)}
+            label={displayName}
+          />
+        );
+      default:
+        return (
+          <StringInput
+            key={variable.name}
+            value={variable.value}
+            defaultValue={variable.defaultValue}
+            onChange={(value) => onVariableChange(variable.name, value)}
+            label={displayName}
+          />
+        );
+    }
+  };
 
   return (
     <div className="flex flex-col h-full border-r">
@@ -97,22 +188,62 @@ export function ControlPanel({
       <ScrollArea className="flex-1">
         <Accordion 
           type="multiple" 
-          value={expandedCategories}
-          onValueChange={setExpandedCategories}
+          value={expandedSections}
+          onValueChange={setExpandedSections}
           className="w-full"
         >
-          {filteredCategories.map(category => (
-            <VariableGroup
-              key={category.id}
-              category={category}
-              variables={category.variables}
-              onVariableChange={onVariableChange}
-              onResetCategory={onResetCategory}
-            />
+          {sections.map(section => (
+            <AccordionItem key={section.id} value={section.id} className="border-b">
+              <AccordionTrigger 
+                className="px-4 py-3 hover:no-underline"
+                data-testid={`accordion-section-${section.id}`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{section.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({section.subSections.reduce((acc, sub) => acc + sub.variables.length, 0)})
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-0">
+                <Accordion 
+                  type="multiple" 
+                  value={expandedSubSections}
+                  onValueChange={setExpandedSubSections}
+                  className="w-full"
+                >
+                  {section.subSections.map(subSection => (
+                    <AccordionItem 
+                      key={`${section.id}-${subSection.id}`} 
+                      value={`${section.id}-${subSection.id}`}
+                      className="border-b-0 border-t"
+                    >
+                      <AccordionTrigger 
+                        className="px-6 py-2 hover:no-underline text-sm"
+                        data-testid={`accordion-subsection-${section.id}-${subSection.id}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                          <span>{subSection.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({subSection.variables.length})
+                          </span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-6 pb-2">
+                        <div className="space-y-1">
+                          {subSection.variables.map(renderVariableInput)}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </AccordionContent>
+            </AccordionItem>
           ))}
         </Accordion>
 
-        {filteredCategories.length === 0 && searchQuery && (
+        {sections.length === 0 && searchQuery && (
           <div className="p-8 text-center text-muted-foreground">
             <p className="text-sm">No variables found matching "{searchQuery}"</p>
           </div>
