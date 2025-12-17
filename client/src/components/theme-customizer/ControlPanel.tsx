@@ -1,8 +1,10 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Search, Upload, RotateCcw, ChevronRight } from 'lucide-react';
 import { CSSVariable, VariableCategory, formatVariableName, formatSectionName, sectionIcons } from './types';
 import { ColorPicker } from './ColorPicker';
@@ -10,6 +12,9 @@ import { SizeInput } from './SizeInput';
 import { FontPicker } from './FontPicker';
 import { NumberInput } from './NumberInput';
 import { StringInput } from './StringInput';
+
+// Subsections that are only visible in expert mode
+const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors'];
 
 interface ControlPanelProps {
   categories: VariableCategory[];
@@ -39,6 +44,15 @@ export function ControlPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSections, setExpandedSections] = useState<string[]>(['colors']);
   const [expandedSubSections, setExpandedSubSections] = useState<string[]>([]);
+  const [expertMode, setExpertMode] = useState(() => {
+    const stored = localStorage.getItem('theme-customizer-expert-mode');
+    return stored === 'true';
+  });
+
+  // Persist expert mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('theme-customizer-expert-mode', String(expertMode));
+  }, [expertMode]);
 
   const baseColorOptions = useMemo(() => {
     return variables.filter(v => 
@@ -58,6 +72,11 @@ export function ControlPanel({
     variables.forEach(v => {
       const mainSection = v.mainSection || 'other';
       const subSection = v.subSection || 'general';
+
+      // Filter out expert-only subsections when not in expert mode
+      if (!expertMode && EXPERT_ONLY_SUBSECTIONS.includes(subSection)) {
+        return;
+      }
 
       if (query && !v.name.toLowerCase().includes(query)) {
         return;
@@ -91,7 +110,7 @@ export function ControlPanel({
     });
 
     return result;
-  }, [variables, searchQuery]);
+  }, [variables, searchQuery, expertMode]);
 
   const modifiedCount = useMemo(() => 
     variables.filter(v => v.value !== v.defaultValue).length
@@ -195,6 +214,25 @@ export function ControlPanel({
             className="pl-9"
             data-testid="input-search-variables"
           />
+        </div>
+
+        <div className="flex items-center justify-between mt-3 pt-3 border-t">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="expert-mode"
+              checked={expertMode}
+              onCheckedChange={setExpertMode}
+              data-testid="switch-expert-mode"
+            />
+            <Label htmlFor="expert-mode" className="text-sm cursor-pointer">
+              Expert mode
+            </Label>
+          </div>
+          {modifiedCount > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {modifiedCount} modified
+            </span>
+          )}
         </div>
       </div>
 
