@@ -2,7 +2,7 @@ import { useCallback, useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RotateCcw, Minus, Plus } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
 interface SizeInputProps {
   value: string;
@@ -44,14 +44,6 @@ export function SizeInput({ value, defaultValue, onChange, label, description }:
     onChange(defaultValue);
   }, [defaultValue, onChange]);
 
-  const increment = useCallback(() => {
-    handleNumberChange(parsed.number + 1);
-  }, [parsed.number, handleNumberChange]);
-
-  const decrement = useCallback(() => {
-    handleNumberChange(parsed.number - 1);
-  }, [parsed.number, handleNumberChange]);
-
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 min-w-0">
@@ -69,33 +61,13 @@ export function SizeInput({ value, defaultValue, onChange, label, description }:
       </div>
 
       <div className="flex items-center gap-1">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={decrement}
-          className="h-8 w-8"
-          data-testid={`size-decrement-${label}`}
-        >
-          <Minus className="h-3 w-3" />
-        </Button>
-
         <Input
           type="number"
           value={parsed.number}
           onChange={(e) => handleNumberChange(parseFloat(e.target.value) || 0)}
-          className="w-16 h-8 text-center font-mono text-sm"
+          className="w-20 h-8 text-center font-mono text-sm"
           data-testid={`size-input-${label}`}
         />
-
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={increment}
-          className="h-8 w-8"
-          data-testid={`size-increment-${label}`}
-        >
-          <Plus className="h-3 w-3" />
-        </Button>
 
         <Select value={parsed.unit} onValueChange={handleUnitChange}>
           <SelectTrigger className="w-16 h-8" data-testid={`size-unit-${label}`}>
