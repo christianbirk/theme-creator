@@ -35,18 +35,20 @@ function detectVariableType(name: string, value: string): CSSVariable['type'] {
     return 'font';
   }
 
-  if (lowerValue.match(/^[\d.]+\s*(px|rem|em|%|vh|vw|pt|cm|mm|in)$/i) ||
-      lowerName.includes('size') || lowerName.includes('spacing') ||
-      lowerName.includes('radius') || lowerName.includes('width') ||
-      lowerName.includes('height') || lowerName.includes('padding') ||
-      lowerName.includes('margin') || lowerName.includes('gap')) {
-    return 'size';
-  }
-
+  // Check for line-height BEFORE size (since 'height' is a substring)
   if (lowerValue.match(/^[\d.]+$/) || 
       lowerName.includes('weight') || lowerName.includes('line-height') ||
       lowerName.includes('opacity') || lowerName.includes('z-index')) {
     return 'number';
+  }
+
+  if (lowerValue.match(/^[\d.]+\s*(px|rem|em|%|vh|vw|pt|cm|mm|in)$/i) ||
+      lowerName.includes('size') || lowerName.includes('spacing') ||
+      lowerName.includes('radius') || lowerName.includes('width') ||
+      (lowerName.includes('height') && !lowerName.includes('line-height')) || 
+      lowerName.includes('padding') ||
+      lowerName.includes('margin') || lowerName.includes('gap')) {
+    return 'size';
   }
 
   return 'string';
