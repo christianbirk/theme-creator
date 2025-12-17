@@ -40,6 +40,17 @@ export function ControlPanel({
   const [expandedSections, setExpandedSections] = useState<string[]>(['colors']);
   const [expandedSubSections, setExpandedSubSections] = useState<string[]>([]);
 
+  const baseColorOptions = useMemo(() => {
+    return variables.filter(v => 
+      v.type === 'color' && 
+      (v.subSection === 'identity-colors' || v.subSection === 'neutral-colors')
+    );
+  }, [variables]);
+
+  const isBaseColor = useCallback((variable: CSSVariable) => {
+    return variable.subSection === 'identity-colors' || variable.subSection === 'neutral-colors';
+  }, []);
+
   const sections = useMemo(() => {
     const query = searchQuery.toLowerCase();
     const sectionMap = new Map<string, Map<string, CSSVariable[]>>();
@@ -106,6 +117,8 @@ export function ControlPanel({
             defaultValue={variable.defaultValue}
             onChange={(value) => onVariableChange(variable.name, value)}
             label={displayName}
+            colorOptions={baseColorOptions}
+            isBaseColor={isBaseColor(variable)}
           />
         );
       case 'font':
