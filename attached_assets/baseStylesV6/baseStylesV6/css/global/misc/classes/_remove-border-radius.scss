@@ -1,0 +1,22 @@
+
+.module{
+	&.remove-universal-border-radius{
+		-moz-border-radius: 0!important;
+		-webkit-border-radius: 0!important;
+		-ms-border-radius: 0!important;
+		-o-border-radius: 0!important;
+		-khtml-border-radius: 0!important;
+		border-radius: 0!important;
+		.media{
+			iframe,
+			img{
+				-moz-border-radius: 0!important;
+				-webkit-border-radius: 0!important;
+				-ms-border-radius: 0!important;
+				-o-border-radius: 0!important;
+				-khtml-border-radius: 0!important;
+				border-radius: 0!important;
+			}
+		} 
+	}
+}

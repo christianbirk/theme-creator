@@ -1,0 +1,36 @@
+.poll {
+  // Results
+  .results {
+    .answer {
+      margin: 0;
+    }
+    .result {
+      background-color: var(--color-neutral-d);
+      display: block;
+      height: 24px;
+      border-radius: var(--universal-border-radius);
+      .votes {
+        border-radius: var(--universal-border-radius);
+        background-color: var(--color-brand-a);
+        height: 24px;
+      }
+    }
+  }
+
+  // Votes
+  .votes {
+    text-align: right;
+    margin: 4px 0 0 0;
+  }
+
+  // Submit buttons
+  fieldset > legend {
+    padding-bottom: 16px;
+  }
+  .poll-controlls {
+    padding: 12px 0 0 0;
+  }
+  .btn {
+    cursor: pointer;
+  }
+}

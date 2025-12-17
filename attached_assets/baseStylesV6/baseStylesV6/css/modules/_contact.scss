@@ -1,0 +1,145 @@
+// Contact
+.contact {
+  h2.heading {
+    @include font-size(normal);
+    margin: 0;
+  }
+  .text {
+    word-break: break-word;
+    > .name {
+      margin: 0 0 0.6666666666666666em 0;
+      > span {
+        @include font-size(xnormal);
+        font-weight: 600;
+      }
+    }
+    .group {
+      > div{
+        display: flex;
+      }
+      a {
+        display: inline-block;
+        min-height: 24px;
+        min-width: 24px;
+      }
+      strong {
+        min-width: 16px;
+        margin-right: 8px;
+        white-space: nowrap;
+      }
+
+      // Other link
+      .other > a {
+        margin: 16px 0 0 0;
+      }
+    }
+    span {
+      + a {
+        margin-left: 4px;
+        text-decoration: underline;
+        &:hover,
+        &:focus,
+        &:active {
+          text-decoration: none;
+        }
+      }
+    }
+  }
+  .media {
+    img {
+      border-radius: var(--universal-border-radius);
+    }
+  }
+  &.highlighted,
+  &.boxed,
+  &[class*='bg-color-'] {
+    .media {
+      img {
+        border-radius: 0;
+      }
+    }
+  }
+  
+
+  &[class*='bg-color-']:not(.small-thumb) {
+    > .introduction + .media img {
+      border-radius: 0;
+    }
+    > .media {
+      img {
+        border-radius: var(--universal-border-radius) var(--universal-border-radius) 0 0;
+      }
+    }
+  }
+
+  // Small Thumbnail
+  &.small-thumb {
+    img {
+      max-width: 50%;
+      border-radius: var(--universal-border-radius);
+    }
+    &.boxed,
+    &.highlighted,
+    &[class*='bg-color-'] {
+      img {
+        margin: var(--grid-box-padding);
+        margin-bottom: 0;
+      }
+      .introduction + .media {
+        img {
+          margin-top: 0;
+        }
+      }
+    }
+  }
+
+  // Icons
+  .items.inline {
+    > .item {
+      a {
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        &:before {
+          @include icon-pack('Font Awesome 6 Brands');
+          font-size: 20px;
+          position: relative;
+          transition: color 0.1s ease-out;
+        }
+        &:hover,
+        &:active,
+        &:focus {
+          &::before {
+            color: var(--color-neutral-a);
+          }
+        }
+      }
+    }
+  }
+  .facebook {
+    &:before {
+      content: '\f09a';
+    }
+  }
+  .linkedin {
+    &:before {
+      content: '\f0e1';
+    }
+  }
+  .instagram {
+    &:before {
+      content: '\f16d';
+    }
+  }
+  .google {
+    &:before {
+      content: '\f0d5';
+    }
+  }
+  .twitter {
+    &:before {
+      content: '\e61b';
+    }
+  }
+}

@@ -1,0 +1,24 @@
+.template-viewer {
+  @include breakpoint(xlarge) {
+    > .container:first-child > .row > [class*='span'] {
+      padding: 0;
+    }
+    .module.i-frame {
+      margin: 0;
+      height: 800px;
+      -ms-zoom: 0.8;
+      -moz-transform: scaleX(0.8);
+      -moz-transform-origin: top left;
+      -o-transform: scaleX(0.8);
+      -o-transform-origin: top left;
+      -webkit-transform: scale(0.8);
+      -webkit-transform-origin: top left;
+      iframe {
+        background: white;
+        width: 1240px;
+        max-width: none;
+        height: 1000px;
+      }
+    }
+  }
+}

@@ -1,0 +1,294 @@
+.leaflet-popup-content {
+  min-width: 240px;
+}
+
+.maps {
+  /* Works on Chrome, Edge, and Safari */
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #cdcdcd;
+    border-radius: 20px;
+    border: 2px solid #cdcdcd;
+  }
+  .wrap {
+    // Buttons
+    .filtering {
+      margin-bottom: 16px;
+      a {
+        > .label {
+          background: var(--color-neutral-e);
+          border: 1px solid var(--color-neutral-d);
+          transition: all 0.2s;
+          &:hover,
+          &:focus,
+          &:active {
+            background: var(--color-neutral-e);
+          }
+          &.active {
+            background-color: var(--color-brand-a);
+            border: 1px solid var(--color-brand-a);
+            color: var(--color-neutral-f);
+            &:before {
+              @include icon-pack;
+              content: '\f00c';
+              margin-right: 6px;
+              color: var(--color-neutral-f);
+              min-width: 12px;
+              text-align: center;
+            }
+            &:hover,
+            &:focus {
+              background-color: var(--color-brand-a);
+            }
+          }
+        }
+      }
+    }
+
+    // Search
+    .search {
+      > .filter {
+        margin: 0 0 16px;
+      }
+      .btn {
+        text-indent: -9999px;
+      }
+    }
+
+    // Show hide switch
+    .show-hide-list {
+      @include switch(
+        var(--color-neutral-d),
+        $side: 'left',
+        $color-background-active: var(--color-brand-a)
+      );
+      margin-bottom: 16px;
+    }
+
+    // Map view
+    .map-view {
+      display: flex;
+      position: relative;
+      @include breakpoint(medium-small) {
+        flex-wrap: wrap;
+      }
+      > .list {
+        overflow-y: hidden;
+        overflow-x: auto;
+        width: 100%;
+        @include breakpoint(medium-small) {
+          order: 2;
+        }
+        @include breakpoint(medium-xlarge) {
+          overflow-y: auto;
+          overflow-x: hidden;
+          max-height: 100%;
+          width: 25%;
+          min-width: 25%;
+          height: auto;
+          position: absolute;
+          left: 0;
+          top: 0;
+        }
+
+        // Items
+        .items {
+          @include breakpoint(medium-small) {
+            display: flex;
+          }
+          > .item {
+            @include breakpoint(medium-small) {
+              min-width: min(80%, 300px);
+              > .text {
+                width: 100%;
+              }
+            }
+            cursor: pointer;
+            display: flex !important;
+            padding: 0 0 16px 0;
+            margin: 0 16px 16px 0;
+            border-bottom: 1px solid var(--color-neutral-d);
+            align-items: center;
+
+            .rich-text {
+              max-height: 110px;
+              overflow-y: auto;
+              overflow-x: hidden;
+            }
+
+            &:after {
+              position: relative;
+              @include icon-pack();
+              content: '\f054';
+              color: var(--color-neutral-d);
+              left: 0;
+              transition: left 0.2s;
+            }
+
+            &:hover,
+            &:focus,
+            &:active {
+              &:after {
+                left: -2px;
+                color: var(--color-brand-a);
+              }
+            }
+
+            @include breakpoint(small) {
+              flex-direction: column;
+            }
+
+            &:first-child {
+              border-top: 1px solid var(--color-neutral-d);
+              padding-top: 16px;
+            }
+            > .text {
+              flex: 100%;
+              padding-right: 16px;
+              @include breakpoint(small) {
+                @include font-size(small);
+              }
+              @include breakpoint(xsmall) {
+                @include font-size(xsmall);
+              }
+              > span {
+                margin: 0 0 0.5rem 0;
+                display: block;
+                @include font-size(normal);
+                @include breakpoint(small) {
+                  @include font-size(normal);
+                }
+                @include breakpoint(xsmall) {
+                  @include font-size(small);
+                }
+                font-weight: 600;
+              }
+              > .rich-text {
+                @include font-size(small);
+                p {
+                  margin: 0 0 0.5rem 0;
+                }
+              }
+              > a {
+                @include font-size(small);
+                text-decoration: underline;
+                &:hover,
+                &:focus,
+                &:active {
+                  text-decoration: none;
+                }
+              }
+            }
+            > .media {
+              align-self: start;
+              width: 100%;
+              max-width: 30px;
+              min-width: 30px;
+              @include breakpoint(small) {
+                width: 100%;
+                max-width: 25px;
+                min-width: 25px;
+                + .text {
+                  flex: 1;
+                }
+              }
+              + .text {
+                margin-top: 0;
+                width: 100%;
+                min-width: calc(100% - 42px);
+                @include breakpoint(medium-xlarge) {
+                  padding-left: 16px;
+                }
+                @include breakpoint(small) {
+                  max-width: calc(100% - 37px);
+                  min-width: calc(100% - 37px);
+                  margin-top: 8px;
+                }
+              }
+            }
+          }
+        }
+      }
+      > .map {
+        width: 100%;
+        @include breakpoint(medium-small) {
+          order: 1;
+        }
+        @include breakpoint(medium-xlarge) {
+          max-width: calc(75% - 5px);
+          margin-left: calc(25% + 5px);
+        }
+      }
+      &.hide-list {
+        > .list {
+          display: none;
+        }
+        > .map {
+          max-width: 100%;
+          margin-left: 0;
+        }
+      }
+    }
+
+    .map > .map-view-container {
+      --aspect-ratio: var(--aspect-ratio-default);
+        @include aspect();
+    }
+
+    // Pop up info
+    .popup-info {
+      .media {
+        position: relative;
+        padding-top: 20%;
+        @include breakpoint(medium-xlarge) {
+          padding-top: 30%;
+        }
+        img {
+          position: absolute;
+          inset: 0;
+          height: 100%;
+          object-fit: contain;
+        }
+        @include breakpoint(medium-xlarge) {
+          height: 30%;
+        }
+        + .wrap {
+          margin-top: 12px;
+        }
+      }
+      .wrap {
+        display: flex;
+        > .popup-info--logo {
+          flex: 15%;
+          margin-right: 8px;
+          + .text {
+            flex: 85%;
+          }
+        }
+        > .text {
+          width: 100%;
+          .heading {
+            @include font-size(normal);
+            margin: 0;
+          }
+          .description {
+            @include font-size(small);
+            max-height: 112px;
+            overflow: auto;
+          }
+          .link-arrow {
+            margin-bottom: 16px;
+            @include font-size(small);
+          }
+          p {
+            margin: 0.5em 0;
+          }
+        }
+      }
+    }
+  }
+}

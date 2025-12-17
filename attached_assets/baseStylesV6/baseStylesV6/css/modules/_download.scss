@@ -1,0 +1,73 @@
+.download {
+  .item {
+    border: 1px solid var(--color-neutral-d);
+    padding: 12px;
+    margin: 0 -1px -1px 0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+    
+    &:hover,
+    &:focus,
+    &:active{
+      background: var(--color-neutral-e);
+    }
+    
+    &:first-child{
+      border-radius: var(--universal-border-radius) var(--universal-border-radius) 0 0;
+    }
+    &:last-child{
+      border-radius: 0 0 var(--universal-border-radius) var(--universal-border-radius);
+    }
+    @include animate-all;
+    ul {
+      list-style-type: none;
+      li {
+        a {
+          display: inline-flex;
+          align-items: flex-start;
+          overflow: hidden;
+          max-width: 100%;
+          font-weight: var(--font-heading-weight);
+        }
+        &:last-child {
+          @include font-size(small);
+        }
+      }
+    }
+
+    //Icons
+    span[class*='icon-'] {
+      display: inline-block;
+      margin-right: 12px;
+      &:before{
+        @include icon-pack();
+        color: var(--color-brand-a);
+        font-size: 30px;
+        font-weight: 500;
+      }
+    }
+    .icon-file:before {
+      content: '\f15b';
+    }
+    .icon-pdf:before {
+      content: '\f1c1';
+    }
+    .icon-audio:before {
+      content: '\f1c7';
+    }
+    .icon-text:before {
+      content: '\f0f6';
+    }
+    .icon-zip:before {
+      content: '\f1c6';
+    }
+    .icon-img:before {
+      content: '\f1c5';
+    }
+    .icon-video:before {
+      content: '\f1c8';
+    }
+  }
+}

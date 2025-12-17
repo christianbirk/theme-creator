@@ -1,0 +1,66 @@
+// main: ../../../GoBasic/css/theme.scss
+
+.pagedlist:not(.dynamic-list):not(.search-results) {
+  ul > li {
+    margin: 0 0 50px 0;
+    overflow: hidden;
+
+    // Media
+    > .media-left {
+      @include breakpoint(medium) {
+        max-width: 25%;
+      }
+      @include breakpoint(small) {
+        max-width: 100%;
+        margin-bottom: 16px;
+      }
+      @include breakpoint(medium-xlarge) {
+        float: left;
+        margin-right: 32px;
+        max-width: 100px;
+      }
+      + .media-body {
+        @include breakpoint(medium-xlarge) {
+          margin-left: 132px;
+        }
+      }
+    }
+
+    // Body
+    > .media-body {
+      h2 {
+        @include font-size(medium);
+        margin: 0;
+      }
+      h2 > a {
+        color: var(--color-neutral-a);
+      }
+      p {
+        margin-top: 0;
+      }
+    }
+  }
+}
+
+// Search filter
+.search-filter {
+  @include grid-box-padding();
+  margin-top: 0;
+  background-color: var(--color-neutral-e);
+  > .panel-heading {
+    font-weight: var(--h2-font-weight);
+    @include font-size(xnormal);
+    color: var(--font-heading-color);
+    font-family: var(--font-heading-family);
+  }
+  .form-group {
+    margin: 10px 0;
+  }
+  .btn {
+    margin-top: 10px;
+  }
+  @include breakpoint(medium) {
+    padding: 15px;
+    margin-left: 15px;
+  }
+}

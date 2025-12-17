@@ -1,0 +1,27 @@
+.highlighted:not(.dynamic-list) {
+  box-shadow: var(--highlighted-box-shadow);
+  background-color: var(--color-neutral-f);
+}
+
+.highlighted.dynamic-list{
+  .items .item {
+    box-shadow: var(--highlighted-box-shadow);
+    background-color: var(--color-neutral-f);
+    border-radius: var(--universal-border-radius);
+    @include grid-box-padding;
+  }
+  .items > .item {
+    margin-bottom: 24px;
+    &:last-child{
+      margin-bottom: 12px;  
+    }
+  }
+} 
+[class*=span-] > .module.highlighted.dynamic-list{
+  padding: 0;
+}
+
+.highlighted.multi-section > .highlighted.multi-section {
+  padding: 0;
+  box-shadow: 0 0 0 transparent;
+}

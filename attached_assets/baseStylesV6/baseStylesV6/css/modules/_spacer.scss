@@ -1,0 +1,20 @@
+// Spacer
+.spacer {
+  min-height: 1px;
+
+  &.divider {
+    position: relative;
+    overflow: hidden;
+    &:before {
+      content: '\0020';
+      display: block;
+      height: 1px;
+      width: 100%;
+      background-color: var(--color-neutral-d);
+      position: absolute;
+      top: calc(50% - 1px);
+      box-sizing: border-box;
+      left: 0;
+    }
+  }
+}

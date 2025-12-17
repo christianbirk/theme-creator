@@ -1,0 +1,13 @@
+// Exact match
+.form-group.exact-match {
+  display: flex;
+  justify-content: flex-start;
+  .switch {
+    margin-top: 8px;
+    @include switch($color-background: var(--color-neutral-d));
+  }
+  .form-label {
+    @include font-size(xsmall);
+    font-weight: normal;
+  }
+}

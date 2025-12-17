@@ -1,0 +1,58 @@
+body.open nav.main div.cnt #main-menu a.mobile-nav-icon:after {
+  background: transparent;
+}
+
+nav.main div.cnt #main-menu a.mobile-nav-icon {
+  padding-right: 35px;
+  cursor: auto;
+
+  &:after {
+    content: '';
+    height: 20px;
+    width: 20px;
+    background: var(--color-brand-a);
+    position: absolute;
+    right: 0;
+  }
+
+  + a.dropdown-toggle {
+    display: inline-block;
+    vertical-align: middle;
+    padding: 0;
+    position: absolute;
+    top: 16px;
+    right: 0;
+    background: transparent;
+    cursor: pointer;
+    &:active,
+    &:focus {
+      background: transparent;
+    }
+  }
+
+  + a.dropdown-toggle {
+    height: 10px;
+  }
+  + a.dropdown-toggle:before,
+  + a.dropdown-toggle:after {
+    content: '';
+    display: block;
+    width: 100%;
+    position: absolute;
+    margin: 0;
+    -moz-transform: none;
+    -webkit-transform: none;
+    transform: none;
+  }
+  // Button open
+  + a.dropdown-toggle.dropped {
+    background: transparent;
+
+    &:before {
+      transform: rotate(-45deg);
+    }
+    &:after {
+      transform: rotate(45deg);
+    }
+  }
+}

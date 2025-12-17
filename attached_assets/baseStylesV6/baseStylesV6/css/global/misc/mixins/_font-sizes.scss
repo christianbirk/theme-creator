@@ -1,0 +1,9 @@
+@mixin font-size($token) {
+  font-size: var(--font-#{$token});
+  line-height: var(--font-#{$token}-line-height);
+}
+
+@mixin font-size-var($var-name, $lh-multiplier) {
+  font-size: var(--#{$var-name});
+  line-height: calc(var(--#{$var-name}));
+}

@@ -1,0 +1,96 @@
+// ---------------
+// Base + packs
+// ---------------
+%icon-link-base {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding: 0; // or use the param below
+  margin-left: var(--icon-link-left, 24px) !important;
+  min-height: 1em;
+
+  &::before {
+    @include animate-all;
+    position: absolute;
+    left: var(--icon-left, -24px);
+    top: auto;
+    margin: 0;
+    text-decoration: none !important;
+    border-bottom: 0 !important;
+  }
+
+  &:hover,
+  &:focus,
+  &:active {
+    &::before { text-decoration: none; border-bottom: 0; }
+  }
+}
+
+%icon-pack-brands::before { @include icon-pack('Font Awesome 6 Brands'); }
+%icon-pack-solid::before  { @include icon-pack(); }
+
+// ---------------
+// Config map
+// ---------------
+$icons: (
+  // Brands (font awesome brands)
+  twitter:   (pack: brands, selectors: ('.twitter', '[href*="twitter.com"]'),  content: '\e61b'),
+  facebook:  (pack: brands, selectors: ('.facebook','[href*="facebook.com"]'), content: '\f09a'),
+  linkedin:  (pack: brands, selectors: ('.linkedin','[href*="linkedin.com"]'), content: '\f0e1'),
+  youtube:   (pack: brands, selectors: ('.youtube', '[href*="youtube.com"]'),  content: '\f16a'),
+  instagram: (pack: brands, selectors: ('.instagram','[href*="instagram.com"]'), content: '\f16d'),
+  vimeo:     (pack: brands, selectors: ('.vimeo','[href*="vimeo.com"]'),      content: '\f27d'),
+
+  // Solid (regular FA)
+  mail:        (pack: solid, selectors: ('.mail', '.newsletter'), content: '\f0e0'),
+  phone:       (pack: solid, selectors: ('.phone'),               content: '\f095'),
+  rss:         (pack: solid, selectors: ('.rss'),                 content: '\f09e'),
+  link-text:   (pack: solid, selectors: ('.link-text'),           content: '\f0f6'),
+  link-zip:    (pack: solid, selectors: ('.link-zip'),            content: '\f1c6'),
+  link-word:   (pack: solid, selectors: ('.link-word'),           content: '\f1c2'),
+
+  // Using CSS vars you already have:
+  link-pdf:     (pack: solid, selectors: ('.link-pdf'),     var: '--link-pdf-icon'),
+  link-excel:   (pack: solid, selectors: ('.link-excel'),   var: '--link-excel-icon'),
+  link-external:(pack: solid, selectors: ('.link-external'),var: '--link-external-icon')
+);
+
+// ---------------
+// Helper mixin
+// ---------------
+@mixin _icon-item($selectors, $pack, $content: null, $var: null) {
+  @each $sel in $selectors {
+    a:not([class*="btn"]):not([class*="link-arrow"])#{unquote($sel)} {
+      @extend %icon-link-base;
+      @extend %icon-pack-#{$pack};
+
+      &::before {
+        @if $var {
+          content: var(#{$var});
+        } @else if $content {
+          content: quote($content) !important;
+        }
+      }
+    }
+  }
+}
+
+// ---------------
+// Public mixin
+// ---------------
+@mixin social-icons($link-left: 24px, $icon-left: -24px) {
+  // expose spacing as CSS vars so you can override per-scope if needed
+  a:not([class*="btn"]):not([class*="link-arrow"]) {
+    --icon-link-left: #{$link-left};
+    --icon-left: #{$icon-left};
+  }
+
+  @each $name, $conf in $icons {
+    $pack: map-get($conf, pack);
+    $selectors: map-get($conf, selectors);
+    $content: if(map-has-key($conf, content), map-get($conf, content), null);
+    $var: if(map-has-key($conf, var), map-get($conf, var), null);
+
+    @include _icon-item($selectors, $pack, $content, $var);
+  }
+}

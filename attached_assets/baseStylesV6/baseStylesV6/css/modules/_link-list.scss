@@ -1,0 +1,163 @@
+.link-list {
+  &.align-center {
+    ul li {
+      a:not([class*='btn']):not(.icon) {
+        @include breakpoint(medium-xlarge) {
+          display: inline-block;
+        }
+      }
+    }
+  }
+  
+  li{
+    @include social-icons();
+  }
+
+  .text > ul > li {
+    a.link-arrow {
+      padding-left: 0;
+    }
+    a{
+      text-decoration: none;
+    }
+    // With icon
+    &.icon {
+      position: relative;
+      &:before {
+        display: none;
+      }
+      > i {
+        display: flex;
+        align-items: center;
+        margin-right: 12px;
+        position: relative;
+      }
+    }
+    &[class*='btn'] {
+      margin: 8px 16px 8px 0;
+    }
+    a:not([class*='btn']) {
+      display: block;
+      position: relative;
+      &:not(.icon):not(.link-pdf) {
+        margin-left: 16px;
+      }
+      
+    
+      // If button
+      &[class*='btn'] {
+        &:before {
+          display: none;
+        }
+      }
+    
+      // Default link icon
+      &:before {
+        position: absolute;
+        content: '›';
+        top: 0;
+        left: -16px;
+        margin: 0;
+        text-align: left;
+      }
+      &:hover,
+      &:focus,
+      &:active {
+        text-decoration: underline;
+      }
+    
+      // With icon
+      &.icon {
+        position: relative;
+        padding: 4px 0 4px calc(16px + 8px);
+        &:before {
+          display: none;
+        }
+        > i {
+          position: absolute;
+          left: 0;
+          &:before {
+            font-size: 24px;
+            color: var(--color-brand-a);
+          }
+        }
+      }
+    
+      &.link-pdf {
+        &:before {
+          content: '\f1c1';
+        }
+      }
+      &.link-excel {
+        &:before {
+          content: '\f1c3';
+        }
+      }
+      &.link-external {
+        &:before {
+          content: '\f35d';
+        }
+      }
+    }
+  }  
+  
+
+  // Small Icon
+  &.small-icon {
+    .media {
+      i {
+        @include small-icon();
+      }
+    }
+  }
+
+  // Horizontal List
+  &.horizontal-list {
+    .items {
+      @include breakpoint(medium-xlarge) {
+        margin-left: -8px;
+        margin-right: -8px;
+      }
+      > .item {
+        display: inline-block;
+        padding-top: 0;
+        padding-bottom: 0;
+        padding-left: 8px;
+        padding-right: 16px;
+        vertical-align: middle;
+        > a {
+          margin-bottom: 16px;
+        }
+        > a[class*='btn'] {
+          margin: 0 0 16px 0;
+        }
+      }
+    }
+  }
+  // When shown as drop down
+  &.drop-down {
+    label {
+      font-family: var(--font-heading-family);
+      @include font-size(medium);
+      font-weight: var(--h2-font-weight);
+      margin: 0 0 0.75em 0;
+    }
+  }
+}
+
+.multi-section .link-list {
+  ul {
+    margin: 0 !important;
+    li {
+      list-style: none !important;
+      a:not([class*='btn']) {
+        text-decoration: none !important;
+        &:hover,
+        &:focus,
+        &:active {
+          text-decoration: underline !important;
+        }
+      }
+    }
+  }
+}

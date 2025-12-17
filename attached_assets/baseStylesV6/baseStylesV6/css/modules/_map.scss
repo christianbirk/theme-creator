@@ -1,0 +1,10 @@
+// main: ../base.scss
+
+.map {
+  .content {
+    position: relative;
+    overflow: hidden;
+    --aspect-ratio: var(--aspect-ratio);
+        @include aspect();
+  }
+}

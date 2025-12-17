@@ -1,0 +1,52 @@
+nav.breadcrumb {
+  display: block;
+  z-index: 36;
+  position: relative;
+  > div {
+    @include breakpoint(medium-xlarge) {
+      padding: var(--breadcrumb-padding);
+      display: flex;
+      & > span {
+        margin-right: 6px;
+      }
+    }
+    @include breakpoint(small) {
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+  }
+  > div > ul {
+    padding: 0;
+  }
+  ul > li {
+    display: inline-block;
+    margin-right: 12px;
+    > a{
+      text-decoration: none;
+    }
+    > a:hover,
+    > a:focus,
+    > a:active {
+      span {
+        text-decoration: underline;
+      }
+    }
+  }
+  ul > li a:after {
+    content: '/';
+    color: var(--breadcrumb-divider-color);
+    margin-left: 12px;
+  }
+  li * {
+    @include font-size(small);
+    color: var(--breadcrumb-link-color);
+  }
+  li span.breadcrumb-label {
+    color: var(--breadcrumb-label-color);
+  }
+  li.active {
+    span {
+      color: var(--breadcrumb-active-color);
+    }
+  }
+}

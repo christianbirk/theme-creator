@@ -1,0 +1,19 @@
+.margin-zero {
+  margin-bottom: 0 !important;
+}
+[class*='span'] > .margin-zero {
+  margin-bottom: 0 !important;
+}
+[class*='span'] > .margin-zero-top {
+  margin-top: 0 !important;
+}
+.padding-zero {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.row > [class*=span] > .module.margin-top {
+    height: calc(100% - 48px);
+}
+.margin-top {
+  margin-top: 32px !important;
+}

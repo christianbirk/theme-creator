@@ -1,0 +1,163 @@
+// Nav Burger
+
+// Specific Seearch Styles
+.services.burger-active {
+  @include breakpoint(medium-xlarge) {
+    .site-search {
+      margin-right: 16px;
+    }
+  }
+}
+
+// Burger Styling
+nav.mobile.burger {
+  @include breakpoint(medium-xlarge) {
+  
+    // Button
+    .nav-toggle{
+      > .dropdown-toggle{
+        background-color: var(--nav-burger-background-color);
+        border-color: var(--nav-burger-border-color);
+        &:hover, &:focus{
+          background-color: var(--nav-burger-background-color-hover);
+          border-color: var(--nav-burger-border-color-hover);
+        }
+        > .title{
+          color: var(--nav-burger-label-and-icon-color);
+          &:hover, &:focus{
+            color: var(--nav-burger-label-and-icon-color-hover);
+          }
+        }
+        > .button, 
+        > .button:before, 
+        > .button:after{
+          background-color: var(--nav-burger-label-and-icon-color);
+          &:hover, &:focus{
+            background-color: var(--nav-burger-label-and-icon-color-hover);
+          }
+        } 
+      }
+    }
+    
+    // Drop Down Menu
+    > .dropdown {
+      // Open state
+      &.dropped {
+        visibility: visible;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        transform: none;
+        width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        background-color: var(--main-bg-color);
+        z-index: 9;
+        overflow: auto;
+        box-sizing: border-box;
+        display: grid;
+        grid-auto-flow: row;
+        grid-auto-rows: min-content;
+        grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
+        justify-items: center;
+        &:before,
+        &:after {
+          content: '';
+        }
+        &:before {
+          grid-row: 1;
+        }
+        &:after {
+          grid-row: 4;
+        }
+        > ul {
+          display: flex;
+          flex-direction: column;
+          align-items: var(--nav-burger-dropdown-link-align);
+          
+          position: relative;
+          top: 0;
+          padding: 0;
+          background-color: transparent;
+          box-shadow: none;
+          border-radius: 0;
+          margin-left: auto;
+          margin-right: auto;
+          width: min(100%, var(--grid-container-max-width));
+          
+          &:nth-of-type(1) {
+            grid-row: 2;
+          }
+          &:nth-of-type(2) {
+            grid-row: 3;
+          }
+          > li {
+            border: 0;
+            &:first-child {
+              border: 0;
+            }
+            &.active{
+              > a:not([class*='btn']):not(.toggler) {
+                background: none;
+                text-decoration: none;
+                width: auto;   
+              }
+            }
+            &:active,
+            &:focus,
+            &:hover{
+              > a:not([class*='btn']):not(.toggler) {
+                text-decoration: none;
+                background: none;
+              }
+            }
+            
+            > a:not([class*='btn']):not([class*='toggler']) {
+              display: inline-block;
+              padding: 4px 0 4px 32px;
+              margin: 4px 0;
+              width: auto;
+              background: transparent;
+              border: 0;
+              min-height: auto;
+              font-size: var(--nav-burger-dropdown-link-font-size);
+              font-family: var(--nav-burger-dropdown-link-font-family);
+              line-height: 1.2;              
+            }
+            > a[class*='btn'] {
+              margin-left: 0;
+              margin-top: 0;
+            }
+            button.toggler,
+            ul {
+              display: none !important;
+            }
+
+            ul {
+              padding: 8px 16px;
+              border: 0;
+              li {
+                border: 0;
+                > a:not([class*='btn']):not(.toggler) {
+                  @include font-size(small);
+                  padding: 4px 0;
+                }
+              }
+            }
+          }
+          + ul.service-links {
+            margin-top: 16px;
+          }
+        }
+        > ul.service-links{
+          > li > a:not([class*='btn']):not(.toggler){
+            @include font-size(xnormal);
+            font-family: var(--font-base-family); 
+            font-weight: var(--font-base-weight);
+          }
+        }
+      }
+    }
+  }
+}

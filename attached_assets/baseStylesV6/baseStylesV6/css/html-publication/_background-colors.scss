@@ -1,0 +1,68 @@
+$colors: (
+  a: var(--color-brand-a),
+  b: var(--color-brand-b),
+  c: var(--color-brand-c),
+  d: var(--color-brand-d),
+  e: var(--color-brand-e),
+  f: var(--color-brand-f),
+  g: var(--color-brand-g),
+  h: var(--color-brand-h),
+  white: var(--color-neutral-f),
+  gray: var(--color-neutral-c)
+);
+
+@each $name, $val in $colors {
+  .html-publication {
+    .bg-color-#{'' + $name} {
+      &.text,
+      &.chapter .introduction {
+        background-color: $val;
+      }
+    }
+
+    // All modules
+    .bg-color-#{'' + $name} {
+      &.text,
+      &.chapter .introduction {
+        * {
+          color: set-text-color($val);
+
+          &.pre-heading {
+            color: set-pre-heading-color($val);
+          }
+
+          > a {
+            color: set-link-color($val);
+          }
+
+          > a.link-arrow {
+            color: set-link-color($val);
+          }
+
+          h1,
+          h2,
+          h3,
+          h4,
+          h5,
+          h6,
+          &.heading,
+          &.heading > a:not([class*='btn']) {
+            color: set-module-heading-color($val);
+          }
+        }
+      }
+    }
+  }
+}
+
+.html-publication {
+  [class*='bg-color-'] {
+    &.text,
+    &.quote > blockquote {
+      padding: 32px;
+      @include breakpoint(large) {
+        padding: 24px * 4;
+      }
+    }
+  }
+}

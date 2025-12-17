@@ -1,0 +1,90 @@
+
+[class*=span-] > .module.flex-list,
+.module.flex-list {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 24px;
+  
+  > .media {
+    width: auto;
+    max-width: 200px;
+    position: relative;
+    left: unset;
+    top: unset;
+    @include breakpoint(medium-small){
+      max-width: 100px;
+    }
+    
+    i {
+      margin-top: 0;
+      font-size: var(--icon-small-font-size);
+      line-height: calc(var(--icon-small-font-size) * 1.5);
+      &::before {
+        height: auto;
+        width: auto ;
+        padding: 0 ;
+      }
+    }
+    + .text {
+      width: auto;
+      margin: 0;
+      padding-top: 0;
+    }
+  }
+  
+  // With background color, boxed or highlighted
+  &.boxed,
+  &.highlighted,
+  &[class*='bg-color'] {
+    @include grid-box-padding;
+    &.card{
+      @include grid-box-padding;  
+    }
+    > .media {
+      img {
+        border-radius: var(--universal-border-radius);
+      }
+      i {
+        padding: 0;
+        margin: 0;
+      }
+      + .text{
+        padding: 0;
+      }
+    }
+  }
+}
+
+.module.small-icon,
+.module.flex-list{
+  > .media > a > i:before,
+  > .media > i:before{
+    color: var(--color-brand-a);
+    background-color: transparent ;
+  }
+}
+
+.boxed,
+.highlighted,
+[class*='bg-color'] {
+  .module.small-icon,
+  .module.flex-list {
+    > .media i {
+      margin: 0;
+      padding: 0;
+    }
+  }
+  .boxed,
+  .highlighted,
+  [class*='bg-color']{
+    &.module.small-icon > .media,
+    &.module.flex-list > .media {
+      > a > i,
+      > i {
+        margin: var(--grid-box-padding);
+        margin-bottom: 0;
+      }
+    }
+  }
+}

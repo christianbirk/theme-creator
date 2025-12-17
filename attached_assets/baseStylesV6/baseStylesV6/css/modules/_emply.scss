@@ -1,0 +1,46 @@
+.emply {
+  .search-input {
+    padding: 40px;
+    background-color: #f7f7f7;
+    border: 1px solid var(--color-neutral-d);
+    @include breakpoint(medium-small) {
+      margin-bottom: 20px;
+    }
+    @include breakpoint(large) {
+      margin-bottom: 40px;
+    }
+    > label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+  }
+
+  h2 {
+    @include breakpoint(medium-small) {
+      margin-bottom: 25px;
+    }
+    @include breakpoint(large) {
+      margin-top: 50px;
+    }
+    text-transform: uppercase;
+  }
+  ul {
+    > li {
+      padding: 20px;
+      border-bottom: 1px solid var(--color-neutral-d);
+      &:first-child {
+        border-top: 1px solid var(--color-neutral-d);
+      }
+      &:nth-child(odd) {
+        background-color: #f7f7f7;
+      }
+      > a {
+        display: block;
+      }
+      > small {
+        display: block;
+      }
+    }
+  }
+}

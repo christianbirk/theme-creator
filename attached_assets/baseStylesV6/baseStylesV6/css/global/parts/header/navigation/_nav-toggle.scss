@@ -1,0 +1,99 @@
+// Mobile toggle
+.nav-toggle {
+  cursor: pointer;
+
+
+  // Toggler
+  .dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: left;
+    text-decoration: none !important;
+    vertical-align: top;
+    @include box-sizing-border-box;
+    @include animate-all;
+    min-height: 48px;
+    line-height: 1.25;   
+    padding: var(--button-universal-padding);
+    border: 1px solid var(--color-brand-a);
+    border-radius: var(--button-universal-border-radius);
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    z-index: 8888;
+    background: white;
+    &:hover, 
+    &:focus{
+      background: color-mix(in srgb, white 95%, black);
+    }
+
+    &:after {
+      display: none !important;
+    }
+    .title {
+      text-transform: capitalize;
+      font-size: var(--button-universal-font-size);
+      font-weight: var(--button-universal-font-weight);
+      font-family: var(--button-universal-font-family);
+      color: var(--color-brand-a);
+      @include breakpoint(small){
+        display: none;
+      }
+      + .button{
+        @include breakpoint(medium-xlarge){
+          margin-left: 8px;
+        }
+      }
+    }
+
+    .button {
+      display: inline-block;
+      vertical-align: middle;
+      width: 20px;
+      position: relative;
+      cursor: pointer;
+    }
+    .button,
+    .button:before,
+    .button:after {
+      height: 1px;
+      background-color: var(--color-brand-a);
+    }
+    .button:before,
+    .button:after {
+      content: '';
+      display: block;
+      width: 100%;
+      position: absolute;
+      transform: rotate(0deg);
+      transition: top 0.2s, transform 0.2s;
+      transform-origin: 50%;
+    }
+    .button:before {
+      top: -6px;
+    }
+    .button:after {
+      top: 6px;
+    }
+    // Button open
+    &.open {
+      .button {
+        visibility: hidden;
+      }
+      .button:after,
+      .button:before {
+        top: 0;
+        visibility: visible;
+        transition: top 0.2s, transform 0.2s;
+        transform-origin: 50%;
+      }
+      .button:before {
+        transform: rotate(-45deg);
+      }
+      .button:after {
+        transform: rotate(45deg);
+      }
+    }
+  }
+}

@@ -1,0 +1,100 @@
+// Content Navigation
+.content-navigation {
+  overflow: visible;
+  position: static;
+  max-width: 100%;
+  @include breakpoint(small) {
+    display: none;
+  }
+  &.fixed {
+    position: fixed;
+    top: 0;
+    overflow-y: auto;
+    max-height: calc(100vh - 32px);
+  }
+
+  .heading {
+    @include font-size(xnormal);
+    margin-bottom: 24px;
+  }
+
+  // All Levels
+  ul li {
+    a {
+      display: block;
+      position: relative;
+      @include font-size(small);
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      &:hover,
+      &:focus,
+      &:active {
+        text-decoration: underline;
+      }
+    }
+  }
+  ul > li {
+    &.expanded {
+      > a {
+        text-decoration: none;
+        font-weight: bold;
+      }
+    }
+  }
+  // Level 1
+  > ul {
+    border-left: 1px solid var(--color-neutral-d);
+    > li {
+      padding-left: 24px;
+      margin: 8px 0;
+      > a {
+        position: relative;
+        padding: 4px 0;
+        &:before {
+          content: '';
+          position: absolute;
+        }
+      }
+      &.expanded {
+        > a {
+          &:before {
+            left: -25px;
+            width: 1px;
+            height: 100%;
+            background-color: var(--color-brand-a);
+          }
+        }
+      }
+    }
+  }
+
+  // Level 2 and beyond
+  ul ul {
+    display: none;
+    height: 0;
+
+    padding: 0 0 0 12px;
+
+    li {
+      > a {
+        padding-bottom: 16px;
+      }
+      &:last-child {
+        > a {
+          padding-bottom: 0;
+        }
+      }
+    }
+  }
+  .expanded {
+    > a {
+      color: var(--color-brand-a);
+    }
+    ul {
+      display: block;
+      padding: 12px;
+      height: auto;
+    }
+  }
+}

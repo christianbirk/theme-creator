@@ -1,0 +1,67 @@
+// Main
+div[role='main'] > .container > div[class*='-page'] {
+  @include breakpoint(medium-xlarge) {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  @include breakpoint(small) {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+body.wide-page div[role='main'] > .container > div.web-page {
+  @include breakpoint(xlarge) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+// Specific content page (this should be fixed in HTML)
+.sectionB > .container > .row > .span-9 > .row {
+  @include breakpoint(large) {
+    margin-left: -16px;
+    margin-right: -16px;
+  }
+  @include breakpoint(medium) {
+    margin-left: -8px;
+    margin-right: -8px;
+  }
+}
+div[aria-label='Hovedindhold'],
+div[aria-label='Main content'] {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+#wrapper div.publication-page {
+  @include breakpoint(medium-small) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+// News & Publication page specific
+#wrapper div.news-page,
+#wrapper div.publication-page {
+  h1 {
+    margin-bottom: 10px;
+  }
+
+  .date + .lead,
+  .labels + .lead {
+    margin-top: 10px;
+  }
+}
+// Left align content field on widepages
+.left-align-content {
+  &.wide-page,
+  &.wide-page-with-three-columns,
+  &.wide-page-with-two-columns {
+    div.web-page {
+      @include breakpoint(medium-xlarge) {
+        margin-left: 0;
+        margin-right: 4px;
+      }
+    }
+  }
+}

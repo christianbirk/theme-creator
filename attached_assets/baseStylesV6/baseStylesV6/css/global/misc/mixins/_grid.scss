@@ -1,0 +1,22 @@
+
+@mixin grid-box-padding{
+  @include breakpoint(large){
+    padding: var(--grid-box-padding);
+  }
+  @include breakpoint(medium-small){
+    padding: var(--grid-box-padding-mobile);
+  }
+}
+
+@mixin grid-gutter(){
+  padding-left: var(--grid-gutter-desktop);
+  padding-right: var(--grid-gutter-desktop);
+  @include breakpoint(xlarge) {
+    padding-left: 0;
+    padding-right: 0;  
+  }
+  @include breakpoint(small) {
+    padding-left: var(--grid-gutter-mobile);
+    padding-right: var(--grid-gutter-mobile);
+  }  
+}

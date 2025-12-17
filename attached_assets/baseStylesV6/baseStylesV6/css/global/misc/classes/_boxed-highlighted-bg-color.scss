@@ -1,0 +1,121 @@
+// All modules
+[class*='span-'] > .module{
+  &[class*='bg-color'],
+  &.highlighted,
+  &.boxed{
+    border-radius: var(--universal-border-radius);
+    @include grid-box-padding;
+    
+    &.card{
+      .media {
+        iframe,
+        img {
+          border-radius: var(--universal-border-radius) var(--universal-border-radius) 0 0;
+        }
+      }
+      
+      &.small-thumbnail{
+        .media {
+          iframe,
+          img {
+            border-radius: var(--universal-border-radius);
+          }
+        }
+      }
+
+      &.only-media {
+        .media {
+          iframe,
+          img {
+            border-radius: var(--universal-border-radius);
+          }
+        }
+      }
+
+      .introduction + .media {
+        img {
+          border-radius: 0;
+        }
+      }
+    }
+
+    // form
+    > .form {
+      margin: 8px 0 0;
+    }
+
+    // Groups
+    .group {
+      margin-top: 0;
+      + .group {
+        margin-top: 16px;
+      }
+    }
+
+    // Media
+    > .media {
+      > a > i,
+      > i {
+        margin: var(--grid-box-padding);
+        margin-bottom: 0;
+      }
+    }
+    
+    .dynamic-list{
+      .media {
+        i {
+          padding: 0;
+        }
+      }
+    }
+
+    // Text
+    .text {
+      > *:last-child {
+        margin-bottom: 0;
+      }
+    }
+    
+    &.multi-section.accordion .sections{
+      margin: 0; 
+    }
+
+    // Items
+    .items {
+      margin-bottom: 0;
+      &.inline:last-child {
+        > .item {
+          padding-bottom: 0;
+        }
+      }
+    }
+
+    // Except cards
+    &.card {
+      padding: 0;
+    }
+
+    // Specific for cards
+    &.card {
+      &.contact {
+        > .introduction {
+          padding-top: 16px;
+          padding-bottom: 16px;
+        }
+      }
+      .introduction {
+        @include grid-box-padding;
+        margin-bottom: 0;
+      }
+      .media + .text {
+        margin-top: 0;
+      }
+      .text {
+        @include grid-box-padding;
+        p:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+}

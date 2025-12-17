@@ -1,0 +1,25 @@
+// main: ../base.scss
+
+nav.sub {
+  @include breakpoint(medium-small) {
+    display: none !important;
+  }
+  > div {
+    .nav-toggle {
+      display: none;
+      @include breakpoint(medium-small) {
+        display: block;
+      }
+    }
+  }
+  ul > li {
+    display: inline-block;
+  }
+  ul > li > * {
+    display: inline-block;
+  }
+  li:hover *,
+  li.active * {
+    color: var(--color-brand-a);
+  }
+}

@@ -1,0 +1,242 @@
+// Cookie banner with checkmarks (new)
+.cookie-container {
+  background-color: rgba(black, 0.35);
+  height: 100vh;
+  z-index: 1900;
+  position: fixed;
+  display: block;
+  pointer-events: none;
+  width: 100% !important;
+  left: 0;
+  top: 0;
+  > .cookie-warning {
+    pointer-events: all;
+    background-color: var(--color-neutral-e);
+    box-shadow: -1px -6px 13px rgba(0, 0, 0, 0.17);
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    z-index: 2000;
+    padding: 0;
+    @include breakpoint(xlarge) {
+      padding: 48px 0 0;
+    }
+    > .cookie-content {
+      margin-inline: auto;
+      width: min(100%, var(--grid-container-max-width));
+      margin: 0 auto;
+      position: relative;
+      padding: 24px 16px 0;
+      @include breakpoint(xlarge) {
+        padding: 0;
+      }
+      @include clear-floats;
+    }
+
+    .checkmarks {
+      margin: 8px 0 24px;
+      @include breakpoint(xlarge) {
+        margin: 0 0 48px;
+      }
+
+      fieldset {
+        border: 0;
+        padding: 0;
+
+        legend {
+          opacity: 0;
+        }
+      }
+
+      label {
+        margin-right: 8px;
+        color: var(--color-brand-a);
+        font-weight: bold;
+        span {
+          margin-left: 8px;
+        }
+        input {
+          -webkit-appearance: none;
+          width: 16px;
+          height: 16px;
+          margin-top: 0;
+          background-color: var(--color-neutral-f);
+          border-radius: var(--universal-border-radius);
+          border: 2px solid var(--color-brand-a);
+
+          // If checked
+          &:checked {
+            background-color: var(--color-brand-a);
+            &:after {
+              content: '\f00c';
+              font-family: var(--icon-alternate-font-family);
+              font-weight: 600;
+              color: var(--color-neutral-f);
+              position: relative;
+              font-size: 8px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              line-height: 1.5em;
+            }
+          }
+          &:focus {
+            outline: none;
+          }
+        }
+        // Disabled
+        &.disabled {
+          span {
+            color: #555555;
+          }
+          input {
+            background-color: #555555;
+            border-color: #555555;
+          }
+        }
+      }
+    }
+
+    .cookies-text {
+      @include breakpoint(xlarge) {
+        width: 50%;
+      }
+      h1 {
+        @include font-size(medium);
+        line-height: var(--line-height-large);
+        margin-bottom: 15px;
+        + p:last-of-type {
+          margin-bottom: 0;
+        }
+      }
+      a {
+        text-decoration: underline;
+        margin: 16px 0;
+        font-weight: bold;
+
+        &:active,
+        &:focus,
+        &:hover {
+          text-decoration: none;
+        }
+        &:before {
+          font-weight: bold;
+        }
+        &.link-arrow {
+          color: var(--cookie-link-color);
+        }
+      }
+    }
+    .buttons {
+      // @include clear-floats;
+      margin-top: 16px;
+      @include breakpoint(xlarge) {
+        margin-top: 0;
+        // float: right;
+        position: absolute;
+        top: 0;
+        right: 0;
+      }
+      a.btn {
+        text-align: center;
+        display: block;
+        margin: 0 16px 16px 0;
+        @include breakpoint(xlarge) {
+          float: none;
+          margin: 0 0 16px 0;
+        }
+        &.focus-visible {
+          outline-color: var(--color-brand-a) !important;
+        }
+        &.hide {
+          display: none;
+        }
+      }
+    }
+    // Fold out Button
+    .btn.cookie-foldout {
+      // float: left;
+      border: 1px solid var(--color-neutral-d);
+      border-bottom: 1px solid var(--color-neutral-f);
+      border-radius: var(--universal-border-radius) var(--universal-border-radius) 0 0;
+      background-color: var(--color-neutral-f);
+      color: var(--color-brand-a) !important;
+      font-weight: bold;
+      margin: 0 0 -1px 0;
+      padding: 16px 24px;
+
+      &:before {
+        font-family: var(--icon-alternate-font-family);
+        content: '\f107';
+        font-weight: 600;
+        color: var(--color-neutral-f);
+        background-color: var(--color-brand-a);
+        border-radius: 100%;
+        padding: 5px 8px;
+        font-weight: bold;
+        margin-right: 8px;
+      }
+      &:active,
+      &:hover,
+      &:focus {
+        background-color: var(--color-neutral-f) !important;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .foldout-wrapper {
+    background-color: var(--color-neutral-f);
+    width: 100%;
+    max-height: 400px;
+    overflow-x: scroll;
+    border-top: 1px solid var(--color-neutral-d);
+    padding: 0 16px;
+    @include breakpoint(xlarge) {
+      padding: 0;
+    }
+
+    .foldout-content {
+      padding: 50px 0;
+      margin-inline: auto;
+      width: min(100%, var(--grid-container-max-width));
+      overflow: hidden;
+
+      table {
+        margin-bottom: 40px;
+
+        caption {
+          text-align: left;
+          @include font-size(medium);
+          font-family: var(--font-heading-family);
+          margin-bottom: 16px;
+          padding: 16px 0;
+          background: transparent;
+        }
+
+        tbody {
+          border: 1px solid var(--color-neutral-d);
+
+          td,
+          th {
+            border: 1px solid var(--color-neutral-d);
+            text-align: left;
+            padding: 16px;
+          }
+
+          th {
+            background: var(--color-neutral-e);
+          }
+          tr:first-child {
+            background-color: var(--color-neutral-e);
+            color: var(--color-brand-a);
+          }
+        }
+      }
+      @include breakpoint(small) {
+        padding: 32px 24px;
+        overflow-x: scroll;
+      }
+    }
+  }
+}

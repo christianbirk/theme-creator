@@ -1,0 +1,183 @@
+.sub-menu {
+  a > h2 {
+    color: var(--color-neutral-a);
+  }
+  // All levels
+  ul li {
+    vertical-align: top;
+    display: inline-block;
+    width: 100%;
+    > a {
+      text-decoration: none;
+      position: relative;
+      display: block;
+    }
+    > a {
+      @include link-arrow-before(21px, calc(100% - 24px), 'true');
+      height: calc(100% - 16px);
+      color: var(--color-brand-a);
+      &:before {
+        font-size: 1rem;
+      }
+      &:after {
+        display: none !important;
+      }
+    }
+    &.dropdown {
+      > a:not(.dropdown-toggle) {
+        &:before {
+          display: none !important;
+        }
+      }
+    }
+  }
+
+  ul li.dropdown ul {
+    @include box-shadow(0 5px 8px rgba(0, 0, 0, 0.1));
+    border: 1px solid var(--color-neutral-d);
+  }
+
+  // Level 1 Specific
+  > ul {
+    margin-left: -8px;
+    margin-right: -8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+  > ul > li {
+    > a {
+      border-radius: var(--universal-border-radius);
+      background-color: var(--color-neutral-e);
+      border: 1px solid var(--color-neutral-d);
+      padding: 16px 24px;
+      margin: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: default;
+      font-weight: var(--font-heading-weight);
+      font-family: var(--font-heading-family);
+      
+      &:hover,
+      &:active,
+      &:focus {
+        text-decoration: none !important;
+        color: var(--color-neutral-a);
+      }
+      &.dropdown-toggle,
+      &[href] {
+        &:hover,
+        &:active,
+        &:focus {
+          cursor: pointer;
+          background-color: var(--color-neutral-e-hover);
+          color: var(--color-brand-a);
+          text-decoration: none;
+        }
+      }
+      &.dropdown-toggle {
+        &:hover,
+        &:active,
+        &:focus {
+          color: var(--color-brand-a);
+        }
+      }
+    }
+    // Dropdown
+    &.dropdown {
+      > ul,
+      > .year-month-dropdown,
+      > .dropdown-with-search {
+        padding: 8px 0;
+        position: absolute;
+        top: calc(100% - 9px);
+        left: 8px;
+        width: calc(100% - 16px);
+        > li > a {
+          padding: 16px 32px 16px 16px;
+
+          &:hover,
+          &:focus,
+          &:active {
+            text-decoration: none;
+          }
+
+          &:before {
+            top: 21px;
+          }
+        }
+      }
+      > a {
+        padding-right: 45px;
+      }
+      // Drop down icon
+      > .dropdown-toggle {
+        cursor: pointer;
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 8px 24px;
+        height: calc(100% - 16px);
+        border-radius: 0 var(--universal-border-radius) var(--universal-border-radius) 0;
+        display: flex;
+        justify-content: center;
+        &:before {
+          @include icon-pack;
+          text-align: center;
+          margin: 0;
+          padding: 0;
+          content: '\f107';
+          left: auto;
+        }
+        &.active {
+          &:before {
+            content: '\f106';
+          }
+        }
+      }
+    }
+  }
+  // Level 2 specific
+  > ul ul.dropped {
+    position: relative;
+    padding: 16px;
+    max-height: 500px;
+    overflow-y: auto;
+    > li {
+      width: 100%;
+      > a {
+        color: var(--color-brand-a);
+        &:hover,
+        &:active,
+        &:focus {
+          color: var(--color-brand-a);
+        }
+      }
+      > .dropdown-toggle {
+        display: none !important;
+      }
+      &.dropdown:hover > ul {
+        display: block;
+        top: -1px;
+        left: 100%;
+      }
+    }
+  }
+}
+
+div {
+  @include loop-spans(6, 9) {
+    .sub-menu > ul > li {
+      @include breakpoint(large) {
+        width: 50%;
+      }
+    }
+  }
+  @include loop-spans(10, 12) {
+    .sub-menu > ul > li {
+      @include breakpoint(large) {
+        width: 25%;
+      }
+    }
+  }
+}

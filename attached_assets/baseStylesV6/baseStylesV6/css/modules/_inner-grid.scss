@@ -1,0 +1,68 @@
+// Inner Grid
+.inner-grid {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  &:not([style*='no-repeat']) {
+    background-size: auto;
+  }
+
+  &.align-items-horizontically {
+    > .container > .row {
+      align-items: center;
+    }
+  }
+
+  // Headline
+  > .container {
+    > h1,
+    > h2 {
+      @include font-size(xmedium);
+      @include breakpoint(large) {
+        margin-inline: var(--grid-gutter-desktop);
+      }
+      @include breakpoint(xlarge) {
+        margin-left: 0;
+        margin-right: 0;
+      }
+      @include breakpoint(medium) {
+        margin-inline: var(--grid-gutter-mobile);
+      }
+      @include breakpoint(small) {
+        margin-inline: 0;
+      }
+    }
+  }
+
+  // Smaller heading
+  &.typo-heading-small {
+    > .container > h1,
+    > .container > h2 {
+      @include font-size(xnormal);
+    }
+  }
+}
+
+// In spans // Check THIS
+div[class*='span'] > .inner-grid {
+  // padding-top: clamp(16px, 5vw, 32px);
+  // padding-bottom: clamp(16px, 5vw, 32px);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+// Full width
+*:not([class*='span']) > .inner-grid {
+  padding-top: clamp(24px, 5vw, 48px);
+  padding-bottom: clamp(24px, 5vw, 48px);
+  @include breakpoint(medium-xlarge) {
+    padding-inline: var(--grid-gutter-desktop);
+  }
+  @include breakpoint(small) {
+    padding-inline: var(--grid-gutter-mobile);
+  }
+}
+
+// Fix for overlapping innergrids
+.inner-grid[style*='margin-bottom'] + .inner-grid {
+  z-index: 2;
+}

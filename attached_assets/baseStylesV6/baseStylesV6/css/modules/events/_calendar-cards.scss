@@ -1,0 +1,51 @@
+@for $i from 2 through 6 {
+  .calendar-card:nth-child(#{$i}) {
+    background-color: darken($color-brand-a, $i * 2%);
+    color: var(--color-neutral-f);
+    z-index: 6 - $i;
+  }
+}
+.calendar-cards-wrapper {
+  display: flex;
+  margin-top: 0;
+  padding: 0;
+  top: 0;
+  position: relative;
+
+  &:not(:only-child) .calendar-card {
+    position: absolute;
+  }
+}
+.calendar-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-brand-a);
+  color: var(--color-neutral-f);  
+
+  &-day {
+    line-height: normal;
+    font-weight: bold;
+  }
+  &-month {
+    line-height: normal;
+    text-transform: uppercase;
+  }
+}
+.event-list {
+  .calendar-cards-wrapper {
+    width: 100%;
+    height: 38%;
+    max-height: 90px;
+  }
+  .calendar-card {
+    width: calc(100% / 5);
+    max-width: 80px;
+  }
+  @include calendar-cards-placement(80px, 5);
+  @include calendar-card-font-size(xsmall, 18px, 10px);
+  @include calendar-card-font-size(small, 24px, 12px);
+  @include calendar-card-font-size(medium, 30px, 14px);
+}

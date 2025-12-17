@@ -1,0 +1,44 @@
+// Font Presenter
+@include loop-spans(6, 12) {
+  > .font .typography {
+    ul {
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+  }
+}
+
+.font {
+  border: 1px solid var(--color-neutral-d);
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--universal-border-radius);
+  @include breakpoint(medium-xlarge) {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .typography{
+    padding: 16px;
+  }
+  span,
+  ul {
+    padding: 8px 16px;
+  }
+  .example {
+    color: var(--font-heading-color);
+    font-size: 100px;
+    line-height: 1;
+    display: block;
+  }
+  ul {
+    word-break: break-all;
+    list-style-type: none;
+
+    // Specs
+    &.specs {
+      li:first-of-type {
+        font-weight: 700;
+      }
+    }
+  }
+}

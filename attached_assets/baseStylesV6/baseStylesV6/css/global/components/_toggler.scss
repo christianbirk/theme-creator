@@ -1,0 +1,51 @@
+@mixin toggler(){
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  font-size: var(--font-xsmall);
+  background-color: color-mix(in oklch, var(--main-bg-color) 95%, black 5%);
+  &:active,
+  &:focus{
+    background: var(--color-neutral-e-hover);
+  }
+  &:hover{
+    background-color: var(--color-neutral-d); 
+    color: var(--color-brand-a); 
+  }
+}
+@mixin toggler-icon(){
+  @include icon-pack($icons: var(--icon-alternate-font-family));
+  font-weight: 600;
+  content:'\f107';
+  display: inline-flex;
+}
+
+
+
+// Toggler
+.toggler{
+  @include toggler();
+  &:before{
+    @include toggler-icon();
+  }
+}
+// Active State
+.expanded > .toggler{
+  background-color: var(--color-brand-a);
+  color: var(--color-neutral-f);
+  &:after{
+    transition: all .15s;
+    transform: rotate(180deg);
+  }
+  &:active,
+  &:focus{
+    background-color: var(--color-brand-a);
+    color: var(--color-neutral-f);
+  }
+}

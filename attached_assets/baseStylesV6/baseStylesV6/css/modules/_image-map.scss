@@ -1,0 +1,52 @@
+$imagemap-width: 33.33%;
+
+.module.image-map {
+  position: relative;
+
+  // Area
+  area {
+    display: block;
+    cursor: pointer;
+    &.link-arrow {
+      &:before,
+      &:after {
+        display: none;
+      }
+    }
+  }
+
+  // Popup
+  .popup {
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.15);
+    background: white;
+    overflow: hidden;
+    padding: 12px;
+    max-width: 50%;
+    height: auto;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.3s;
+    transition-delay: 0.2s;
+    z-index: 999;
+    * {
+      display: block;
+    }
+    img {
+      position: relative;
+      max-width: 33.33%;
+      margin: 0 0 12px 0;
+    }
+    h3 {
+      margin: 0;
+    }
+    p {
+      margin: 0;
+    }
+    div + * {
+      left: 33.33%;
+    }
+  }
+}

@@ -1,0 +1,55 @@
+.slider .hero,
+.vertical-center,
+.vertical-top,
+.vertical-bottom,
+.horizontal-left,
+.horizontal-center,
+.horizontal-right{
+	.content-wrapper{
+		@include breakpoint(large){
+			position: absolute;
+		}
+		position: static;
+	}
+}
+.vertical-top{
+	.content-wrapper{
+		@include breakpoint(medium-xlarge){
+			bottom: auto!important;
+			top: 0!important;
+		}
+	}
+}
+.vertical-bottom{
+	.content-wrapper{
+		@include breakpoint(medium-xlarge){
+			top: auto!important;
+			bottom: 0!important;
+		}
+	}
+}
+.horizontal-center{
+	.content-wrapper{
+		text-align: center;
+		margin: 0 auto;
+	}
+}
+.horizontal-left{
+	.content-wrapper{
+		left: auto;
+		right: auto;
+		@include breakpoint(medium-xlarge){
+			left: 0!important;
+		}
+	}
+}
+.horizontal-right{
+	.content-wrapper{
+		left: auto;
+		right: auto;
+		@include breakpoint(medium-xlarge){
+			left: auto!important;
+			right: 0;
+		}
+	}
+}

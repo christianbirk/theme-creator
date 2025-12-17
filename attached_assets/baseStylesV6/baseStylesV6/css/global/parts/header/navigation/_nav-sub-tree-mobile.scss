@@ -1,0 +1,29 @@
+// main: ../base.scss
+
+.mobile-subnav {
+  background: var(--color-neutral-f);
+  padding: 15px;
+  margin: 15px 0 0 0;
+  .dropdown-toggle {
+    &:before {
+      @include icon-pack;
+      margin-right: 8px;
+      content: '\f078';
+      font-size: 11px;
+      top: -2px;
+      position: relative;
+      @include animate-all;
+    }
+    &.dropped:before {
+      transform: rotate(180deg);
+      @include animate-all;
+    }
+  }
+  .dropdown-menu {
+    display: none;
+    padding: 10px 0 0 0;
+    &.dropped {
+      display: block;
+    }
+  }
+}

@@ -1,0 +1,41 @@
+.grouped-link-list {
+  ul {
+    > .group {
+      @include clear-floats;
+      margin: 0 0 32px 0;
+
+      // Icon
+      > .icon {
+        @include breakpoint(large) {
+          float: left;
+        }
+
+        max-width: 200px;
+        margin: 0 16px 0 0;
+        @include breakpoint(medium-small) {
+          max-width: none;
+          margin-bottom: 16px;
+        }
+        + .content {
+          @include breakpoint(large) {
+            margin-left: 216px;
+          }
+        }
+      }
+
+      // Content
+      > .content {
+        .rich-text {
+          margin: 0 0 16px 0;
+        }
+        .links {
+          @include clear-floats;
+          > li {
+            display: inline-block;
+            margin: 0 16px 8px 0;
+          }
+        }
+      }
+    }
+  }
+}

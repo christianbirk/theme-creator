@@ -1,0 +1,14 @@
+//Focus rules for accessibility
+*:focus:not(.focus-visible) {
+  outline: none;
+}
+
+%focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 2px var(--color-brand-a);
+  border-color: var(--color-brand-a);
+}
+
+.focus-visible {
+  @extend %focus-visible;
+}

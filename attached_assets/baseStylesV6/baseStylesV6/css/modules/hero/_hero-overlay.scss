@@ -1,0 +1,34 @@
+.module.hero.overlay{
+	
+	@include breakpoint(medium-xlarge) {
+		.text{
+			align-items: flex-end;
+			width: 100%;
+			
+			&:before{
+				border-radius: var(--universal-border-radius);
+				width: 100%;
+				height: 100%;
+				content:'\0020';
+				display: block;
+				position: absolute;
+				bottom: 0;
+				left: 0;
+				background-color: rgba(0,0,0,.25);
+				background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.5) 60%, rgba(0, 0, 0, 0) 100%);
+				z-index: -1;
+			}
+					
+			.wrap{
+				z-index: 1;
+				position: relative;
+				padding: 5%;
+				width: 100%;			
+			}
+			h1,h2,h3,h4,h5,h6,.heading, .pre-heading, .rich-text, a, a.link-arrow{
+				color: var(--color-neutral-f);
+			}
+		}
+	}
+	
+}

@@ -1,0 +1,26 @@
+// main: ../../../GoBasic/css/theme.scss
+
+.key-number {
+  > .number {
+    font-size: 120px;
+    line-height: 0.85;
+    letter-spacing: -0.03em;
+    color: var(--color-brand-a);
+    font-weight: bold;
+    display: block;
+    margin: 0 0 32px;
+    word-wrap: break-word;
+    white-space: normal;
+  }
+}
+
+@include loop-spans(10, 12) {
+  > .key-number > .number {
+    font-size: 200px;
+  }
+}
+@include loop-spans(1, 3) {
+  > .key-number > .number {
+    font-size: 75px;
+  }
+}

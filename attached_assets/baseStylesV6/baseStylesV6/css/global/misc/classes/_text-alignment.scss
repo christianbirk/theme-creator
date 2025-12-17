@@ -1,0 +1,50 @@
+.align-center:not(.split-box),
+.align-center > .text,
+.align-center > .media > i,
+.align-center > .media > a,
+.align-center > .media > a > i {
+  @include breakpoint(medium-xlarge) {
+    text-align: center !important;
+    justify-content: center;
+    [class*='btn'] {
+      margin-right: 16px;
+      margin-left: 16px;
+    }
+  }
+}
+.align-right:not(.split-box),
+.align-right .text {
+  @include breakpoint(medium-xlarge) {
+    text-align: right !important;
+    [class*='btn'] {
+      margin-right: 0;
+    }
+  }
+}
+.align-left:not(.split-box),
+.align-left > .text,
+.align-left:not(.split-box) > .text {
+  text-align: left !important;
+}
+.align-center.split-box {
+  .wrap {
+    @include breakpoint(medium-xlarge) {
+      text-align: center !important;
+    }
+  }
+}
+.align-right.split-box {
+  .wrap {
+    @include breakpoint(medium-xlarge) {
+      text-align: right !important;
+    }
+  }
+}
+.align-left.split-box {
+  .wrap {
+    text-align: left !important;
+  }
+}
+.align-center .heading > a:not([class*='btn']) {
+  display: inline;
+}

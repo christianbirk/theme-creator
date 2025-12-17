@@ -1,0 +1,71 @@
+// Snap Grid
+.module.snap-grid {
+  width: 100%;
+  padding: 0;
+}
+
+.snap-grid .container {
+  width: 100%;
+}
+
+.snap-grid {
+  &.inner-grid .container {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .row {
+    margin-left: 0;
+    width: 100%;
+    padding: 0;
+    gap: 0;
+
+    > [class*='span'] {
+      height: auto;
+
+      > .module {
+        height: 100%;
+        border-radius: 0;
+      }
+    }
+
+    > [class*='span']:first-child {
+      > .module {
+        @include breakpoint(medium-xlarge){
+          border-radius: var(--universal-border-radius) 0 0 var(--universal-border-radius);  
+        }
+        @include breakpoint(small){
+          border-radius: var(--universal-border-radius) var(--universal-border-radius) 0 0;  
+        }
+      }
+    }
+
+    > [class*='span']:last-child {
+      > .module {
+        @include breakpoint(medium-xlarge){
+          border-radius: 0 var(--universal-border-radius) var(--universal-border-radius) 0;
+        }
+        @include breakpoint(small){
+          border-radius: 0 0 var(--universal-border-radius) var(--universal-border-radius);  
+        }
+      }
+    }
+  }
+
+  [class*='span'] {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    height: auto;
+
+    > div {
+      margin: 0 !important;
+    }
+  }
+  .hero {
+    &.fill-space {
+      height: 100% !important;
+    }
+  }
+}

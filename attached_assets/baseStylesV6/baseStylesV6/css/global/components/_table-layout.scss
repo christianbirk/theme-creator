@@ -1,0 +1,21 @@
+// Table Layout
+.table-layout {
+  margin: 16px 0;
+  .table-row {
+    border-bottom: 1px solid var(--color-neutral-d);
+    &:first-child {
+      border-top: 1px solid var(--color-neutral-d);
+    }
+    &:nth-child(even) {
+      background: var(--color-neutral-f);
+    }
+    > span {
+      padding: 8px 0;
+      display: inline-block;
+      vertical-align: top;
+    }
+    .table-head {
+      font-weight: bold;
+    }
+  }
+}

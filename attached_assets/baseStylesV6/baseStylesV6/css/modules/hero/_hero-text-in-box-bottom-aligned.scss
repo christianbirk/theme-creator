@@ -1,0 +1,147 @@
+// all views
+.hero.text-in-box-bottom-aligned[style*='background-image'],
+.hero.text-in-box-bottom-aligned.bg-video {
+  border-radius: var(--universal-border-radius);
+  > .media{
+    border-radius: var(--universal-border-radius);
+  }
+  
+  .media + .text {
+    margin: 0 auto;
+  }
+  .text {
+    align-items: flex-end;
+  }
+
+  .text .wrap {
+    > .heading {
+      + .rich-text {
+        p:first-of-type {
+          margin-top: 0;
+        }
+      }
+    }
+    > .rich-text {
+      p:last-of-type {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  // Align Right
+  &.align-text-right {
+    > .text {
+      padding-right: 0!important;
+      .wrap {
+        @include breakpoint(medium-xlarge) {
+          width: 50% !important;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  // Align left
+  &.align-text-left {
+    > .text {
+      margin: 0 auto;
+      .wrap {
+        @include breakpoint(medium-xlarge) {
+          width: 50% !important;
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+// Text box bottom in spans
+div[class*='span'] > .hero.text-in-box-bottom-aligned {
+  &[style*='background-image'],
+  &.bg-video {
+    .text,
+    .text .wrap {
+      width: 100%;
+    }
+    .text .wrap {
+      border-radius: 0 0 var(--universal-border-radius) var(--universal-border-radius);
+    }
+
+    &.align-text-right {
+      .text .wrap {
+        border-radius: var(--universal-border-radius) 0 var(--universal-border-radius) 0;
+      }
+    }
+    
+    &.align-text-left {
+      .text .wrap {
+        border-radius: 0 var(--universal-border-radius) 0 var(--universal-border-radius);
+      }
+    }
+
+    &.align-text-center {
+      .text .wrap {
+        width: 100%;
+        border-radius: 0 0 var(--universal-border-radius) var(--universal-border-radius);
+      }
+    }
+  }
+}
+
+// Text box bottom in full width
+div:not([class*='span']) > .hero.text-in-box-bottom-aligned {
+  &[style*='background-image'],
+  &.bg-video {
+    .text .wrap {
+      @include breakpoint(medium) {
+        margin: 0;
+        border-radius: 0 var(--universal-border-radius) 0 0;
+      }
+      @include breakpoint(large) {
+        border-radius: 0 var(--universal-border-radius) 0 0;
+      }
+      @include breakpoint(xlarge) {
+        border-radius: var(--universal-border-radius) var(--universal-border-radius) 0 0;
+      }
+    }
+
+    &.align-text-right {
+      .text .wrap {
+        @include breakpoint(medium) {
+          border-radius: var(--universal-border-radius) 0 0 0;
+        }
+        @include breakpoint(large) {
+          border-radius: var(--universal-border-radius) 0 0 0;
+        }
+        @include breakpoint(xlarge) {
+          border-radius: var(--universal-border-radius) var(--universal-border-radius) 0 0;
+        }
+      }
+    }
+
+    // Align center
+    &.align-text-center {
+      .text .wrap {
+        width: 100%;
+        @include breakpoint(medium) {
+          border-radius: 0;
+        }
+        @include breakpoint(large) {
+          border-radius: 0;
+        }
+        @include breakpoint(xlarge) {
+          border-radius: var(--universal-border-radius) var(--universal-border-radius) 0 0;
+        }
+      }
+    }
+
+    // Align Right
+    &.align-text-right {
+      > .text {
+        .wrap {
+          margin: 0;
+        }
+      }
+    }
+  }
+}

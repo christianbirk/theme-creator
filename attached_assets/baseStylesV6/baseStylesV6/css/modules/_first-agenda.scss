@@ -1,0 +1,100 @@
+@keyframes lds-dual-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+// First agenda
+.first-agenda {
+  text-align: center;
+  > *:not(.append-items) {
+    text-align: left;
+  }
+
+  // Items
+  .items {
+    // Item
+    .item {
+      margin: 0 0 32px 0;
+      div.labels > span {
+        background-color: transparent;
+        font-weight: normal;
+        color: var(--color-neutral-a);
+        padding: 0px;
+      }
+      .btn {
+        margin-top: 24px;
+      }
+    }
+  }
+
+  .btn.append-items {
+    position: relative;
+    &.loading {
+      padding-left: 45px;
+      &:before,
+      &:after {
+        position: absolute;
+        left: 15px;
+        top: calc(50% - 11px);
+        content: '';
+        display: block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+      }
+
+      &:before {
+        border: 2px solid rgba(255, 255, 255, 0.25);
+      }
+      &:after {
+        border: 2px solid var(--color-neutral-f);
+        border-color: var(--color-neutral-f) transparent var(--color-neutral-f) transparent;
+        animation: lds-dual-ring 1.2s linear infinite;
+      }
+    }
+  }
+
+  // Page
+  .first-agenda-page {
+    padding-top: 48px;
+    .heading {
+      margin-bottom: 8px;
+    }
+
+    // Centering elements
+    .multi-section.accordion,
+    .table-layout {
+      @include breakpoint(medium-xlarge) {
+        margin-left: 16.66666667%;
+        width: 66.66666667%;
+      }
+    }
+
+    // Table Layout
+    .table-layout {
+      @include breakpoint(medium-xlarge) {
+        margin: 48px auto;
+      }
+      @include breakpoint(small) {
+        margin: 24px 0;
+      }
+      .table-head {
+        min-width: 180px;
+      }
+      .table-row {
+        > span {
+          padding: 16px 8px;
+        }
+      }
+    }
+
+    //back button
+    .back-button {
+      margin-top: 24px;
+    }
+  }
+}

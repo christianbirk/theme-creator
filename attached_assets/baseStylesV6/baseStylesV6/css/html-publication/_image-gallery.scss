@@ -1,0 +1,129 @@
+// main: ../../../GoBasic/css/theme.scss
+
+// Image Gallery
+.image-gallery {
+  margin: 40px auto;
+
+  &.with-description {
+    > .media,
+    > .figcaptions {
+      width: 100%;
+      > .img,
+      > p {
+        position: relative;
+        &.one,
+        &.two,
+        &.three,
+        &.four {
+          &:before {
+            border-radius: 100%;
+            background: var(--color-brand-a);
+            color: white;
+            height: 27px;
+            width: 27px;
+            padding-top: var(--html-publication-image-gallery-number-top-adjust, 3px);
+            text-align: center;
+            display: block;
+            margin-bottom: 16px;
+            font-size: var(--font-small);
+          }
+        }
+        &.one:before {
+          content: '1';
+        }
+        &.two:before {
+          content: '2';
+        }
+        &.three:before {
+          content: '3';
+        }
+        &.four:before {
+          content: '4';
+        }
+      }
+    }
+  }
+
+  > .media {
+    height: auto !important;
+    padding-bottom: 0 !important;
+    > .img:before {
+      position: absolute;
+      right: 16px * 2;
+      top: 16px * 2;
+      z-index: 10;
+    }
+  }
+  &.gal-1 {
+    .figcaptions > p,
+    .img {
+      width: 100%;
+    }
+  }
+
+  &.gal-2 {
+    .figcaptions > p,
+    .img {
+      width: 50%;
+    }
+    @include breakpoint(small) {
+      .figcaptions > p {
+        width: 100%;
+      }
+    }
+  }
+  &.gal-3 {
+    .figcaptions > p,
+    .img {
+      width: 33.33%;
+    }
+
+    @include breakpoint(small) {
+      .figcaptions > p {
+        width: 100%;
+      }
+      .img {
+        width: 50%;
+      }
+    }
+  }
+  &.gal-4 {
+    .img {
+      width: 50%;
+    }
+    .figcaptions > p {
+      width: 25%;
+      @include breakpoint(small) {
+        width: 100%;
+      }
+    }
+  }
+
+  > .media {
+    overflow: hidden;
+    margin-right: -10px;
+    margin-left: -10px;
+    box-shadow: 0 0 0 transparent;
+    .img {
+      float: left;
+      padding: 10px;
+      > div {
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        --aspect-ratio: var(--aspect-ratio-default);
+        @include aspect();
+      }
+    }
+  }
+  > .figcaptions {
+    margin-right: -10px;
+    margin-left: -10px;
+    overflow: hidden;
+    > p {
+      float: left;
+      padding-right: 10px;
+      padding-left: 10px;
+    }
+  }
+}

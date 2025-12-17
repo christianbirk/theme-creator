@@ -1,0 +1,16 @@
+.logo {
+  min-width: 0; 
+  > div {
+    a {
+      display: flex;
+      &:focus {
+        opacity: 0.75;
+      }
+    }
+  }
+  img {
+    vertical-align: unset;
+    width: 100%;
+    height: auto;
+  }
+}

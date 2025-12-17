@@ -1,0 +1,15 @@
+// main: ../../../GoBasic/css/theme.scss
+
+.html-publication {
+  .media {
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    --aspect-ratio: var(--aspect-ratio-default);
+        @include aspect();
+  }
+  video {
+    width: 100%;
+    height: auto;
+  }
+}

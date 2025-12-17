@@ -1,0 +1,36 @@
+// Breakpoints
+@mixin breakpoint($point) {
+  @if $point == xlarge {
+    @media (min-width: $grid-max-width) {
+      @content;
+    }
+  } @else if $point == large {
+    @media (min-width: 1024px) {
+      @content;
+    }
+  } @else if $point == medium {
+    @media (min-width: 768px) and (max-width: 1023px) {
+      @content;
+    }
+  } @else if $point == small {
+    @media (max-width: 767px) {
+      @content;
+    }
+  } @else if $point == xsmall {
+    @media (max-width: 480px) {
+      @content;
+    }
+  } @else if $point == xxsmall {
+    @media (max-width: 360px) {
+      @content;
+    }
+  } @else if $point == medium-small {
+    @media (max-width: 1023px) {
+      @content;
+    }
+  } @else if $point == medium-xlarge {
+    @media (min-width: 768px) {
+      @content;
+    }
+  }
+}

@@ -1,0 +1,129 @@
+// MP3 Player
+.mp3-player {
+  .audiojs {
+    background: transparent;
+    background-image: none;
+    box-shadow: none;
+    overflow: visible;
+    margin-top: 30px;
+    width: 100%;
+
+    .play-pause {
+      border-right: 0;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      width: 50px;
+
+      .play {
+        &:after {
+          content: '\f04b';
+          left: 16px !important;
+        }
+      }
+
+      .pause {
+        &:after {
+          content: '\f04c';
+        }
+      }
+
+      .pause,
+      .play {
+        border: 1px solid black;
+        background-color: var(--color-brand-a);
+        &.focus-visible {
+          &:after {
+            @extend %focus-visible;
+          }
+        }
+      }
+
+      .error,
+      .loading,
+      .pause,
+      .play {
+        background: none;
+        padding: 20px;
+        border-radius: 999px;
+        position: relative;
+        margin-top: -12px;
+        border-color: #ccc;
+        border-width: 5px;
+
+        &:after {
+          font-family: var(--icon-alternate-font-family);
+          font-weight: 600;
+          top: 9px;
+          left: 14px;
+          font-size: 14px;
+          position: absolute;
+          color: var(--color-brand-a);
+          -webkit-font-smoothing: subpixel-antialiased;
+          transition: 100ms all ease;
+        }
+      }
+
+      .error {
+        &:after {
+          content: '\f071';
+          font-size: 20px;
+          color: #eb3700;
+          left: 12px !important;
+        }
+      }
+
+      .loading {
+        background: none;
+        box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        border-style: solid;
+        animation: a-spin 1s infinite linear;
+        -webkit-animation: a-spin 1s infinite linear;
+        border-top-color: var(--color-brand-a);
+      }
+    }
+
+    .scrubber {
+      height: 9px;
+      border-top: none;
+      background-color: var(--color-neutral-d);
+      margin: 13px 0 10px 30px;
+      width: 80%;
+      .loaded,
+      .progress {
+        height: 9px;
+        background-image: none;
+      }
+
+      .loaded {
+        background: #ccc;
+
+        &:hover {
+          cursor: pointer;
+        }
+      }
+
+      .progress {
+        background-color: var(--color-brand-a);
+      }
+    }
+
+    .time {
+      color: var(--color-neutral-a);
+      font-family: var(--font-base-family);
+      text-shadow: none;
+      border-left: none;
+      margin: 10px 0;
+      padding: 0;
+      width: 100%;
+      font-size: var(--font-small);
+
+      em {
+        color: inherit;
+        font-family: inherit;
+        text-shadow: inherit;
+      }
+    }
+  }
+}

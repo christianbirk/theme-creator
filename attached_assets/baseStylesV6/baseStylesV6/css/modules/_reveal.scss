@@ -1,0 +1,59 @@
+// main: ../../../GoBasic/css/theme.scss
+
+.reveal-module {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--universal-border-radius);
+
+  .image-a {
+    background-repeat: no-repeat;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+
+    .ui-resizable-e,
+    .ui-resizable-handle {
+      width: 1px;
+      right: 0;
+      background: white;
+      cursor: ew-resize;
+
+      .handlebar {
+        width: 50px;
+        height: 50px;
+        position: absolute;
+        right: -25px;
+        left: auto;
+        background: rgba(255, 255, 255, 0.75);
+        border-radius: 100%;
+        text-align: center;
+        @include animate-all;
+
+        @include insert-icon-after('\f07e', 24px, 0, 14px);
+        &:after {
+          color: var(--color-brand-a);
+        }
+
+        &:active,
+        &:focus,
+        &:hover {
+          background: rgba(255, 255, 255, 0.5);
+          @include animate-all;
+        }
+      }
+    }
+  }
+
+  .image-b {
+    left: 0;
+    top: 0;
+    z-index: 49;
+  }
+
+  img {
+    max-width: none;
+    margin: 0 !important;
+  }
+}

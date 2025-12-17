@@ -1,0 +1,43 @@
+// Module
+.module {
+  min-height: 0;
+  @include breakpoint(small) {
+    min-height: auto !important;
+  }
+  &[required-cookies]:not(.cookieVisible) {
+    display: none;
+  }
+}
+
+// Spans
+[class*='span'] > .module {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+// Full Width
+div:not([class*='span']) > .module {
+  > .media img {
+    width: 100%;
+  }
+}
+
+.row {
+  > [class*='span'] > .module {
+    height: calc(100% - 2 * 16px);
+    &.margin-zero,
+    &.margin-zero-top {
+      height: calc(100% - 16px);
+    }
+    &.margin-top {
+      height: calc(100% - 3 * 16px);
+    }
+    &.height-auto {
+      height: auto;
+    }
+    &.content-navigation.fixed,
+    &.multi-section {
+      height: auto;
+    }
+  }
+}

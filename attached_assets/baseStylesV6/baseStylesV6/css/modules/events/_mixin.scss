@@ -1,0 +1,49 @@
+@function max-font-size($value, $min) {
+	@if unit($value) != unit($min) {
+		@error "Units of \$value and \$min must match.";
+	}
+
+	@return if($value < $min, $min, $value);
+}
+
+@mixin calendar-card-font-size($cardSize, $dayFontSize, $monthFontSize) {
+	$mediaIconFontSize: max-font-size($dayFontSize, 30px);
+
+	.media.#{$cardSize} {
+		.calendar-card {
+			&-day {
+				font-size: $dayFontSize;
+			}
+			&-month {
+				font-size: $monthFontSize;
+			}
+		}
+		i:before {
+			font-size: $mediaIconFontSize;
+		}
+	}
+}
+@mixin calendar-card-font-size-only-child($cardSize, $dayFontSize, $monthFontSize) {
+	$mediaIconFontSize: max-font-size($dayFontSize, 30px);
+
+	.media.#{$cardSize} {
+		.calendar-cards-wrapper:only-child .calendar-card {
+			&-day {
+				font-size: $dayFontSize;
+			}
+			&-month {
+				font-size: $monthFontSize;
+			}
+		}
+		i:before {
+			font-size: $mediaIconFontSize;
+		}
+	}
+}
+@mixin calendar-cards-placement($maxOffset, $cardsNumber) {
+	@for $i from 1 through $cardsNumber {
+		.calendar-card:nth-child(#{$i}) {
+			left: calc(min(calc(90% / $cardsNumber), $maxOffset) * ($i - 1));
+		}
+	}
+}

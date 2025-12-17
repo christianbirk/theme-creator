@@ -1,0 +1,62 @@
+// main: ../../../GoBasic/css/theme.scss
+
+.html-publication {
+  footer {
+    background: var(--html-publication-footer-bg-color);
+    padding: 20px 0;
+    @include breakpoint(large) {
+      padding: 80px 0;
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    a:not(.archive-link):not(.btn),
+    ul li,
+    ol li,
+    blockquote,
+    strong,
+    b,
+    div,
+    pre,
+    &.thumbnail:not(.circle) .media i,
+    &.content:not(.circle) .media i,
+    &.content:not(.circle) .media i,
+    .item .media i,
+    span {
+      color: set-text-color(var(--html-publication-footer-bg-color));
+    }
+    a:hover,
+    a:focus,
+    a:active {
+      color: white !important;
+      text-decoration: underline;
+    }
+    .contact-info {
+      > img {
+        max-width: var(--html-publication-footer-logo-width);
+        + div {
+          margin-top: 30px;
+        }
+      }
+    }
+    .colyfon {
+      margin-top: 0;
+      max-width: none;
+      @include breakpoint(medium-xlarge) {
+        max-width: 100%;
+      }
+    }
+    .link-list {
+      @include breakpoint(medium-small) {
+        min-height: auto !important;
+      }
+      @include breakpoint(large) {
+        margin-top: 35px;
+      }
+    }
+  }
+}

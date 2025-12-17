@@ -1,0 +1,68 @@
+.labels {
+  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  .label {
+    @include font-size(xsmall);
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    background-color: var(--label-background, var(--color-neutral-e));
+    border-color: var(--label-border-color, var(--color-neutral-d));
+    color: var(--label-color, var(--color-neutral-a));
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--label-border-radius);
+    text-transform: var(--label-text-transform);
+    font-family: var(--label-font-family);
+    line-height: 1;
+    text-decoration: none !important;
+    gap: 8px;
+    
+    // Remove
+    .remove {
+      text-decoration: none;
+      display: inline-flex;
+      cursor: pointer;
+      border-radius: 50%;
+      align-items: center;
+      font-size: 14px;
+      &::before{
+        @include icon-pack($icons: var(--icon-alternate-font-family));
+        font-weight: 600;
+        content: '\f057';
+        display: inline-block;
+      }      
+      &:hover,
+      &:focus,
+      &:active {
+      }
+    }
+    &.clear-all {
+      border: 1px solid var(--color-brand-a);
+      background-color: var(--color-brand-a);
+      color: var(--color-neutral-f);
+      .remove {
+        color: var(--color-neutral-f);  
+      }
+    }
+  }
+  a.label {
+    &:focus,
+    &:hover,
+    &:active {
+      background-color: var(--label-background-color-hover, var(--color-neutral-d));
+      color: var(--label-color-hover, var(--color-neutral-a)) !important;
+    }
+  }
+  &.selected-filters{
+    .label {
+      padding-right: 8px;
+    }
+  }
+}
+
+
+.labels + .media {
+  margin-top: 16px;
+}

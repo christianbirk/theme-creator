@@ -1,0 +1,9 @@
+[class*='bg-color-'] .video-js {
+  * {
+    color: white;
+  }
+  [class*='button'],
+  .vjs-selected * {
+    color: var(--font-base-color);
+  }
+}

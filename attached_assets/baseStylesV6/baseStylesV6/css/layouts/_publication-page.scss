@@ -1,0 +1,37 @@
+// publication page
+div.publication-page {
+  @include clear-floats();
+
+  // ID number and author
+  .id-number,
+  .author,
+  .labels,
+  .date {
+    display: block;
+    @include font-size(small);
+    margin-bottom: 8px;
+  }
+  .date + .labels {
+    margin: 0;
+  }
+
+  // Media
+  .media {
+    @include breakpoint(medium-xlarge) {
+      max-width: 20%;
+      float: left;
+      margin: 24px 24px 16px 0;
+    }
+    @include breakpoint(small) {
+      max-width: 100%;
+      margin-top: 16px;
+    }
+  }
+
+  // Text
+  .media + .text {
+    .lead {
+      margin-top: 0;
+    }
+  }
+}

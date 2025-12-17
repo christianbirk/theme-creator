@@ -1,0 +1,21 @@
+// variables
+@import './variables';
+
+// Header
+@import './parts/header/header';
+@import './parts/header/logo';
+
+// Navigation
+@import './parts/header/navigation/nav-burger';
+@import './parts/header/navigation/nav-main-hamburger';
+@import './parts/header/navigation/nav-main';
+@import './parts/header/navigation/nav-mega-menu';
+@import './parts/header/navigation/nav-mobile';
+@import './parts/header/navigation/nav-sub-tree-mobile';
+@import './parts/header/navigation/nav-sub-tree';
+@import './parts/header/navigation/nav-sub';
+@import './parts/header/navigation/nav-toggle';
+@import './parts/header/navigation/nav-service';
+
+// Footer
+@import './parts/footer/footer';

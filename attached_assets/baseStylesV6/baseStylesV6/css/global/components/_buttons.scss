@@ -1,0 +1,276 @@
+// All buttons
+
+
+[class*="btn"]{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: left;
+  text-decoration: none !important;
+  vertical-align: top;
+  @include box-sizing-border-box;
+  @include animate-all;
+  padding: var(--button-universal-padding);
+  text-transform: var(--button-universal-text-transform);
+  font-family: var(--button-universal-font-family);
+  margin: 0 16px 16px 0;
+  border-radius: var(--button-universal-border-radius);
+  font-size: var(--button-universal-font-size);
+  font-weight: var(--button-universal-font-weight);
+  min-height: 48px;
+  line-height: 1.25;
+  &:focus,
+  &:hover,
+  &:active {
+    outline: none;
+    text-decoration: none !important;
+  }
+  > i {
+    margin-right: 12px;
+  }
+}
+
+
+// Button
+.btn,
+[class*='btn-icon-']{
+  background-color: var(--button-background-color);
+  border: 0;
+  color: var(--button-color);
+  &:focus,
+  &:hover,
+  &:active {
+    color: var(--button-color);
+    background-color: color-mix(in srgb, var(--button-background-color), black 10%);
+    border: 0;
+  }
+}
+
+// Alternate
+.btn-alternate {
+  background-color: var(--button-alternate-background-color);
+  color: var(--button-alternate-color);
+  border: 0;
+  &:focus,
+  &:hover,
+  &:active {
+    background-color: color-mix(in srgb, var(--button-alternate-background-color), black 10%);  
+    color: var(--button-alternate-color);
+    border: 0;
+  }
+}
+
+// Outline
+.btn-outline {
+  background-color: var(--button-outline-background-color);
+  color: var(--button-outline-color);
+  box-shadow: inset 0px 0px 0px var(--button-outline-border-size) var(--button-outline-border-color);
+  &:focus,
+  &:hover,
+  &:active {
+    background-color: var(--button-outline-border-color);
+    color: var(--color-neutral-f);
+  }
+}
+
+//Self service button for municipalities
+.btn-self-service {
+  background-color: #166f33;
+  color: var(--color-neutral-f);
+  color: var(--color-neutral-f);
+  &:focus,
+  &:hover,
+  &:active {
+    background-color: rgba(22, 111, 51, 0.9);
+    color: var(--color-neutral-f);
+  }
+  // IE11 fix for transparent buttons when visited
+  &:visited {
+    background-color: #166f33;
+  }
+}
+
+.services nav.service li a[class*='btn'] {
+  margin: 0 !important;
+}
+
+// inside Paragraphs
+p > .btn,
+p > .btn-alternate,
+p > .btn-outline,
+p > .btn-self-service {
+  margin-bottom: 0;
+}
+
+// Buttons container
+.buttons {
+  @include clear-floats;
+  > .btn-group,
+  > .btn {
+    margin-right: 16px;
+    &:last-of-type {
+      margin-right: 0;
+    }
+  }
+}
+
+// Button groups
+.btn-group {
+  margin: 0 16px 16px 0;
+  > .btn {
+    float: left;
+    margin-right: 0;
+
+    border-radius: var(--universal-border-radius) 0 0 var(--universal-border-radius);
+  }
+  // Toggler
+  .btn-toggler {
+    background-color: var(--button-background-color, var(--color-brand-a));
+    padding: 12px 24px;
+    border-radius: 0 var(--universal-border-radius) var(--universal-border-radius) 0;
+    cursor: pointer;
+    display: inline-block;
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    &:before {
+      content: '\f107';
+      @include icon-pack;
+      color: var(--color-neutral-f);
+    }
+    &:hover,
+    &:focus,
+    &:active {
+      background-color: var(--button-background-color-hover);
+      color: var(--button-color-hover);
+    }
+  }
+
+  &.dropdown {
+    > .btn {
+      border-radius: var(--universal-border-radius);
+    }
+  }
+}
+
+// Arrow
+.rich-text .link-arrow,
+.link-arrow {
+  border: none;
+  position: relative;
+  background: none;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--link-color);
+  padding: 0 0 0 14px;
+  text-transform: var(--link-arrow-text-transform);
+  font-family: var(--link-arrow-text-font-family);
+  font-weight: var(--link-arrow-text-font-weight);
+  &:before {
+    line-height: inherit;
+    position: absolute;
+    height: 100%;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    content: '›';
+    font-size: var(--link-arrow-icon-size);
+  }
+  &:focus,
+  &:active,
+  &:hover {
+    text-decoration: underline;
+    background: transparent;
+    color: var(--link-arrow-hover-color);
+  }
+}
+
+// All links
+.link-pdf,
+.link-external,
+.link-excel {
+  border: none;
+  position: relative;
+  background: none;
+  text-decoration: none !important;
+  &:before {
+    @include icon-pack;
+    position: absolute;
+    left: 0;
+  }
+  &:focus,
+  &:active,
+  &:hover {
+    text-decoration: underline !important;
+    background: transparent;
+  }
+}
+
+// PDF
+.link-pdf {
+  color: var(--link-pdf-color);
+  padding: 0 0 0 18px;
+  &:before {
+    content: '\f1c1';
+    font-size: 15px;
+    top: 4px;
+  }
+  &:focus,
+  &:active,
+  &:hover {
+    color: var(--link-pdf-hover-color);
+  }
+}
+
+// External link
+.link-external {
+  color: var(--link-external-color);
+  padding: 0 0 0 22px;
+  &:before {
+    content: '\f08e';
+    font-size: 15px;
+    top: 4px;
+  }
+  &:focus,
+  &:active,
+  &:hover {
+    color: var(--link-external-hover-color);
+  }
+}
+
+// Excel link
+.link-excel {
+  color: var(--link-excel-color);
+  padding: 0 0 0 22px;
+  &:before {
+    content: '\f1c3';
+    font-size: 15px;
+    top: 2px;
+  }
+  &:focus,
+  &:active,
+  &:hover {
+    color: var(--link-excel-hover-color);
+  }
+}
+
+[class*='btn-icon-'] {
+  &:before {
+    @include icon-pack();
+    margin-right: 12px;
+  }
+}
+
+// Buttons with icons
+.btn-icon {
+  &-download {
+    &:before {
+      content: '\f33d';
+    }
+  }
+  &-external {
+    &:before {
+      content: '\f08e';
+    }
+  }
+}

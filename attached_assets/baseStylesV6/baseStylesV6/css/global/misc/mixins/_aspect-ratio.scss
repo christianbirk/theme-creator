@@ -1,0 +1,34 @@
+
+
+@mixin aspect($default: null, $var: --aspect-ratio, $fallback: true) {
+  // Native
+  @if $default == null {
+    aspect-ratio: var(#{$var});
+  } @else {
+    aspect-ratio: var(#{$var}, #{$default});
+  }
+
+  // Fallback for old browsers
+  @if $fallback {
+    @supports not (aspect-ratio: 1) {
+      position: relative;
+
+      &::before {
+        content: "";
+        display: block;
+
+        // padding-bottom = 100% / (w/h)
+        @if $default == null {
+          padding-bottom: calc(100% / var(#{$var}));
+        } @else {
+          padding-bottom: calc(100% / var(#{$var}, #{$default}));
+        }
+      }
+
+      > * {
+        position: absolute;
+        inset: 0;
+      }
+    }
+  }
+}

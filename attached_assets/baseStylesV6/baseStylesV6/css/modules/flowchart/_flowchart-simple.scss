@@ -1,0 +1,223 @@
+// Flowchart simple | old one
+
+.flowchart-simple {
+  position: relative;
+  border-radius: var(--universal-border-radius);
+  border: 1px solid var(--color-neutral-d);
+  padding: 24px;
+
+  // Step
+  > .step {
+    position: relative;
+    &.hidden {
+      visibility: hidden;
+      opacity: 0;
+      height: 0;
+      overflow: hidden;
+    }
+    &.active {
+      visibility: visible;
+      opacity: 1;
+      height: auto;
+      overflow: visible;
+      @include transition(opacity 0.5s);
+    }
+
+    // Not first step
+    &:not(.first) {
+      .text,
+      .media {
+        padding-top: 24px * 2;
+      }
+    }
+    .text.additional-info {
+      padding-top: 0;
+      .rich-text {
+        p:first-of-type {
+          margin-top: 8px;
+        }
+      }
+    }
+  }
+
+  // Previous
+  .previous {
+    padding: 8px 12px;
+    background: var(--color-brand-a);
+    color: var(--color-brand-a);
+    border-radius: var(--universal-border-radius);
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: pointer;
+    @include font-size(xsmall);
+    z-index: 99;
+    line-height: 1;
+    &:hover,
+    &:active,
+    &:focus {
+      background: var(--color-brand-a);
+    }
+
+    &:before {
+      content: '\f104';
+      @include icon-pack;
+      margin-right: 8px;
+    }
+  }
+
+  // Text
+  .text {
+    margin: 0;
+    .rich-text {
+      p:last-of-type {
+        margin-bottom: 8px;
+      }
+    }
+  }
+
+  .media {
+    position: relative;
+    margin-bottom: 24px;
+    @include breakpoint(medium-small) {
+      margin-bottom: 24px * 0.5;
+    }
+  }
+
+  // Drop down
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  // JS buttons
+  .previous,
+  .btn {
+    cursor: pointer;
+  }
+
+  // Buttons
+  .buttons {
+    padding: 16px 0 0;
+  }
+  .heading + .buttons {
+    padding: (16px * 0.5) 0 0;
+  }
+
+  [class*='btn'] {
+    @include breakpoint(medium-small) {
+      float: none;
+      display: block;
+      text-align: center;
+      margin-right: 0;
+    }
+  }
+
+  // Background colors
+  &[class*='bg-color'] {
+    padding: 24px;
+    border: 0;
+    @include breakpoint(medium-small) {
+      padding: 24px * 0.5;
+    }
+  }
+
+  .checkbox {
+    min-height: 46px;
+    border: 1px solid var(--color-neutral-c);
+    &:first-of-type {
+      border-top-left-radius: var(--universal-border-radius);
+      border-top-right-radius: var(--universal-border-radius);
+    }
+    &:last-of-type {
+      border-bottom-left-radius: var(--universal-border-radius);
+      border-bottom-right-radius: var(--universal-border-radius);
+    }
+    &:not(:first-of-type) {
+      border-top: none;
+    }
+    input[type='checkbox'] {
+      display: none;
+      & + label {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        font-weight: 400;
+        position: absolute;
+        inset: 0;
+        cursor: pointer;
+        padding: 0 16px;
+        &::before {
+          content: '';
+          height: 14px;
+          width: 14px;
+          border: 1px solid var(--color-neutral-c);
+          border-radius: 3px;
+          margin-right: 12px;
+        }
+        &::after {
+          content: '';
+          border-color: transparent;
+          transition: border-color 0.1s ease-out;
+        }
+      }
+      &:checked {
+        & + label {
+          &::after {
+            content: '';
+            display: block;
+            box-sizing: border-box;
+            position: absolute;
+            left: 15px;
+            top: calc(50% - 6px);
+            width: 5px;
+            height: 9px;
+            border-width: 0 2px 2px 0;
+            border-style: solid;
+            border-color: var(--color-brand-a);
+            transform-origin: bottom left;
+            transform: rotate(45deg) translateY(-50%);
+          }
+        }
+      }
+    }
+  }
+  .flowchart-summary {
+    .section {
+      padding: 16px 24px 24px;
+      border: 1px solid var(--color-neutral-d);
+      border-radius: var(--universal-border-radius);
+      &:not(:last-of-type) {
+        margin-bottom: 16px;
+      }
+    }
+  }
+}
+
+@include loop-spans(9, 12) {
+  .flowchart-simple {
+    @include breakpoint(medium-xlarge) {
+      .step {
+        display: flex;
+        align-items: center;
+        @include clear-floats();
+        > .media {
+          margin-bottom: 0;
+          width: 50%;
+          float: left;
+          padding-right: 24px * 0.5;
+          + .text {
+            float: left;
+            padding-left: 24px * 0.5;
+            width: 50%;
+          }
+        }
+        > .text {
+          width: 100%;
+        }
+      }
+    }
+  }
+}

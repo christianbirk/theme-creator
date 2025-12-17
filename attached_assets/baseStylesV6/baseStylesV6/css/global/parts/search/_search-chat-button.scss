@@ -1,0 +1,40 @@
+/* Chat & Search Button */
+.site-search-toggler,
+.site-chat-toggler {
+	height: var(--form-field-height);
+	min-width: var(--form-field-height);
+	border-radius: var(--search-btn-border-radius);
+	background-color: var(--search-btn-background-color);
+	
+	color: var(--search-text-color);
+	padding: 0 17px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	&:hover,
+	&:active,
+	&:focus{
+		color: var(--search-text-color-hover);
+		background-color: var(--search-btn-background-color-hover);
+	}
+	&::before {
+		font-family: var(--icon-default-font-family);
+		color: var(--search-icon-color);
+		font-weight: var(--icon-font-weight);
+		font-style: normal;
+		display: inline-block;
+		line-height: 1;
+		font-size: 18px;
+		&:hover,
+		&:active,
+		&:focus{
+			color: var(--search-icon-color-hover);
+		}
+	}
+}
+.site-search-toggler::before {
+	content: '\f002';
+}
+.site-chat-toggler::before {
+	content: '\f086';
+}

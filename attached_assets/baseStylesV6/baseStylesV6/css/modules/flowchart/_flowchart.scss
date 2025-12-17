@@ -1,0 +1,193 @@
+.flowchart {
+  position: relative;
+  border-radius: var(--universal-border-radius);
+  border: 1px solid var(--color-neutral-d);
+  padding: 24px;
+
+  // Header
+  .flowchart-header {
+    border-bottom: 1px solid var(--color-neutral-d);
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+
+    // Buttons
+    > .btn-outline {
+      min-height: 16px * 2;
+      padding: 0 16px;
+      @include font-size(small);
+      &:before {
+        font-family: var(--icon-alternate-font-family);
+        font-weight: var(--icon-font-weight);
+        margin-right: 8px;
+      }
+
+      // Share button
+      &.flowchart-share {
+        margin-right: 0;
+        &:before {
+          content: '\e1cd';
+        }
+      }
+
+      // Previous
+      &.previous {
+        &:before {
+          content: '\f060';
+        }
+      }
+    }
+  }
+
+  // Step
+  > .step {
+    position: relative;
+    &.hidden {
+      visibility: hidden;
+      opacity: 0;
+      height: 0;
+      overflow: hidden;
+    }
+    &.active {
+      visibility: visible;
+      opacity: 1;
+      height: auto;
+      overflow: visible;
+      @include transition(opacity 0.5s);
+      @include breakpoint(medium-xlarge) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+    .text.additional-info {
+      padding-top: 0;
+      .rich-text {
+        p:first-of-type {
+          margin-top: 8px;
+        }
+      }
+    }
+  }
+
+  // Text
+  .text {
+    margin: 0;
+    .rich-text {
+      p:last-of-type {
+        margin-bottom: 8px;
+      }
+    }
+  }
+
+  // Media
+  .media {
+    position: relative;
+    @include breakpoint(medium-small) {
+      margin-bottom: 12px;
+    }
+  }
+
+  // Drop down
+  .form-group {
+    margin-bottom: 16px;
+    label,
+    select {
+      margin-bottom: 16px;
+    }
+    &.flex-box {
+      display: flex;
+      align-items: flex-start;
+      .btn {
+        margin: 0 0 0 16px;
+      }
+    }
+  }
+
+  // JS buttons
+  .btn {
+    cursor: pointer;
+  }
+  // Buttons
+  .buttons {
+    padding: 16px 0 0;
+  }
+  .heading + .buttons {
+    padding: (16px * 0.5) 0 0;
+  }
+
+  // Background colors
+  &[class*='bg-color'] {
+    padding: 24px;
+    border: 0;
+    @include breakpoint(medium-small) {
+      padding: 24px * 0.5;
+    }
+  }
+
+  // Flowchart options
+  .flowchart-options {
+    margin-bottom: 8px;
+    > .form-group {
+      margin-bottom: 0;
+    }
+  }
+  .checkbox {
+    display: flex;
+    border: 1px solid var(--color-neutral-d);
+    padding: 12px 16px;
+    margin-top: -1px;
+    &:first-of-type {
+      border-radius: var(--universal-border-radius) var(--universal-border-radius) 0 0;
+    }
+    &:last-of-type {
+      border-radius: 0 0 var(--universal-border-radius) var(--universal-border-radius);
+    }
+    input {
+      position: relative;
+      top: 7px;
+      flex-basis: 5%;
+    }
+    .flowchart-question-details {
+      margin-left: 12px;
+      flex-basis: 95%;
+      label {
+        margin: 0;
+      }
+    }
+  }
+
+  // Summary
+  .flowchart-summary {
+    .section {
+      padding: 16px 24px 24px;
+      border: 1px solid var(--color-neutral-d);
+      border-radius: var(--universal-border-radius);
+      &:not(:last-of-type) {
+        margin-bottom: 16px;
+      }
+    }
+  }
+}
+
+@include loop-spans(9, 12) {
+  .flowchart {
+    @include breakpoint(medium-xlarge) {
+      .step {
+        display: flex;
+        > .media {
+          margin-bottom: 0;
+          width: 50%;
+          padding-right: 24px * 0.5;
+          + .text {
+            padding-left: 24px * 0.5;
+            width: 50%;
+          }
+        }
+        > .text {
+          width: 100%;
+        }
+      }
+    }
+  }
+}

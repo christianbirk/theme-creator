@@ -1,0 +1,14 @@
+
+.align-center-vertical{
+  &.text,
+  &.multi-box,
+  &.hero .text,
+  &.link-list {
+    display: flex;
+    align-items: center;
+
+    .media + .text{
+      padding-left: 5%;
+    }
+  }
+}

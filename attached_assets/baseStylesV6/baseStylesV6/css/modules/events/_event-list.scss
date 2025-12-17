@@ -1,0 +1,58 @@
+.event-list {
+  
+  .event.item {
+    > .text {
+      display: flex;
+      flex-direction: column;
+  
+      > span:first-of-type {
+        margin-top: 0;
+      }
+      > span{
+        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+        > i{
+          line-height: calc(var(--font-normal) * 1.5);
+        }
+      }
+      .event-date-range{
+        display: inline;
+        .datetime + .datetime{
+          display: block;  
+        }
+      }
+    }
+    p {
+      margin: 12px 0;
+    }
+    > .media {
+      width: 100%;
+      position: relative;
+      background-color: var(--color-neutral-e);
+      overflow: hidden;
+      aspect-ratio: 16/9;
+      border-radius: var(--universal-border-radius);
+      i {
+        justify-content: center;
+        &::before {
+          width: 30%;
+          aspect-ratio: 1;
+          height: auto;
+          transform: translateY(50%);
+        }
+      }      
+    }
+    .calendar-cards-wrapper {
+      position: absolute;
+      display: flex;
+      margin-left: 16px;
+    }
+    .event-price {
+      background-color: var(--color-neutral-d);
+      padding: 2px 12px;
+      width: fit-content;
+      border-radius: 10px;
+    }
+  }
+}

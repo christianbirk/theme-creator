@@ -1,0 +1,265 @@
+*::selection {
+  background-color: var(--color-neutral-a);
+  color: var(--color-neutral-f) !important;
+}
+*::-moz-selection {
+  background-color: var(--color-neutral-a);
+  color: var(--color-neutral-f) !important;
+}
+*::-webkit-selection {
+  background-color: var(--color-neutral-a);
+  color: var(--color-neutral-f) !important;
+}
+img::selection {
+  background: transparent;
+}
+
+body {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.25);
+
+  @include breakpoint(medium) {
+    overflow-wrap: break-word;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    hyphens: auto;
+  }
+}
+
+// Generel links
+a {
+  text-decoration: none;
+  color: var(--link-color, var(--color-brand-a));
+  &:hover,
+  &:focus,
+  &:active {
+    color: var(--link-color-hover, var(--color-brand-a));
+  }
+}
+
+strong,
+b {
+  font-weight: 600;
+}
+i {
+  display: inline-block;
+  font-style: normal;
+}
+p {
+  margin: 1em 0;
+}
+
+// Headlines
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  -webkit-hyphens: auto !important;
+  -moz-hyphens: auto !important;
+  hyphens: auto !important;
+  > a {
+    max-width: 100%;
+    color: var(--font-base-color);
+    &:active,
+    &:focus,
+    &:hover {
+      color: var(--color-brand-a);
+    }
+  }
+}
+h1 {
+  margin: 0 0 0.5em 0;
+}
+h2 {
+  margin: 0 0 0.45em 0;
+}
+h3 {
+  margin: 0 0 0.4em 0;
+}
+h4 {
+  margin: 0 0 0.35em 0;
+}
+h5 {
+  margin: 0 0 0.35em 0;
+}
+h6 {
+  margin: 0 0 0.35em 0;
+}
+
+$headings: (
+  1: var(--h1-font-family, var(--font-heading-family)),
+  2: var(--h2-font-family, var(--font-heading-family)),
+  3: var(--h3-font-family, var(--font-heading-family)),
+  4: var(--h4-font-family, var(--font-heading-family)),
+  5: var(--h5-font-family, var(--font-heading-family)),
+  6: var(--h6-font-family, var(--font-heading-family))
+);
+
+@each $name, $val in $headings {
+  h#{'' + $name},
+  h#{'' + $name} > a {
+    font-family: $val;
+    color: var(--font-heading-color, var(--color-neutral-a));
+  }
+}
+
+h1 {
+  @include font-size(large);
+  font-weight: var(--h1-font-weight, 700);
+  text-transform: var(--h1-text-transform, none);
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+h2 {
+  @include font-size(xmedium);
+  font-weight: var(--h2-font-weight, 700);
+  text-transform: var(--h2-text-transform, none);
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+h3 {
+  @include font-size(medium);
+  font-weight: var(--h3-font-weight, 700);
+  text-transform: var(--h3-text-transform, none);
+}
+h4 {
+  @include font-size(xnormal);
+  font-weight: var(--h4-font-weight, 700);
+  text-transform: var(--h4-text-transform, none);
+}
+h5 {
+  @include font-size(normal);
+  font-weight: var(--h5-font-weight, 700);
+  text-transform: var(--h5-text-transform, none);
+}
+h6 {
+  @include font-size(small);
+  font-weight: var(--h6-font-weight, 700);
+  text-transform: var(--h6-text-transform, none);
+}
+
+.heading + .rich-text > p:first-of-type {
+  margin-top: 0;
+}
+
+// Pre-heading
+.pre-heading {
+  display: inline-block;
+  width: 100%;
+  font-family: var(--pre-heading-family);
+  margin: 0 0 16px 0;
+  color: var(--pre-heading-color);
+  font-weight: var(--pre-heading-weight);
+  text-transform: var(--pre-heading-text-transform);
+  font-size: var(--pre-heading-font-size);
+}
+
+// Remove arrow on anchor links
+a[id],
+a[name] {
+  &:after {
+    display: none;
+  }
+}
+
+// Links
+a{
+  word-break: break-word;
+  background-color: transparent;
+  color: var(--link-color);
+  text-decoration: underline;
+  &:focus,
+  &:active,
+  &:hover {
+    text-decoration: none;
+    background-color: transparent;
+  }
+  &[type='mailto'] {
+    word-break: break-all;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    hyphens: auto;
+  }
+}
+
+.lead {
+  font-size: var(--lead-font-size);
+  line-height: var(--lead-font-line-height); 
+  font-family: var(--lead-font-family);
+  font-weight: var(--lead-font-weight);
+  color: var(--lead-color);
+  margin: 16px 0;
+  &.fade-out {
+    margin-bottom: 15px;
+  }
+}
+
+dl {
+  margin: 0 0 16px 0;
+  dt,
+  dd {
+    margin: 0 0 8px 0;
+    padding: 0;
+  }
+  dt {
+    margin: 0 0 4px 0;
+  }
+}
+
+// @include loop-spans(1, 5) {
+  // > .module .text {
+  //   > h2,
+  //   > h2 > a {
+  //     @include font-size(medium);
+  //   }
+  //   h3,
+  //   h3 > a {
+  //     @include font-size(xnormal);
+  //   }
+  //   h4,
+  //   h4 > a {
+  //     @include font-size(normal);
+  //   }
+  //   h5,
+  //   h5 > a {
+  //     @include font-size(small);
+  //   }
+  //   h6,
+  //   h6 > a {
+  //     @include font-size(xsmall);
+  //   }
+  // }
+// }
+
+// This is used for testing type
+.font-small {
+  @include font-size(small);
+}
+.font-xsmall {
+  @include font-size(xsmall);
+}
+.font-normal {
+  @include font-size(normal);
+}
+.font-xnormal {
+  @include font-size(xnormal);
+}
+.font-medium {
+  @include font-size(medium);
+}
+.font-xmedium {
+  @include font-size(xmedium);
+}
+.font-large {
+  @include font-size(large);
+}
+.font-xlarge {
+  @include font-size(xlarge);
+}
+.font-xxlarge {
+  @include font-size(xxlarge);
+}

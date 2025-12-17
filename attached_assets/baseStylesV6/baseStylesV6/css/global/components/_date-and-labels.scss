@@ -1,0 +1,34 @@
+// Date and labels
+.date {
+  vertical-align: top;
+}
+.date{
+  display: block;
+}
+
+main.publication-page,
+main.news-page {
+  .labels {
+    margin-top: 4px;
+  }
+  .date{
+    display: inline-block;
+  }
+  .date + .labels {
+    margin-left: 16px;
+  }
+}
+.date.last-updated {
+  margin-top: 8px;
+  display: block;
+  text-align: right;
+  font-style: italic;
+  margin-right: 16px;
+  @include breakpoint(xlarge) {
+    margin-right: 0;
+  }
+}
+
+.date + .labels{
+  margin-top: 8px;
+}

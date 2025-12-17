@@ -1,0 +1,21 @@
+// Module Heading
+.module.module-heading {
+  > .text,
+  > .introduction,
+  > .container {
+    > .heading {
+      @include font-size(normal);
+      border-bottom: var(--module-heading-border-width) solid var(--module-heading-border-color);
+      padding-bottom: 4px;
+      display: inline-block;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      a:after {
+        top: 0;
+      }
+    }
+  }
+  > .introduction > .heading {
+    margin-bottom: 0;
+  }
+}

@@ -1,0 +1,241 @@
+.dt-container {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+  overflow-y: hidden;
+
+  .dt-message {
+    text-align: center;
+  }
+
+  .dt-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    margin-left: -50%;
+    margin-top: -20px;
+    height: 40px;
+    text-align: center;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0) 0,
+      rgba(255, 255, 255, 0.9) 25%,
+      rgba(255, 255, 255, 0.9) 75%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+}
+
+.dt-dropdown {
+  label {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    margin-right: 60px;
+  }
+}
+
+.dt-bottom {
+  justify-content: flex-end;
+  padding: 8px 0;
+}
+
+.dt-top {
+  justify-content: space-between;
+  padding: 8px 0 24px;
+}
+
+.dt-search {
+  width: 100%;
+  position: relative;
+  &:before,
+  &:after {
+    position: absolute;
+    content: '\0020';
+    display: inline-block !important;
+    background-color: var(--color-neutral-b);
+  }
+  &:before {
+    height: 2px;
+    width: 6px;
+    transform: rotate(45deg);
+    right: 14px;
+    top: 29px;
+  }
+  &:after {
+    background: transparent;
+    height: 16px;
+    width: 16px;
+    border-radius: 100%;
+    border: 2px solid var(--color-neutral-b);
+    right: 18px;
+    top: 14px;
+  }
+}
+
+.dt-top,
+.dt-bottom {
+  display: flex;
+
+  .dt-selector {
+    padding: 8px;
+    margin-right: 16px;
+    min-width: 75px;
+  }
+  .dt-info {
+    margin: 8px 0;
+  }
+}
+
+.dt-input {
+  padding: 8px 12px;
+}
+.white-space-nowrap {
+  > .dt-wrapper > .dt-container > .dt-table {
+    & > tbody,
+    > tfoot,
+    > thead {
+      & > tr {
+        & > td,
+        & > th {
+          white-space: nowrap;
+        }
+      }
+    }
+  }
+}
+
+.dt-table {
+  max-width: 100%;
+  width: 100%;
+  border-spacing: 0;
+  background-clip: padding-box;
+
+  & > tbody,
+  > tfoot,
+  > thead {
+    & > tr {
+      & > td,
+      & > th {
+        vertical-align: top;
+        padding: 12px 16px;
+        border: 1px solid var(--color-neutral-d);
+        background-clip: padding-box;
+      }
+    }
+  }
+
+  & > tbody {
+    & > tr {
+      &:nth-child(2n) {
+        & > td {
+          background-color: #fafafa;
+        }
+      }
+    }
+  }
+
+  & > thead > tr {
+    & > th,
+    & > td {
+      vertical-align: bottom;
+      text-align: left;
+    }
+  }
+
+  & > tfoot > tr {
+    & > th,
+    & > td {
+      vertical-align: bottom;
+      text-align: left;
+    }
+  }
+
+  th {
+    vertical-align: bottom;
+    text-align: left;
+    background-color: #f0f0f0;
+
+    &.sortable {
+      position: relative;
+      cursor: pointer;
+      padding-right: 20px;
+
+      &:after {
+        @include icon-pack;
+        content: '\f107';
+        margin: 0 0 0 12px;
+      }
+      &.desc,
+      &.asc {
+        background-color: #e6e6e6;
+      }
+      &.desc::after {
+        transform: rotate(180deg);
+      }
+    }
+  }
+}
+
+.hidden {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+// Additional class settings
+thead {
+  .grey-col {
+    background-color: #f0f0f0 !important;
+  }
+  .grey-col-bold {
+    background-color: #f0f0f0 !important;
+  }
+  .grey-col-normal {
+    background-color: #f0f0f0 !important;
+  }
+}
+tbody {
+  .grey-col {
+    background-color: var(--color-neutral-e) !important;
+  }
+  .grey-col-bold {
+    background-color: var(--color-neutral-e) !important;
+  }
+  .grey-col-normal {
+    background-color: var(--color-neutral-e) !important;
+  }
+}
+thead,
+tbody {
+  .white-col {
+    background-color: var(--color-neutral-f) !important;
+  }
+  .white-col-bold {
+    background-color: var(--color-neutral-f) !important;
+    font-weight: bold;
+  }
+  .white-col-normal {
+    background-color: var(--color-neutral-f) !important;
+    font-weight: normal !important;
+  }
+  .normal-txt {
+    font-weight: normal !important;
+  }
+  .bold-txt {
+    font-weight: bold !important;
+  }
+  .grey-col-bold {
+    font-weight: bold !important;
+  }
+  .grey-col-normal {
+    font-weight: normal !important;
+  }
+}

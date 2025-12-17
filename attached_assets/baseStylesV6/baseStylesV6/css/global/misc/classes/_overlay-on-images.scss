@@ -1,0 +1,12 @@
+.hero[class*='overlay-'] {
+  @include overlay(rgba(0, 0, 0, 0.5), var(--color-neutral-f));
+}
+.inner-grid[class*='overlay-'] {
+  position: relative;
+  @include overlay(rgba(0, 0, 0, 0.5), var(--color-neutral-f));
+}
+.inner-grid[class*='overlay-'] > div,
+.hero[class*='overlay-'] .content {
+  position: relative;
+  z-index: 2;
+}

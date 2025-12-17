@@ -1,0 +1,17 @@
+
+@mixin full-width-hack{
+  &:before,
+  &:after{
+    content:'\0020';
+    width: 9999px;
+    position: absolute;
+    top: 0;
+    height: 100%;
+  }
+  &:before{
+    left: -9999px;
+  }
+  &:after{
+    right: -9999px;
+  }
+}

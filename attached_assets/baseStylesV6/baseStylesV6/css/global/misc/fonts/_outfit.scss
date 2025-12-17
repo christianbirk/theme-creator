@@ -1,0 +1,10 @@
+$weights: 100, 200, 300, 400, 500, 600, 700, 800, 900;
+
+@each $weight in $weights {
+	@font-face {
+		font-family: 'Outfit';
+		font-style: normal;
+		font-weight: $weight;
+		src: url('/Assets/GoBasic/v1/fonts/Outfit/Outfit-VariableFont_wght.woff2') format('woff2');
+	}
+}

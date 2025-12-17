@@ -1,0 +1,72 @@
+// Search Panel
+
+.sidebar-panel {
+  .sidebar-overlay {
+    opacity: 0;
+    visibility: hidden;
+    height: 100vh;
+    width: 100vw;
+    background: black;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 9998;
+    transition: opacity 0.3s ease-in;
+  }
+  .sidebar-content {
+    position: fixed;
+    top: -100%;
+    z-index: 9999;
+    max-width: calc(100vw - 24px);
+    background: var(--color-neutral-f);
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--highlighted-box-shadow);
+    border-radius: var(--universal-border-radius);
+    transition: opacity 0.2s ease-in-out;
+    margin: 0;
+    height: auto;
+    
+    width: 100%;
+    left: auto;
+    
+    @include breakpoint(xlarge){
+      width: calc(var(--grid-container-max-width) * .66);
+      left: 50%;
+      transform: translate(-50%, 0);
+    }
+    
+    @include breakpoint(medium-small){
+      margin: 12px;
+      height: calc(100vh - 24px);
+    }
+  }
+  .site-search-content {
+    overflow: auto;
+  }
+
+  // Active
+  &.active {
+    .sidebar-content {
+      top: 24px;
+      opacity: 1;
+    }
+    .sidebar-overlay {
+      opacity: 0.35;
+      visibility: visible;
+    }
+  }
+
+  // Inactive
+  &.inactive {
+    .sidebar-content {
+      transform: translateY(-100vh);
+      opacity: 0;
+    }
+    .sidebar-overlay {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+}

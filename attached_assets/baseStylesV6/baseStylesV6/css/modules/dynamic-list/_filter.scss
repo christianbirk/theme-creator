@@ -1,0 +1,190 @@
+// Filter
+.filter {
+  margin: 0 0 24px 0;
+  
+  
+  > .form.inline {
+    margin: 0;
+    gap: 12px;
+    flex-wrap: wrap;
+    @include search-input();
+    > div {
+      display: flex;
+      gap: 12px;
+      margin: 0;
+      position: relative;
+    }
+    > .form-group {
+      &.search {
+        width: 33.33%;
+        @include breakpoint(small){
+          width: 100%;  
+        }
+        display: block;
+        .exact-match{
+          margin: 0;  
+        }
+      }
+      .btn {
+        margin: 0;
+      }
+      .dropdown-menu {
+        max-height: 350px;
+        overflow-x: auto;
+      }
+    }
+    .sort-selector{
+      
+    }
+    
+    .selected-filters {
+      flex: 0 0 100%;
+    }
+  }
+
+  // Mobile Filters button + modal
+  .mobile-filters-btn {
+    display: none;
+  }
+  .mobile-filters-modal {
+    display: none;
+  }
+
+  // Mobile view overrides
+  .mobile-filters-btn{
+    @include breakpoint(small) {
+      width: 100%;
+    }
+  }
+  
+  @include breakpoint(medium-small) {
+    // Hide inline dropdowns inside form on mobile
+    > .form.inline {
+
+      > .form-group {
+        .dropdown {
+          display: none;
+        }
+      }
+    }
+
+    // Show Filters button
+    .mobile-filters-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      &:after{
+        @include icon-pack(var(--icon-alternate-font-family));
+        font-weight: 600;
+        content:'\f078';
+        font-size: 12px;
+      }
+    }
+    
+    
+    > .form.inline > .categorizations.form-group{
+      display: none;
+    }
+    
+    // Modal base
+    .mobile-filters-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 1000;
+      &.active {
+        display: block;
+      }
+      .mobile-filters-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+      }
+      .mobile-filters-dialog {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: 0;
+        margin: 12px;
+        background: var(--color-neutral-f);
+        border-radius: var(--universal-border-radius);
+        max-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.1);
+      }
+      .mobile-filters-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--color-neutral-d);
+        .mobile-filters-title {
+          margin: 0;
+          color: var(--color-brand-a);
+        }
+        .close-mobile-filters {
+          width: 36px;
+          height: 36px;
+          border: 0;
+          background: transparent;
+          position: relative;
+          &:before,
+          &:after {
+            content: '';
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            top: 17px;
+            height: 2px;
+            background: var(--color-brand-a);
+          }
+          &:before {
+            transform: rotate(45deg);
+          }
+          &:after {
+            transform: rotate(-45deg);
+          }
+        }
+      }
+      .mobile-filters-content {
+        overflow: auto;
+        margin: 16px;
+        border: 1px solid var(--color-neutral-d);
+        border-radius: var(--universal-border-radius);
+        box-shadow: 0 5px 10px 0px rgba(0, 0, 0, .1);
+        .dropdown{
+          border-bottom: 1px solid var(--color-neutral-d);
+          display: block;
+          &:last-child{
+            border-bottom: 0 none;
+          }
+          > .btn{
+            padding: 16px 20px;
+            justify-content: space-between;
+            border-radius: var(--universal-border-radius);
+            width: 100%;
+            margin: 0;
+            border-radius: 0;
+            background: white;
+            color: var(--color-brand-a);
+          }
+        }  
+      }
+      
+      // Accordion-like behavior visuals: ensure only one dropdown menu is open visually
+      .dropdown-menu {
+        box-shadow: none;
+        position: relative;
+        border: 0 none;
+        border-radius: 0;
+        &.dropped{
+          border-top: 1px solid var(--color-neutral-d);
+          background: var(--color-neutral-e);
+        }
+      }
+    }
+  }
+}

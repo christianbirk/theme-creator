@@ -1,0 +1,211 @@
+
+// Dynamic List
+.dynamic-list{
+  // Grouped heading A-Å
+  .items {
+    > .group-heading {
+      margin-top: 40px;
+      margin-bottom: 12px;
+      @include breakpoint(medium-small) {
+        margin-top: 16px;
+      }
+      &:first-of-type {
+        margin-top: 0;
+      }
+    }
+  }
+}
+
+// Dynamic List + Event List
+.dynamic-list,
+.event-list {  
+
+  // Items: List and Columns
+  .items {
+    nav {
+      width: 100%;
+      margin-top: 12px;
+    }
+    .item {
+      cursor: pointer;
+      padding: 0;
+      > .text {
+        > .pre-heading {
+          margin: 0 0 8px 0;
+        }
+
+        > h3,
+        > h2 {
+          margin-bottom: 16px;
+          > a[href*='.pdf'] {
+            &:before {
+              content: '\f1c1';
+              @include icon-pack;
+              margin-right: 8px;
+            }
+          }
+        }
+        > .labels,
+        > .date {
+          margin-bottom: 8px;
+        }
+        > p {
+          margin-top: 0;
+        }
+      }
+    }
+
+    // List View
+    > .item {
+      @include breakpoint(medium-xlarge) {
+        display: flex;
+      }
+      margin: 0;
+      padding: 16px 0;
+      border-top: 1px solid var(--color-neutral-d);
+      &:last-child {
+        border-bottom: 1px solid var(--color-neutral-d);
+      }
+      > .media {
+        cursor: pointer;
+        margin: 0 16px 0 0;
+        max-width: 128px;
+        min-width: 128px;
+        
+        @include breakpoint(small) {
+          > i:before {
+            font-size: 50px;
+          }
+        }
+      }
+      > .text p:last-of-type {
+        margin: 0;
+      }
+
+      > .media + .text {
+        @include breakpoint(small) {
+          margin-top: 16px;
+        }
+        @include breakpoint(medium-xlarge) {
+          margin-top: 0;
+        }
+      }
+    }
+
+    // Column View
+    > .row {
+      @include breakpoint(large) {
+        margin-left: calc(var(--grid-gutter-desktop) * -1);
+        margin-right: calc(var(--grid-gutter-desktop) * -1);
+      }
+      @include breakpoint(medium) {
+        margin-left: calc(var(--grid-gutter-mobile) * -1);
+        margin-right: calc(var(--grid-gutter-mobile) * -1);
+      }
+      
+      &:last-child{
+        [class*='span'] {
+          @include breakpoint(large) {
+            margin-bottom: var(--grid-gutter-desktop);  
+          }
+          @include breakpoint(medium) {
+            margin-bottom: var(--grid-gutter-mobile);  
+          }
+        }  
+      }
+    }
+    
+    
+    [class*='span'] {
+      @include breakpoint(large) {
+        margin-bottom: calc(var(--grid-gutter-desktop) * 2);
+      }
+      @include breakpoint(medium) {
+        margin-bottom: calc(var(--grid-gutter-mobile) * 2);
+      }
+      
+      @include breakpoint(small) {
+        padding-left: 0;
+        padding-right: 0;
+      }
+    }
+
+    [class*='span'] > .item {
+      margin: 0 0 16px 0;
+      height: 100%;
+      > .media {
+        max-width: 100%;
+      }
+    }
+    // Grouped
+    .group {
+      display: flex;
+      align-items: center;
+      position: relative;
+      margin: 0 0 16px 0;
+
+      &:after {
+        width: 100%;
+        content: '';
+        height: 1px;
+        background-color: var(--color-neutral-d);
+        margin-left: 16px;
+        display: block;
+      }
+    }
+  }
+
+  .links {
+    a.archive-link {
+      margin-left: 0;
+    }
+  }
+
+  // Buttons
+  .buttons {
+    margin-top: 24px;
+    .btn {
+      margin-bottom: 0;
+    }
+  }
+  .append-items {
+    margin-top: 16px;
+  }
+
+  .load-more.btn > span {
+    color: var(--button-color, var(--color-neutral-a));
+  }
+  &.align-center {
+    *:not(.append-items) {
+      text-align: center;
+    }
+  }
+  .form-group.exact-match {
+    justify-content: flex-start;
+  }
+}
+
+// Full width settings
+div:not([class*='span']) > .dynamic-list,
+div:not([class*='span']) > .event-list {
+  padding: var(--grid-box-padding);
+  @include breakpoint(medium-small) {
+    padding: 0 8px;
+  }
+}
+
+.find-authorized-psychologists {
+  .filter > .summary {
+    margin-top: 8px;
+  }
+  .filter .form > .form-group.search {
+    width: 400px;
+    max-width: 95%;
+  }
+}
+.legal-documents-search {
+  .filter .form > .form-group.search {
+    width: 350px;
+    max-width: 95%;
+  }
+}

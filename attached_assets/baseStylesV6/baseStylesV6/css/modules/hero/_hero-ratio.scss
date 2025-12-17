@@ -1,0 +1,55 @@
+
+.slider .hero,
+.hero{
+	width: 100%;
+	&.bg-video,
+	&[style*='background-image']{
+		
+		// General
+		@include breakpoint(medium-xlarge) {
+			--aspect-ratio: var(--hero-ratio-desktop);
+			@include aspect();  
+		}
+		@include breakpoint(small) {
+			&.bg-video .media,
+			> .background-mobile {
+				--aspect-ratio: var(--hero-ratio-mobile);
+				@include aspect();
+				height: auto;
+			}
+		}
+
+		// Split Box
+		&.split-box{
+			@include breakpoint(small) {
+				.background-mobile,
+				&.bg-video > .media {
+					--aspect-ratio: var(--hero-split-box-ratio-mobile);
+					@include aspect();
+				}
+			}
+			@include breakpoint(medium-xlarge) {
+				--aspect-ratio: var(--hero-split-box-ratio-desktop);
+				@include aspect();
+			}
+		}
+	}
+}
+
+// Full Width
+div:not([class*="span"]) > .slider .hero,
+div:not([class*="span"]) > .hero{
+	&.bg-video,
+	&[style*='background-image']{
+		@include breakpoint(medium-xlarge) {
+			--aspect-ratio: var(--hero-ratio-full-width);
+			@include aspect();
+		}
+		&.split-box{
+			@include breakpoint(medium-xlarge) {
+				--aspect-ratio: var(--hero-split-box-ratio-full-width);
+				@include aspect();
+			}
+		}
+	}
+}

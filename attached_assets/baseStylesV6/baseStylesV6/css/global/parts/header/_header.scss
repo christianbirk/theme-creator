@@ -1,0 +1,40 @@
+// Header
+
+header.header {
+  position: relative;
+  z-index: 999;
+  background-color: var(--header-background-color);
+  > .header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    @include grid-gutter();
+    margin-inline: auto;
+    width: var(--grid-header-container-width); 
+    padding-top: var(--header-container-padding);
+    padding-bottom: var(--header-container-padding);
+    @include breakpoint(small){
+      padding: calc(var(--header-container-padding) / 2);
+    }
+  }
+
+  .logo > div > a {
+    @include breakpoint(small) {
+      z-index: 1;
+    }
+  }
+}
+
+a#skip {
+  display: block;
+  position: absolute;
+  left: -999px;
+  top: -999px;
+
+  &:focus {
+    left: 0;
+    top: 0;
+    z-index: 2000;
+    padding: 10px;
+  }
+}

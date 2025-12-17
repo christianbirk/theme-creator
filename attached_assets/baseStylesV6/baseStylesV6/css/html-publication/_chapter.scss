@@ -1,0 +1,327 @@
+body.stick {
+  .chapter {
+    scroll-margin-top: var(--html-publication-top-adjustment, 60px);
+  }
+}
+
+// Chapter & Introduction
+.chapter {
+  margin-bottom: 20px;
+  scroll-margin-top: var(--html-publication-top-adjustment-desktop, 90px);
+
+  &.margin-zero > .introduction {
+    margin-bottom: 0;
+  }
+
+  //Chapter in chapter font size
+  .container .chapter {
+    > .introduction {
+      padding: 0;
+      .number-title > span:not(.pre-heading) {
+        font-size: 14px;
+        min-width: 35px;
+        min-height: 35px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        /* use CSS var with alpha overlay via color-mix for broad support */
+        background-color: color-mix(
+          in srgb,
+          var(--html-publication-chapter-number-background-color) 30%,
+          transparent
+        );
+      }
+    }
+    h2.headline {
+      font-size: var(--html-publication-sub-chapter-heading);
+      @include breakpoint(large) {
+        margin: 20px auto;
+      }
+    }
+  }
+
+  @include breakpoint(large) {
+    margin-bottom: 140px;
+  }
+  > .chapter {
+    @include breakpoint(large) {
+      margin-top: 100px;
+    }
+  }
+  > .cnt > .text:not(.col-2) {
+    @include breakpoint(medium-xlarge) {
+      width: var(--html-publication-chapter-one-column-text-width, var(--span-8));
+    }
+    @include breakpoint(large) {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+    @include breakpoint(xlarge) {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    @include breakpoint(medium) {
+      padding-left: 16px * 0.5;
+      padding-right: 16px * 0.5;
+      width: 100%;
+    }
+  }
+  .poll.boxed {
+    padding: 40px;
+  }
+}
+
+[class*='bg-color-'].chapter {
+  > .introduction .number-title > span:not(.pre-heading) {
+    background: var(--color-neutral-f);
+    color: var(--color-neutral-a);
+  }
+}
+
+[class*='bg-color-'].chapter {
+  > .introduction {
+    padding: 40px 0;
+    @include breakpoint(small) {
+      padding: 20px 0;
+    }
+    padding: 100px 20px;
+    @include breakpoint(small) {
+      padding: 75px 20px;
+    }
+    @include breakpoint(large) {
+      padding: 150px 0;
+    }
+  }
+}
+
+// If Media i selected
+.prelude.img,
+.chapter.img {
+  // Introduction
+  > .introduction {
+    @include breakpoint(small) {
+      padding-bottom: 75px;
+    }
+    @include breakpoint(medium) {
+      padding-bottom: 280px;
+    }
+    @include breakpoint(large) {
+      padding-bottom: 440px;
+    }
+  }
+  > .cnt {
+    @include breakpoint(small) {
+      margin-top: -20px;
+      transform: none !important;
+    }
+    @include breakpoint(medium) {
+      margin-top: -225px;
+    }
+    @include breakpoint(large) {
+      margin-top: -360px;
+    }
+    > .inner {
+      @include breakpoint(medium-xlarge) {
+        box-shadow: 0 0 75px 10px rgba(black, 0.2);
+      }
+    }
+  }
+
+  // Media Container
+  > .cnt {
+    // Inside the inner
+    > .inner {
+      position: relative;
+      > .fancybox-media {
+        --aspect-ratio: var(--aspect-ratio);
+        @include aspect();
+        > video {
+          width: 100%;
+          vertical-align: top;
+        }
+        &:after {
+          opacity: 0.9;
+          @include icon-pack;
+          position: absolute;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          content: var(--video-popup-icon);
+          color: var(--video-popup-icon-color);
+          background: var(--video-popup-icon-background-color);
+          width: var(--video-popup-icon-width);
+          height: var(--video-popup-icon-height);
+          font-size: var(--video-popup-icon-size);
+          border-radius: var(--video-popup-icon-border-radius);
+          margin: calc(0px - calc(var(--video-popup-icon-height) / 2)) 0
+            calc(0px - calc(var(--video-popup-icon-width) / 2)) 0;
+          @include animate-all;
+        }
+        &:focus,
+        &:active,
+        &:hover {
+          &:after {
+            opacity: 1;
+          }
+        }
+      }
+
+      > .fancybox-media > .cover-image,
+      > .cover-image {
+        --aspect-ratio: var(--aspect-ratio-default);
+        @include aspect();
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        margin-bottom: 30px;
+      }
+
+      > .fancybox-media > .cover-image + video,
+      > .cover-image + video {
+        position: absolute;
+        top: 0;
+      }
+
+      // If article has cover image and feature image
+      + .feature-image {
+        position: relative;
+        float: right;
+        padding: 0 20px;
+        width: 41.67%;
+        margin-right: 8.33%;
+        > div {
+          margin: -390px 0 40px 75px;
+        }
+        @include breakpoint(small) {
+          // margin: 200px auto 0;
+          // float: none;
+          // width: 90%;
+          display: none;
+        }
+        @include breakpoint(medium) {
+          margin: 0;
+        }
+        > div {
+          @include breakpoint(medium-xlarge) {
+            box-shadow: 0 0 75px 10px rgba(black, 0.2);
+          }
+          --aspect-ratio: 8.5/10;
+          @include aspect();
+          background-position: center;
+          background-repeat: no-repeat;
+          background-size: cover;
+        }
+      }
+    }
+
+    //If article has no cover image but only feature image
+    > .feature-image > div {
+      --aspect-ratio: var(--aspect-ratio-default);
+        @include aspect();
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      margin-bottom: 30px;
+    }
+  }
+}
+
+// Introduction
+.html-publication .introduction {
+  padding: 20px 0;
+  text-align: center;
+  padding: 40px 0;
+}
+// Number and title
+.number-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  @include breakpoint(medium-small) {
+    margin-bottom: 16px;
+  }
+  min-height: 45px;
+  justify-content: center;
+  > span:not(.pre-heading) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 20px;
+    background: var(--html-publication-chapter-number-background-color);
+    color: var(--html-publication-chapter-number-text-color, currentColor);
+    width: 45px;
+    height: 45px;
+    border-radius: var(--html-publication-chapter-number-border-radius);
+    + span.pre-heading {
+      padding-left: 20px;
+      width: auto;
+    }
+  }
+
+  span.pre-heading {
+    padding: 10px 0 0 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    @include font-size(normal);
+    display: inline-block;
+  }
+}
+
+> .cnt {
+  > .credits,
+  > .headline,
+  > .teaser {
+    @include breakpoint(large) {
+      width: 75%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+}
+h2.headline {
+  font-size: var(--html-publication-chapter-heading);
+}
+h3.headline {
+  font-size: var(--html-publication-sub-chapter-heading);
+}
+.headline {
+  margin: 0;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  hyphens: none;
+
+  @include breakpoint(large) {
+    margin: 50px 0 0 0;
+  }
+  + .teaser {
+    margin-top: 50px;
+    line-height: 1.7em;
+  }
+}
+.teaser {
+  margin: 0;
+  @include font-size(xnormal);
+}
+
+// Credits
+.credits {
+  padding: 0;
+  list-style: none;
+  li {
+    font-weight: bold;
+    text-transform: uppercase;
+    @include font-size(small);
+    span {
+      font-weight: normal;
+      margin-right: 10px;
+    }
+  }
+  + .teaser {
+    padding-top: 20px;
+    @include breakpoint(large) {
+      padding-top: 50px;
+    }
+  }
+}

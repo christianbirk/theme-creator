@@ -1,0 +1,47 @@
+.feed-list {
+  // Item
+  .ajaxhost.items {
+    // Grouped
+    .group {
+      display: block;
+      position: relative;
+      margin: 32px 0 0 !important;
+    }
+
+    // Item
+    > .item {
+      margin: 0 0 16px 0;
+
+      // Text
+      .text {
+        h2,
+        h3 {
+          @include font-size(medium);
+        }
+        .date {
+          margin: 0;
+        }
+        > p:first-of-type {
+          margin-top: 0;
+        }
+        > p:last-of-type {
+          margin-bottom: 0;
+        }
+      }
+      dl {
+        @include font-size(small);
+        font-family: var(--font-base-family);
+        overflow: hidden;
+        dt {
+          float: left;
+          font-weight: bold;
+        }
+        dd,
+        dt {
+          display: block;
+          margin: 0 5px 0 0;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,82 @@
+.hero {
+  &.label-look {
+    &:after {
+      display: none;
+    }
+    .text {
+      @include breakpoint(medium) {
+        > .wrap {
+          width: 66.66% !important;
+          max-width: 66.66%;
+        }
+      }
+      @include breakpoint(medium-xlarge) {
+        > .wrap {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    }
+
+    .heading,
+    .pre-heading,
+    .rich-text {
+      @include breakpoint(small) {
+        padding: 0;
+        margin: 0 0 16px 0 !important;
+      }
+      @include breakpoint(medium-xlarge) {
+        padding: 16px 24px;
+        width: auto;
+        margin: 0 0 16px 0 !important;
+      }
+    }
+
+    // No background color
+    .heading,
+    .pre-heading,
+    .rich-text {
+      @include breakpoint(medium-xlarge) {
+        border-radius: var(--universal-border-radius);
+        background-color: color-mix(in srgb, var(--color-brand-a) 90%, transparent);
+      }
+    }
+    //Right aligned label hero
+    &.align-text-right {
+      .text {
+        @include breakpoint(medium) {
+          margin-left: 40% !important;
+        }
+        @include breakpoint(medium-xlarge) {
+          > .wrap {
+            text-align: right;
+            align-items: flex-end;
+          }
+        }
+
+        a[class*='btn'] {
+          @include breakpoint(medium-xlarge) {
+            float: right;
+          }
+        }
+      }
+    }
+
+    &.align-text-center {
+      .heading,
+      .pre-heading,
+      .rich-text {
+        width: 100%;
+      }
+    }
+  }
+}
+
+div:not([class*='span']) > .hero.label-look {
+  .text > .wrap {
+    @include breakpoint(xlarge) {
+      padding: 0;
+    }
+  }
+}

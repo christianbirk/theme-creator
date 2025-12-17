@@ -1,0 +1,18 @@
+
+// Archive Page
+div.archive-page{
+  .labels{
+    display: none;
+  }
+}
+
+.span-9 > .archive-search-result{
+  .row > .span-3{
+    width: 33.33%;
+  }
+}
+.span-6 > .archive-search-result{
+  .row > .span-3{
+    width: 50%;
+  }
+}

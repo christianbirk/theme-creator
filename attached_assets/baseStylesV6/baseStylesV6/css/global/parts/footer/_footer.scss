@@ -1,0 +1,43 @@
+
+footer {
+  position: relative;
+  z-index: 2;
+  background-color: var(--footer-background-color);
+  margin-top: 32px;
+  > div {
+    padding: 0;
+  }
+  .multi-section {
+    h2,
+    h3 {
+      text-transform: none;
+    }
+  }
+}
+
+.wide-page{
+  footer{
+    margin-top: 0;
+  }
+}
+
+
+.wrapper + footer {
+  [class*='span'] > .module .heading,
+  .heading,
+  .heading > a,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-size: var(--footer-heading-font-size);
+    text-transform: var(--footer-heading-text-transform);
+    font-family: var(--footer-heading-font-family);
+    font-weight: var(--footer-heading-font-weight);
+  }
+}
+
+
+

@@ -1,0 +1,13 @@
+
+// Print button
+@mixin print-button($padding-right: 0, $padding-left: 0){
+  cursor: pointer;
+  > a, > span {
+    padding: 0 $padding-right 0 $padding-left;
+    @include insert-icon-before('\f02f', $size: var(--icon-size), $margin: 0, $top: var(--icon-top-adjust));
+    > span{
+      display: none;
+      font-weight: bold;
+    }
+  }
+}

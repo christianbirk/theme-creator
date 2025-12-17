@@ -1,0 +1,14 @@
+.tool-section {
+  background: var(--breadcrumb-bg-color);
+  > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    @include grid-gutter();
+    margin-inline: auto;
+    width: min(100%, var(--grid-container-max-width));
+    @include breakpoint(small){
+      display: block;  
+    }
+  }
+}

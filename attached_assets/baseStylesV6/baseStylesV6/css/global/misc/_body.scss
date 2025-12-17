@@ -1,0 +1,40 @@
+html{
+  @include font-size(normal);
+}
+
+body {
+  @include font-size(normal);
+  @include font-smoothing;
+  font-family: var(--font-base-family);
+  background-color: var(--body-bg-color, var(--color-neutral-f));
+  color: var(--font-base-color);
+  font-weight: var(--font-base-weight);
+  overflow-y: auto;
+  overflow-x: hidden;
+  
+  &.nav-open{
+  }
+
+  &.remove-footer-space {
+    .wrapper > div[role='main'] {
+      padding: 0;
+    }
+  }
+
+  &.popup-view {
+    .wrapper > div[role='main'] {
+      padding: 16px;
+    }
+  }
+
+  > .overflow {
+    overflow: hidden;
+  }
+
+  .wrapper {
+    background-color: var(--main-bg-color, var(--color-neutral-f));
+    &.bg-content {
+      @include background-size-cover;
+    }
+  }
+}

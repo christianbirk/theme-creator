@@ -1,0 +1,54 @@
+
+.hide-media-in-mobile{
+	.media{
+		@include breakpoint(small){
+			display: none!important;
+		}
+	}
+}
+.hide-bg-image-in-mobile{
+	@include breakpoint(small){
+		background-image: none!important;
+	}
+}
+.hide-in-mobile{
+	@include breakpoint(small){
+		display: none!important;
+	}
+}
+.hide-in-desktop{
+	@include breakpoint(medium-xlarge) {
+		display: none!important;
+	}
+}
+
+.show-in-desktop{
+	@include breakpoint(medium-small) {
+		display: none!important;
+	}
+	@include breakpoint(large) {
+		display: none!important;
+	}
+	@include breakpoint(xlarge) {
+		display: block!important;
+	}
+}
+.show-in-tablet{
+	@include breakpoint(small) {
+		display: none!important;
+	}
+	@include breakpoint(medium) {
+		display: block!important;
+	}
+	@include breakpoint(large) {
+		display: block!important;
+	}
+	@include breakpoint(xlarge) {
+		display: none!important;
+	}
+}
+.show-in-mobile{
+	@include breakpoint(medium-xlarge) {
+		display: none!important;
+	}
+}

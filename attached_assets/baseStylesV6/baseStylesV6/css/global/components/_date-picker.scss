@@ -1,0 +1,53 @@
+input[type='date'] {
+  height: 48px;
+}
+input[type='date'],
+input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+.date-inputs {
+  position: relative;
+  display: inline-block;
+
+  > select {
+    @extend .btn;
+    @include set-picker-arrow-svg(#fff);
+    cursor: pointer;
+    background-position-x: calc(100% - 16px);
+    min-width: 100px;
+  }
+
+  // Old version
+  .date-input {
+    display: inline-block;
+    max-width: 150px;
+    margin-right: 16px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--form-field-background-color, var(--color-neutral-f));
+    border-radius: var(--universal-border-radius);
+
+    @include breakpoint(medium-small) {
+      max-width: none;
+      width: 41.66667%;
+    }
+    input {
+      background-color: transparent;
+      position: relative;
+      z-index: 2;
+      padding-right: 32px;
+    }
+    &:after {
+      right: 15px;
+      content: '\f073';
+      font-family: var(--icon-alternate-font-family);
+      font-weight: 600;
+      font-size: var(--font-normal, 1rem);
+      position: absolute;
+      color: var(--color-neutral-b);
+      z-index: 1;
+    }
+  }
+}

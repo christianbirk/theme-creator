@@ -1,0 +1,240 @@
+// Grid
+.container {
+  position: relative;
+  margin-inline: auto;
+  width: min(100%, var(--grid-container-max-width));
+  margin-right: auto;
+  margin-left: auto;
+  .container {
+    width: auto;
+    padding: 0;
+  }
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  @include breakpoint(small) {
+    max-width: 100%;
+  }
+
+  @include breakpoint(xlarge) {
+    margin-right: calc(var(--grid-gutter-desktop) * -1);
+    margin-left: calc(var(--grid-gutter-desktop) * -1);
+  }
+  &:after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+}
+
+[class*='plh-'] > .row {
+  @include breakpoint(large) {
+    margin-right: calc(var(--grid-gutter-desktop) * -1);
+    margin-left: calc(var(--grid-gutter-desktop) * -1);
+  }
+  @include breakpoint(medium) {
+    margin-right: calc(var(--grid-gutter-mobile) * -1);
+    margin-left: calc(var(--grid-gutter-mobile) * -1);
+  }
+}
+[class*='section'] > .container > .row {
+  @include breakpoint(small) {
+    margin-right: var(--grid-gutter-mobile);
+    margin-left: var(--grid-gutter-mobile);
+  }
+}
+
+// Spans
+[class*='span'] {
+  position: relative;
+  min-height: 1px;
+  @include breakpoint(large) {
+    padding-right: var(--grid-gutter-desktop);
+    padding-left: var(--grid-gutter-desktop);
+  }
+  @include breakpoint(medium) {
+    padding-right: var(--grid-gutter-mobile);
+    padding-left: var(--grid-gutter-mobile);
+  }
+  @include breakpoint(small) {
+    width: 100% !important;
+  }
+}
+
+// #keep-grid {
+  // @include breakpoint(small) {
+  //   .heading {
+  //     -webkit-hyphens: auto !important;
+  //     -moz-hyphens: auto !important;
+  //     hyphens: auto !important;
+  //   }
+  //   @supports (zoom: 0.5) {
+  //     zoom: 0.5;
+  //   }
+  //   [class*='span'] {
+  //     position: relative;
+  //     min-height: 1px;
+  //     float: left;
+  //     padding-left: var(--grid-gutter-desktop) !important;
+  //     padding-right: var(--grid-gutter-desktop) !important;
+  //   }
+  //   @supports not (zoom: 0.5) {
+  //     .module {
+  //       padding: 8px 12px 12px !important;
+  //       .text {
+  //         padding: 0 !important;
+  //       }
+  //     }
+  //     .heading {
+  //       font-size: 0.9rem;
+  //       line-height: 1.2rem;
+  //     }
+  //     p {
+  //       font-size: 0.75rem;
+  //       line-height: 1rem;
+  //     }
+  //     [class*='span'] {
+  //       padding-left: var(--grid-gutter-mobile) !important;
+  //       padding-right: var(--grid-gutter-mobile) !important;
+  //     }
+  //   }
+  //   /** Safari */
+  //   @media screen and (-webkit-min-device-pixel-ratio: 0) {
+  //     zoom: normal;
+  //     .module {
+  //       padding: 8px 12px 12px !important;
+  //       .text {
+  //         padding: 0 !important;
+  //       }
+  //     }
+  //     .heading {
+  //       font-size: 0.9rem;
+  //       line-height: 1.2rem;
+  //     }
+  //     p {
+  //       font-size: 0.75rem;
+  //       line-height: 1rem;
+  //     }
+  //     [class*='span'] {
+  //       padding-left: var(--grid-gutter-mobile) !important;
+  //       padding-right: var(--grid-gutter-mobile) !important;
+  //     }
+  //   }
+  //   .span-12 {
+  //     width: 100% !important;
+  //   }
+  //   .span-11 {
+  //     width: 91.66% !important;
+  //   }
+  //   .span-10 {
+  //     width: 83.33% !important;
+  //   }
+  //   .span-9 {
+  //     width: 75% !important;
+  //   }
+  //   .span-8 {
+  //     width: 66.66% !important;
+  //   }
+  //   .span-7 {
+  //     width: 58.33% !important;
+  //   }
+  //   .span-6 {
+  //     width: 50% !important;
+  //   }
+  //   .span-5 {
+  //     width: 41.66% !important;
+  //   }
+  //   .span-4 {
+  //     width: 33.33% !important;
+  //   }
+  //   .span-3 {
+  //     width: 25% !important;
+  //   }
+  //   .span-2 {
+  //     width: 16.66% !important;
+  //   }
+  //   .span-1 {
+  //     width: 8.33% !important;
+  //   }
+  // }
+// }
+
+// Grid calculator
+@mixin grid-calculator($columns: 12, $span-number: 12) {
+  width: calc(100 /#{$columns} * #{$span-number} * 1%);
+}
+
+// Offset grid left & right mixin
+@mixin grid-calculator-space($direction, $columns: 12, $span-number: 12) {
+  @if $direction == 'left' {
+    margin-left: calc(100 /#{$columns} * #{$span-number} * 1%);
+  }
+  @if $direction == 'right' {
+    margin-right: calc(100 /#{$columns} * #{$span-number} * 1%);
+  }
+}
+
+@for $spans from 1 through 12 {
+  // Module width
+  .span-#{$spans} {
+    @include grid-calculator($span-number: $spans);
+
+    // Module Width inside spans
+    @for $i from 1 through $spans {
+      > .row > .span-#{$i},
+      > .module.multi-section.tabs > .tab-content > .tab-body > .row > .span-#{$i},
+      > .module > .sections > .section .section-body > .row > .span-#{$i},
+      > .module > .items > .row > .span-#{$i},
+      > .module > .row > .span-#{$i},
+      > [class*='plh-'] > .row > .span-#{$i},
+      > .inner-grid > .container > .row > .span-#{$i},
+      > .event-list .items > .row > .span-#{$i},
+      > .dynamic-list .items > .row > .span-#{$i} {
+        @include grid-calculator($spans, $i);
+      }
+    }
+  }
+
+  // Space Left & Right
+  .space-right-#{$spans} {
+    @include grid-calculator-space('right', $span-number: $spans);
+  }
+  .space-left-#{$spans} {
+    @include grid-calculator-space('left', $span-number: $spans);
+  }
+
+  // Space Left & Right inside spans
+  .span#{$spans},
+  .span-#{$spans} {
+    @for $i from 1 through $spans {
+      > [class*='plh-'] > .row > .space-right-#{$i},
+      > .inner-grid > .container > .row > .space-right-#{$i},
+      > .row > .space-right-#{$i} {
+        @include grid-calculator-space('right', $spans, $i);
+      }
+    }
+    @for $i from 1 through $spans {
+      > [class*='plh-'] > .row > .space-left-#{$i},
+      > .inner-grid > .container > .row > .space-left-#{$i},
+      > .row > .space-left-#{$i} {
+        @include grid-calculator-space('left', $spans, $i);
+      }
+    }
+  }
+}
+
+.module {
+  @include breakpoint(small) {
+    min-height: none !important;
+  }
+}
+
+[class*='space-right-'],
+[class*='space-left-'] {
+  @include breakpoint(small) {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+}

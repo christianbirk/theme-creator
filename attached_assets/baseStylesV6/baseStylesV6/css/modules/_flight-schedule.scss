@@ -1,0 +1,195 @@
+.module.flights {
+  // Multi Section Styles
+  .multi-section.tabs.flight-schedule {
+    .tabs-navigation {
+      border: 0;
+      h3:after {
+        display: none !important;
+      }
+      li a {
+        background: transparent;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        padding: 16px 32px;
+        font-weight: bold;
+
+        // resets
+        &:hover,
+        &:active,
+        &:focus {
+          &:before {
+            left: 0;
+          }
+        }
+        &:before {
+          padding-right: 0;
+        }
+      }
+      li.active a {
+        background-color: rgba(232, 17, 17, 0.1);
+        border-bottom: 3px solid var(--color-brand-a);
+      }
+      #departure {
+        a {
+          &:before {
+            position: relative;
+            top: 0;
+            margin-right: 8px;
+            font-family: nova-travel;
+            content: '\71';
+          }
+        }
+      }
+      #arrival {
+        a {
+          &:before {
+            margin-right: 8px;
+            font-family: nova-travel;
+            content: '\6c';
+          }
+        }
+      }
+    }
+    .tab-content {
+      .tab-body {
+        border: 0;
+        padding: 16px 0;
+      }
+    }
+  }
+
+  // Additional info
+  .fs-additional-info {
+    padding: 24px;
+    background-color: lightgoldenrodyellow;
+    border-radius: var(--universal-border-radius);
+    &:before {
+      content: '\f06a';
+      font-family: var(--icon-alternate-font-family);
+      font-weight: 600;
+      margin-right: 8px;
+    }
+    @include breakpoint(small) {
+      padding: 16px;
+    }
+  }
+
+  // Date picker
+  #flight-schedule-date-picker {
+    margin-top: 16px;
+    @include breakpoint(medium-xlarge) {
+      width: 240px;
+    }
+    @include breakpoint(small) {
+      width: 100%;
+    }
+    + .flight-schedule-table {
+      margin: 16px 0 32px;
+    }
+  }
+
+  // Table
+  .flight-schedule-table {
+    margin: 16px 0;
+    th {
+      padding: 8px 0;
+      text-align: left;
+    }
+    td {
+      word-break: keep-all;
+      &.inactive {
+        text-decoration: line-through;
+        color: var(--color-neutral-b);
+      }
+    }
+    tr.date {
+      display: table-row;
+      background-color: var(--color-brand-a);
+      td {
+        padding: 8px;
+        border: 0;
+        font-weight: bold;
+        color: var(--color-neutral-a) !important;
+      }
+    }
+    td.fs-sms {
+      i {
+        @include insert-icon-before('\f10b', $size: 30px, $margin: 8px, $top: 0);
+        > span {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+// Popup view
+.fs-popup {
+  padding-top: 24px;
+  padding-bottom: 24px;
+  > * {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .checkbox {
+    .form-label {
+      > p:first-child {
+        margin-top: 2px;
+        font-weight: normal;
+      }
+      a {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .fs-summary {
+    > strong,
+    > span {
+      display: block;
+    }
+  }
+
+  .fs-alert {
+    visibility: hidden;
+    opacity: 0;
+    padding: 0;
+    line-height: 1;
+    position: relative;
+    @include transition(opacity 0.2s);
+    &.show {
+      padding: 16px 16px 16px 48px;
+      opacity: 1;
+      visibility: visible;
+    }
+    &.hide {
+      visibility: hidden;
+      opacity: 0;
+      padding: 0;
+    }
+    &:before {
+      font-size: 24px;
+      position: absolute;
+      top: 12px;
+      left: 16px;
+    }
+
+    &.warning {
+      background-color: #ff4136;
+      color: white;
+      &:before {
+        font-family: nova-messages-chat;
+        content: '\67';
+      }
+    }
+    &.success {
+      background-color: #3d9970;
+      color: white;
+      &:before {
+        font-family: nova-status;
+        content: '\64';
+      }
+    }
+  }
+}

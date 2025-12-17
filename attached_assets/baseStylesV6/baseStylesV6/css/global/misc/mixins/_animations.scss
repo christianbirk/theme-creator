@@ -1,0 +1,154 @@
+@mixin animate-all {
+  transition: all 0.1s ease-in;
+}
+@mixin animation-none {
+  transition: 0 none;
+}
+@mixin transition($value) {
+  -moz-transition: $value;
+  -webkit-transition: $value;
+  -o-transition: $value;
+  transition: $value;
+}
+@mixin transform($value) {
+  transform: $value;
+  -webkit-transform: $value;
+  -moz-transform: $value;
+  -ms-transform: $value;
+  -o-transform: $value;
+}
+
+@mixin animation($value, $fill-mode: 'none') {
+  -webkit-animation: $value;
+  animation: $value;
+  -webkit-animation-fill-mode: $fill-mode;
+  animation-fill-mode: $fill-mode;
+}
+
+// Mobile navigation
+@-webkit-keyframes inafter {
+  0% {
+    top: 5px;
+  }
+  50% {
+    top: 0;
+    -webkit-transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(45deg);
+  }
+}
+@-webkit-keyframes inbefore {
+  0% {
+    top: -5px;
+  }
+  50% {
+    top: 0;
+    -webkit-transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(-45deg);
+  }
+}
+
+@-webkit-keyframes outafter {
+  0% {
+    top: 0;
+    -webkit-transform: rotate(45deg);
+  }
+  25% {
+    -webkit-transform: rotate(0deg);
+  }
+  50% {
+    top: 0;
+  }
+  100% {
+    top: 5px;
+  }
+}
+@-webkit-keyframes outbefore {
+  0% {
+    top: 0;
+    -webkit-transform: rotate(-45deg);
+  }
+  25% {
+    -webkit-transform: rotate(0deg);
+  }
+  50% {
+    top: 0;
+  }
+  100% {
+    top: -5px;
+  }
+}
+
+// Add Animation
+@-webkit-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Add Animation
+@-webkit-keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+// Loading animations
+@keyframes a-spin {
+  0% {
+    transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+    -ms-transform: rotate(360deg);
+  }
+}
+@-webkit-keyframes a-spin {
+  0% {
+    transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+    -webkit-transform: rotate(360deg);
+  }
+}
+@-moz-keyframes a-spin {
+  0% {
+    transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+    -moz-transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,45 @@
+
+.hero:not(.split-box){
+
+  &.align-text-center{
+    > .text{
+      @include breakpoint(large){
+        justify-content: center;
+        margin: 0 auto;
+      }
+      > .wrap{
+        @include breakpoint(medium-xlarge){
+          margin: 0 auto;
+          text-align: center;
+        }
+      }
+    }
+  }
+
+  &.align-text-right{
+    &.bg-video,
+    &[style*="background-image"]{
+      > .text{
+        @include breakpoint(medium-xlarge){
+          justify-content: flex-end;
+          padding-right: 32px;
+        }
+      }
+    }
+  }
+}
+
+.hero.split-box.align-text-center{
+  .text .wrap{
+    @include breakpoint(medium-xlarge){
+      text-align: center;
+      margin: 0 auto;  
+    }
+  }
+}
+
+.hero.align-text-center{
+  .link-arrow{
+    display: inline-flex;
+  }
+}

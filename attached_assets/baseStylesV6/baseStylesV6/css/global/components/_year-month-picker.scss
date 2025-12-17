@@ -1,0 +1,53 @@
+// Removed SCSS variable - using direct value
+
+.filter .form > .form-group.year-month-input .dropdown-menu {
+  max-height: none;
+}
+
+.year-month-input {
+  .dropdown > .year-month-dropdown {
+    padding: 10px 5px;
+  }
+
+  .dropdown-menu {
+    overflow: visible;
+    padding: 0;
+  }
+
+  .month-list {
+    margin-top: 4px;
+    max-height: 355px;
+    overflow-y: auto;
+  }
+
+  .year-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .current-year {
+    font-size: 21px;
+  }
+
+  .year-change-btn {
+    margin: 0;
+    padding: 8px 16px;
+    min-height: 28px;
+  }
+
+  .archive-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #cccccc;
+    font-weight: var(--font-base-weight);
+
+    & > #checkbox-field {
+      margin-left: 16px;
+    }
+  }
+}

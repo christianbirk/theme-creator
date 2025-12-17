@@ -1,0 +1,8 @@
+
+@mixin loop-spans($from: 1, $to: 12){
+  @for $spans from $from through $to{
+    .span-#{$spans}{
+      @content;
+    }
+  }
+}

@@ -1,0 +1,79 @@
+.hero {
+  // All text boxes
+  &[class*='text-in-box'] {
+    border-radius: var(--universal-border-radius);
+    background-color: rgba(var(--color-neutral-f), 1);
+    .text {
+      .wrap {
+        @include breakpoint(medium-xlarge) {
+          border-radius: var(--universal-border-radius);
+        }
+        background-color: var(--color-neutral-f);
+      }
+    }
+    .media{
+      border-radius: var(--universal-border-radius);
+    }
+  }
+}
+
+.slider .hero,
+div[class*='span'] > .hero {
+  &.text-in-box.bg-video,
+  &.text-in-box[style*='background-image'] {
+    > .text {
+      width: 100%;
+      > .wrap {
+        @include breakpoint(medium-xlarge) {
+          margin-left: 32px;
+        }
+      }
+    }
+    &.align-text-center {
+      > .text > .wrap {
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+    &.align-text-left {
+      > .text > .wrap {
+        @include breakpoint(medium-xlarge) {
+          margin-left: 32px;
+        }
+      }
+    }
+    &.align-text-right {
+      > .text > .wrap {
+        width: calc(50% - #{32px});
+        margin-left: 0;
+        @include breakpoint(small) {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+// Full width
+div:not([class*='span']) {
+  > .slider .hero[class*='text-in-box'],
+  > .hero[class*='text-in-box'] {
+    .text {
+      margin-inline: auto;
+      width: min(100%, var(--grid-container-max-width));
+      > .wrap {
+        margin: 0;
+        @include breakpoint(medium) {
+          margin-left: 32px;
+          margin-right: 32px;
+        }
+      }
+    }
+    &.align-text-center {
+      > .text > .wrap {
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+  }
+}

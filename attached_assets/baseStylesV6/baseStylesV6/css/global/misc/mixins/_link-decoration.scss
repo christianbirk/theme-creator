@@ -1,0 +1,61 @@
+
+:root{
+  container-type: style;
+}
+
+@container style(--link-style: underline) {
+  .heading > a[href],
+  .download .item ul li a,
+  .media-gallery .item .text .title,
+  .sub-menu a[href] > h2,
+  .module.hero .link-wrapper[href] + .text .heading,
+  .module.hero > .link-wrapper[href] .text > .wrap .heading{
+    text-decoration: underline;
+    &:hover { 
+      text-decoration: none; 
+    }
+  }
+}
+
+@container style(--link-style: arrow) {
+  .heading > a[href],
+  .download .item ul li a,
+  .media-gallery .item .text .title,
+  .sub-menu a[href] > h2,
+  .module.hero .link-wrapper[href] + .text .heading,
+  .module.hero > .link-wrapper[href] .text > .wrap .heading{
+    text-decoration: none;
+    &::before {
+      content: "›";
+      margin-inline-end: .5rem;
+      position: relative;
+      left: 0;
+      transition: left .12s;
+    }
+    &:hover::before,
+    &:focus-visible::before {
+      left: 2px;
+    }
+  }
+}
+
+@mixin link-arrow-before($arrow-top-position, $arrow-left-position, $remove-padding-left: 'false') {
+  @include animate-all;
+  @if ($remove-padding-left == 'false') {
+    padding-left: 30px !important;
+  }
+  &:before {
+    content: '\f105';
+    @include icon-pack;
+    font-size: 13px;
+    position: absolute;
+    top: $arrow-top-position;
+    left: $arrow-left-position;
+    @include animate-all;
+  }
+  &:hover,
+  &:focus,
+  &:active {
+    text-decoration: underline;
+  }
+}

@@ -1,0 +1,79 @@
+@mixin switch($color-background, $side: 'left', $color-background-active: lighten($color-brand-a, 5%)) {
+	input[type='checkbox'] {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+		margin: 0;
+		padding: 0;
+		pointer-events: none;
+		&:disabled + label {
+			cursor: not-allowed;
+			&::before {
+				opacity: 0.5;
+			}
+		}
+		& + label {
+			@if ($side == 'left') {
+				padding-left: 40px;
+			}
+			@if ($side == 'right') {
+				padding-right: 40px;
+			}
+			position: relative;
+			cursor: pointer;
+			&::before {
+				content: '';
+				width: 31px;
+				height: 17px;
+				border-radius: 9px;
+				background-color: $color-background;
+				position: absolute;
+				@if ($side == 'left') {
+					left: 0;
+				}
+				@if ($side == 'right') {
+					right: 0;
+				}
+				top: 50%;
+				transform: translateY(-50%);
+			}
+			&::after {
+				content: '';
+				background-color: var(--color-neutral-f);
+				width: 13px;
+				height: 13px;
+				border-radius: 50%;
+				position: absolute;
+				@if ($side == 'left') {
+					left: 2px;
+				}
+				@if ($side == 'right') {
+					right: 16px;
+				}
+				top: 50%;
+				transform: translateY(-50%);
+				@if ($side == 'left') {
+					transition: left 0.2s ease-out;
+				}
+				@if ($side == 'right') {
+					transition: right 0.2s ease-out;
+				}
+				box-shadow: 0 5px 5px 0 rgba(var(--color-neutral-a), 0.1);
+			}
+		}
+		&:checked + label {
+			&::before {
+				background-color: $color-background-active;
+			}
+			&::after {
+				@if ($side == 'left') {
+					left: 16px;
+				}
+				@if ($side == 'right') {
+					right: 2px;
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,284 @@
+body.stick {
+  .table-of-contents {
+    position: fixed;
+    z-index: 998;
+    top: 0;
+    opacity: 0;
+    visibility: hidden;
+    height: 0;
+    &.nav {
+      opacity: 1;
+      visibility: visible;
+      height: 100%;
+      overflow-x: auto;
+      top: 53px;
+      transition: opacity 0.2s, top 0.15s;
+      @include breakpoint(small) {
+        top: 56px;
+        overflow-x: scroll;
+        height: 100%;
+      }
+    }
+  }
+}
+
+.table-of-contents {
+  > div {
+    margin-inline: auto;
+    width: min(100%, var(--grid-container-max-width));
+    margin: 0 auto;
+    ul > li > a:after {
+      display: inline-block;
+    }
+  }
+  &.nav {
+    left: 0;
+    background: white;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.15);
+    margin: 0;
+    > div {
+      padding: 20px 0;
+      padding: 100px 0;
+      @include breakpoint(small) {
+        padding: 30px 20px;
+      }
+    }
+    width: 100%;
+    ul {
+      @include breakpoint(small) {
+        padding-bottom: 20px;
+      }
+    }
+    > div {
+      margin-inline: auto;
+      width: min(100%, var(--grid-container-max-width));
+      margin: 0 auto;
+    }
+    &:before,
+    &:after {
+      background: white;
+      content: '\0020';
+      position: absolute;
+      top: 0;
+      width: 9999px;
+      height: 100%;
+    }
+    &:before {
+      left: -9999px;
+    }
+    &:after {
+      right: -9999px;
+    }
+    .colyfon {
+      display: none;
+    }
+  }
+
+  // All Levels
+  > div {
+    width: 100%;
+    padding: 40px 0;
+    @include breakpoint(small) {
+      width: 100%;
+      padding: 20px 0;
+    }
+    width: 83.33%;
+    padding: 100px 0;
+    @include breakpoint(small) {
+      padding: 50px 0;
+    }
+  }
+
+  h2 {
+    @include font-size(xmedium);
+    margin-bottom: 20px;
+    @include font-size(xlarge);
+    margin-bottom: 75px;
+    @include breakpoint(small) {
+      margin-bottom: 30px;
+    }
+  }
+
+  ul {
+    padding: 0;
+    counter-reset: section;
+    list-style-type: none;
+    li {
+      position: relative;
+      &:after {
+        border-radius: var(--html-publication-chapter-number-border-radius);
+      }
+      &:before {
+        text-align: center;
+        counter-increment: section;
+        content: counters(section, '.') ' ';
+        display: inline-block;
+        color: var(--color-neutral-a);
+        @include font-size(xnormal);
+      }
+      a {
+        vertical-align: top;
+        &[href] {
+          line-height: var(--line-height-normal);
+        }
+        &:before {
+          display: none;
+        }
+      }
+    }
+  }
+
+  // Level 1 specific
+  > div ul {
+    // Magazine
+    -webkit-column-count: 2;
+    -moz-column-count: 2;
+    column-count: 2;
+    -webkit-column-gap: 30px;
+    -moz-column-gap: 30px;
+    column-gap: 30px;
+    @include breakpoint(small) {
+      -webkit-column-count: 1;
+      -moz-column-count: 1;
+      column-count: 1;
+    }
+
+    > li {
+      break-inside: avoid;
+      padding-left: 60px;
+      width: 100% !important;
+      height: auto !important;
+      min-height: 45px;
+
+      &:before,
+      &:after {
+        min-width: 45px;
+        min-height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      &:before {
+        float: none;
+        font-size: 20px;
+        line-height: 0;
+        z-index: 3;
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--html-publication-chapter-number-text-color);
+        border-radius: var(--html-publication-chapter-number-border-radius);
+        @include breakpoint(medium-small) {
+          font-size: 16px;
+        }
+      }
+      &:after {
+        background: var(--html-publication-chapter-number-background-color);
+        content: '\0020';
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 2;
+      }
+    }
+    // }
+  }
+  > div ul > li {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    break-inside: avoid;
+    > a {
+      display: inline-block;
+    }
+  }
+
+  ul li {
+    list-style: none;
+    margin: 0;
+    font-weight: bold;
+    a {
+      color: var(--color-neutral-a);
+      @include font-size(xnormal);
+      font-weight: bold;
+      &:hover,
+      &:focus,
+      &:active {
+        text-decoration: underline;
+        &:after {
+          padding: 0 0 0 10px;
+        }
+      }
+    }
+    span {
+      font-weight: normal;
+      line-height: 1;
+      color: var(--color-neutral-b);
+      display: block;
+      @include font-size(xsmall);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      + a {
+        margin: 0;
+        line-height: 1;
+        &:after {
+          padding: 0 0 0 10px;
+        }
+      }
+    }
+  }
+
+  // Level 2
+  > div > ul ul {
+    margin-top: 30px;
+    -webkit-column-count: 1;
+    -moz-column-count: 1;
+    column-count: 1;
+    -webkit-column-gap: 0;
+    -moz-column-gap: 0;
+    column-gap: 0;
+    li {
+      &:before {
+        @include font-size(normal);
+      }
+      > span {
+        @include font-size(small);
+      }
+      > a {
+        @include font-size(normal);
+        &:after {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+.colyfon {
+  @include breakpoint(medium-xlarge) {
+    max-width: 100%;
+  }
+  position: relative;
+  color: var(--font-base-color);
+  > div {
+    margin-bottom: 20px;
+  }
+  &:before {
+    content: '';
+    width: 120px;
+    height: 1px;
+    background: var(--color-neutral-d);
+    display: block;
+    margin: 50px 0 40px;
+  }
+
+  span {
+    @include font-size(small);
+    display: block;
+  }
+}
+footer .colyfon {
+  max-width: none !important;
+}

@@ -1,0 +1,185 @@
+@include loop-spans(1, 6) {
+  .contact-search {
+    .search {
+      flex-wrap: wrap;
+      .form-group {
+        margin-bottom: 16px;
+      }
+    }
+  }
+}
+
+.contact-search {
+  // Filters
+  .search {
+    margin: 0 0 32px;
+    @include breakpoint(medium-xlarge) {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+    }
+    .form-group {
+      flex: 1 1 0;
+      min-width: 0;
+      width: 100%;
+      @include breakpoint(medium-xlarge) {
+        margin-right: 12px;
+      }
+      @include breakpoint(small) {
+        margin-bottom: 12px;
+      }
+      .form-label {
+        display: block;
+      }
+      select,
+      input {
+        width: 100%;
+      }
+      &.submit {
+        @include breakpoint(small) {
+          text-align: right;
+        }
+      }
+    }
+
+    .btn {
+      width: 100%;;
+      margin: 16px 0 0 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      &:before{
+        content: "\f002";	
+        font-family: var(--icon-default-font-family);
+        font-size: 16px;
+        font-weight: 600;
+        margin-right: 12px;
+      }
+      @include breakpoint(small) {
+        margin-top: 8px;
+      }
+    }
+  }
+
+  // Results
+  .results {
+    // Table in mobile
+    @include breakpoint(medium-small) {
+      border: 1px solid var(--color-neutral-d);
+      border-bottom: 0;
+      /* Force table to not be like tables anymore */
+      thead,
+      tbody,
+      th,
+      td,
+      tr {
+        display: block;
+      }
+      /* Hide table headers (but not display: none;, for accessibility) */
+      tr:first-child {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+      }
+      tr {
+        border-bottom: 1px solid var(--color-neutral-d);
+        border-top: 0 !important;
+      }
+      td {
+        /* Behave  like a "row" */
+        border: none;
+        position: relative;
+        padding-left: 50%;
+        &.contact-name {
+          font-weight: bold;
+        }
+      }
+      td:before {
+        /* Now like a table header */
+        position: absolute;
+        /* Top/left values mimic padding */
+        top: 6px;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+      }
+    }
+    td {
+      padding: 14px 15px;
+      @include breakpoint(medium-small) {
+        padding: 3px 0;
+      }
+    }
+    th {
+      text-align: left;
+      padding: 14px 15px;
+    }
+    tr {
+      border-top: 1px solid var(--color-neutral-d);
+      border-bottom: 1px solid var(--color-neutral-d);
+      @include breakpoint(medium-small) {
+        padding: 10px;
+      }
+    }
+    tr:nth-child(odd) {
+      background-color: #fafaf8;
+    }
+
+    //Contact image as background image
+    .avatar {
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+
+    //Table results with images
+    .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: var(--universal-border-radius);
+      @include breakpoint(small) {
+        margin-bottom: 8px;
+      }
+    }
+    td {
+      vertical-align: middle !important;
+    }
+  }
+}
+
+.contact-search,
+.member-directory {
+  .results {
+    margin-bottom: 32px;
+    width: 100%;
+    @include breakpoint(medium-small) {
+      margin: 0 0 32px;
+    }
+    //Column results with images
+    &.column {
+      @include breakpoint(medium-small) {
+        border: 0px;
+      }
+      .contact {
+        background-color: var(--color-neutral-e);
+        address {
+          padding: 16px;
+          @include breakpoint(small) {
+            font-size: 1rem;
+          }
+        }
+        .media {
+          + address {
+            padding: 0 16px 16px;
+          }
+          aspect-ratio: 4/3;
+          overflow: hidden;
+        }
+      }
+      h2.department {
+        margin-top: 16px;
+      }
+    }
+  }
+}

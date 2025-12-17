@@ -1,0 +1,24 @@
+.tree-nav {
+  li {
+    position: relative;
+    a {
+      @include user-select-none;
+    }
+    > ul {
+      display: none;
+    }
+
+    &.collapsed {
+      li {
+        display: none;
+      }
+    }
+
+    // Toggler
+    &.expanded {
+      > ul {
+        display: block;
+      }
+    }
+  }
+}

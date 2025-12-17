@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import * as sass from 'sass';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface CSSVariable {
   name: string;
@@ -51,49 +53,100 @@ function detectVariableType(name: string, value: string): CSSVariable['type'] {
 function categorizeVariable(name: string): string {
   const lowerName = name.toLowerCase();
 
-  if (lowerName.includes('primary') || lowerName.includes('secondary') || 
-      lowerName.includes('accent') || lowerName.includes('brand')) {
+  // Identity/Brand Colors
+  if (lowerName.includes('color-brand') || lowerName.includes('primary') ||
+      lowerName.includes('accent') || lowerName.includes('universal-accent')) {
     return 'brand-colors';
   }
 
-  if (lowerName.includes('background') || lowerName.includes('foreground') ||
-      lowerName.includes('muted') || lowerName.includes('card') ||
-      lowerName.includes('border') && !lowerName.includes('radius') && !lowerName.includes('width') ||
-      lowerName.includes('input') && !lowerName.includes('height')) {
+  // Neutral Colors
+  if (lowerName.includes('color-neutral') || lowerName.includes('main-bg') ||
+      lowerName.includes('body-bg')) {
     return 'neutral-colors';
   }
 
-  if (lowerName.includes('destructive') || lowerName.includes('success') ||
-      lowerName.includes('warning') || lowerName.includes('error') ||
-      lowerName.includes('info') || lowerName.includes('danger')) {
-    return 'status-colors';
+  // Status Colors (Light/Dark Background variants)
+  if (lowerName.includes('-bg-dark') || 
+      (lowerName.includes('button') && (lowerName.includes('background') || lowerName.includes('color'))) ||
+      lowerName.includes('icon-background') || lowerName.includes('icon-color') ||
+      lowerName.includes('label-background') || lowerName.includes('label-color') ||
+      lowerName.includes('link-color') || lowerName.includes('font-base-color') ||
+      lowerName.includes('font-heading-color') || lowerName.includes('lead-color') ||
+      lowerName.includes('pre-heading-color')) {
+    return 'color-combinations';
   }
 
-  if (lowerName.includes('font') || lowerName.includes('text') ||
-      lowerName.includes('line-height') || lowerName.includes('letter') ||
-      lowerName.includes('weight')) {
+  // Typography
+  if (lowerName.includes('font') || lowerName.includes('text-transform') ||
+      lowerName.includes('line-height') || lowerName.includes('hyphens') ||
+      lowerName.includes('lead-') || lowerName.includes('pre-heading')) {
     return 'typography';
   }
 
-  if (lowerName.includes('spacing') || lowerName.includes('gap') ||
-      lowerName.includes('margin') || lowerName.includes('padding')) {
-    return 'spacing';
+  // Layout & Spacing
+  if (lowerName.includes('grid') || lowerName.includes('spacing') ||
+      lowerName.includes('gutter') || lowerName.includes('padding') ||
+      lowerName.includes('margin') || lowerName.includes('gap') ||
+      lowerName.includes('container')) {
+    return 'layout';
   }
 
-  if (lowerName.includes('radius') || lowerName.includes('border-width')) {
+  // Borders & Radius
+  if (lowerName.includes('radius') || lowerName.includes('border-width') ||
+      lowerName.includes('boxed-border')) {
     return 'borders';
   }
 
+  // Shadows
   if (lowerName.includes('shadow')) {
     return 'shadows';
   }
 
-  if (lowerName.includes('button') || lowerName.includes('input-height') ||
-      lowerName.includes('nav') || lowerName.includes('sidebar') ||
-      lowerName.includes('card-padding') || lowerName.includes('component')) {
-    return 'components';
+  // Header, Footer, Body
+  if (lowerName.includes('header') || lowerName.includes('footer')) {
+    return 'header-footer';
   }
 
+  // Navigation
+  if (lowerName.includes('nav') || lowerName.includes('breadcrumb') ||
+      lowerName.includes('menu') || lowerName.includes('service-') ||
+      lowerName.includes('burger')) {
+    return 'navigation';
+  }
+
+  // Search
+  if (lowerName.includes('search')) {
+    return 'search';
+  }
+
+  // Buttons
+  if (lowerName.includes('button') || lowerName.includes('btn') ||
+      lowerName.includes('link-arrow')) {
+    return 'buttons';
+  }
+
+  // Icons
+  if (lowerName.includes('icon')) {
+    return 'icons';
+  }
+
+  // Labels
+  if (lowerName.includes('label')) {
+    return 'labels';
+  }
+
+  // Forms
+  if (lowerName.includes('form') || lowerName.includes('input')) {
+    return 'forms';
+  }
+
+  // Hero & Aspect Ratios
+  if (lowerName.includes('hero') || lowerName.includes('aspect-ratio') ||
+      lowerName.includes('ratio')) {
+    return 'hero-ratios';
+  }
+
+  // Transitions
   if (lowerName.includes('transition') || lowerName.includes('duration') ||
       lowerName.includes('easing') || lowerName.includes('animation')) {
     return 'transitions';
@@ -232,224 +285,26 @@ export async function registerRoutes(
   });
 
   app.get('/api/sample-scss', async (req, res) => {
-    const sampleScss = `/* Sample Base SCSS Foundation
- * This is a demonstration of CSS custom properties
- * that can be customized with the Theme Customizer
- */
-
-:root {
-  /* Brand Colors */
-  --primary: #3B82F6;
-  --primary-foreground: #FFFFFF;
-  --secondary: #64748B;
-  --secondary-foreground: #FFFFFF;
-  --accent: #8B5CF6;
-  --accent-foreground: #FFFFFF;
-
-  /* Neutral Colors */
-  --background: #FFFFFF;
-  --foreground: #0F172A;
-  --card: #FFFFFF;
-  --card-foreground: #0F172A;
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-
-  /* Status Colors */
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --success: #22C55E;
-  --success-foreground: #FFFFFF;
-  --warning: #F59E0B;
-  --warning-foreground: #FFFFFF;
-  --info: #0EA5E9;
-  --info-foreground: #FFFFFF;
-
-  /* Typography */
-  --font-family-sans: 'Inter', sans-serif;
-  --font-family-serif: 'Georgia', serif;
-  --font-family-mono: 'JetBrains Mono', monospace;
-  --font-size-base: 16px;
-  --font-size-sm: 14px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 30px;
-  --line-height-normal: 1.5;
-  --line-height-tight: 1.25;
-  --line-height-loose: 1.75;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  /* Spacing */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
-
-  /* Borders & Radius */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-full: 9999px;
-  --border-width: 1px;
-  --border-width-thick: 2px;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-  --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
-
-  /* Components */
-  --button-height-sm: 32px;
-  --button-height-md: 40px;
-  --button-height-lg: 48px;
-  --input-height: 40px;
-  --card-padding: 24px;
-  --nav-height: 64px;
-  --sidebar-width: 280px;
-
-  /* Transitions */
-  --transition-fast: 150ms;
-  --transition-normal: 200ms;
-  --transition-slow: 300ms;
-  --easing-default: ease-in-out;
-}
-
-/* Base Styles */
-body {
-  font-family: var(--font-family-sans);
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-normal);
-  color: var(--foreground);
-  background-color: var(--background);
-  margin: 0;
-  padding: 0;
-}
-
-/* Button Styles */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  border-radius: var(--radius-md);
-  border: var(--border-width) solid transparent;
-  cursor: pointer;
-  transition: all var(--transition-normal) var(--easing-default);
-}
-
-.btn-primary {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-}
-
-.btn-secondary {
-  background-color: var(--secondary);
-  color: var(--secondary-foreground);
-}
-
-.btn-outline {
-  background-color: transparent;
-  border-color: var(--border);
-  color: var(--foreground);
-}
-
-.btn-outline:hover {
-  background-color: var(--muted);
-}
-
-/* Card Styles */
-.card {
-  background-color: var(--card);
-  color: var(--card-foreground);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--card-padding);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Form Styles */
-.input {
-  width: 100%;
-  height: var(--input-height);
-  padding: 0 var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  border: var(--border-width) solid var(--input);
-  border-radius: var(--radius-md);
-  background-color: var(--background);
-  color: var(--foreground);
-  transition: border-color var(--transition-fast) var(--easing-default);
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-/* Badge Styles */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 12px;
-  font-weight: var(--font-weight-medium);
-  border-radius: var(--radius-full);
-}
-
-.badge-success {
-  background-color: var(--success);
-  color: var(--success-foreground);
-}
-
-.badge-warning {
-  background-color: var(--warning);
-  color: var(--warning-foreground);
-}
-
-.badge-destructive {
-  background-color: var(--destructive);
-  color: var(--destructive-foreground);
-}
-
-/* Navigation */
-.nav {
-  display: flex;
-  align-items: center;
-  height: var(--nav-height);
-  padding: 0 var(--spacing-lg);
-  background-color: var(--card);
-  border-bottom: var(--border-width) solid var(--border);
-}
-
-/* Sidebar */
-.sidebar {
-  width: var(--sidebar-width);
-  background-color: var(--muted);
-  border-right: var(--border-width) solid var(--border);
-  padding: var(--spacing-md);
-}
-`;
-
-    res.json({
-      success: true,
-      content: sampleScss,
-      filename: 'sample-theme.scss'
-    });
+    try {
+      const samplePath = path.join(process.cwd(), 'server/sample-scss/variables.scss');
+      
+      if (fs.existsSync(samplePath)) {
+        const content = fs.readFileSync(samplePath, 'utf-8');
+        res.json({
+          success: true,
+          content,
+          filename: '_variables.scss'
+        });
+      } else {
+        res.status(404).json({ 
+          error: 'Sample SCSS file not found',
+          path: samplePath 
+        });
+      }
+    } catch (err) {
+      console.error('Read sample SCSS error:', err);
+      res.status(500).json({ error: 'Failed to read sample SCSS file' });
+    }
   });
 
   return httpServer;

@@ -1,0 +1,40 @@
+// cookies page
+.cookies-accepted {
+  .alert {
+    margin: 1.25em 0;
+  }
+}
+
+.consent-macro,
+.cookie-overview,
+.cookie-text {
+  margin: 1.25em 0;
+}
+.consent-macro span {
+  font-weight: bold;
+}
+.cookie-overview {
+  table {
+    margin-bottom: 40px;
+
+    caption {
+      text-align: left;
+      margin-bottom: 15px;
+    }
+
+    tbody {
+      border: 1px solid var(--color-neutral-e);
+
+      td,
+      th {
+        text-align: left;
+        padding: 10px;
+      }
+
+      tr:first-child {
+        background-color: var(--color-neutral-e);
+        color: var(--color-brand-a);
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+@mixin text-width($percentage){
+	@include breakpoint(medium-xlarge){
+		.content-wrapper{
+			width: $percentage;
+		}
+		&.center-vertical .content-wrapper,
+		&.align-center .content-wrapper{
+			margin: 0 auto;
+		}
+	}
+}
+.text-width-25{
+	@include text-width(25%);
+}
+.text-width-33{
+	@include text-width(33.33%);
+}
+.text-width-50{
+	@include text-width(50%);
+}
+.text-width-66{
+	@include text-width(66.66%);
+}
+.text-width-75{
+	@include text-width(75%);
+}

@@ -1,0 +1,57 @@
+// main: ../../../GoBasic/css/theme.scss
+
+@include loop-spans(10, 12) {
+  .quote {
+    blockquote {
+      @include breakpoint(medium-xlarge) {
+        width: 100%;
+      }
+    }
+  }
+}
+
+.quote {
+  blockquote {
+    margin: 20px auto;
+    &:before {
+      display: none;
+    }
+    @include font-size(xmedium);
+    line-height: 1.25;
+    padding: 0;
+
+    footer {
+      border: 0;
+      padding: 0;
+      overflow: hidden;
+      margin-top: 20px;
+      @include breakpoint(medium-xlarge) {
+        margin-top: 40px;
+      }
+      background: transparent;
+      @include font-size(small);
+      display: flex;
+      align-items: center;
+      > .portrait {
+        height: 50px;
+        width: 50px;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        float: left;
+        margin-right: 20px;
+        border-radius: 100%;
+      }
+    }
+    cite {
+      font-style: normal;
+      font-weight: bold;
+      display: inline-block;
+    }
+    .title {
+      display: block;
+      color: var(--color-neutral-a);
+      font-weight: normal;
+    }
+  }
+}

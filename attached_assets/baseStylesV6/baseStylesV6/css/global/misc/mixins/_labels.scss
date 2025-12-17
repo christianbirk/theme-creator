@@ -1,0 +1,12 @@
+@mixin labels {
+	display: inline-block;
+	font-size: var(--label-text-size);
+	margin: var(--label-margin);
+	background: var(--label-background-color);
+	color: var(--label-text-color);
+	padding: var(--label-padding);
+	line-height: var(--label-line-height);
+	font-style: var(--label-font-style);
+	border: var(--label-border);
+	font-weight: var(--label-font-weight);
+}

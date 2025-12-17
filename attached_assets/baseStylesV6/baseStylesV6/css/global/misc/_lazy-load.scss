@@ -1,0 +1,9 @@
+
+// Fade in lazy loaded images
+img.lazy{
+  opacity: 0;
+  @include transition(opacity .2s);
+  &.loaded{
+    opacity: 1;
+  }
+}

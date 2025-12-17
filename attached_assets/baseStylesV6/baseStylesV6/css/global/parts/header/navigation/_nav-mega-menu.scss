@@ -1,0 +1,134 @@
+nav.main {
+  // Mega Menu Drop Down
+  div.cnt #main-menu .mega-dropdown {
+    position: static;
+
+    > div {
+      position: absolute;
+      height: 0;
+      visibility: hidden;
+      left: 0;
+      margin-right: -16px;
+      width: 100%;
+      background-color: var(--color-neutral-f);
+
+      &.dropped {
+        height: auto;
+        visibility: visible;
+        z-index: 999;
+
+        // If inner grid is not in full width
+        > .row > [class*='span'] {
+          .inner-grid .container {
+            width: auto;
+          }
+        }
+      }
+
+      // Make it Full Width
+      &:before {
+        position: absolute;
+        content: '\0020';
+        height: 100%;
+        z-index: 0;
+        background-color: var(--color-neutral-f);
+        left: 50%;
+        width: 100lvw;
+        transform: translateX(-50%);
+        box-shadow: var(--highlighted-box-shadow);
+      }
+
+      > div {
+        position: relative;
+        z-index: 2;
+      }
+
+      // Inner Grid
+      .inner-grid {
+        padding: 16px 0;
+      }
+
+      // In Full Width
+      .row {
+        > .inner-grid {
+          width: 100%;
+
+          &:before {
+            content: '\0020';
+            position: absolute;
+            top: 0;
+            height: 100%;
+            z-index: 0;
+            left: 50%;
+            width: 100lvw;
+            transform: translateX(-50%);
+          }
+          &.bg-color-a {
+            &:before {
+              background: var(--color-brand-a);
+            }
+          }
+          &.bg-color-b {
+            &:before {
+              background: var(--color-brand-b);
+            }
+          }
+          &.bg-color-c {
+            &:before {
+              background: var(--color-brand-c);
+            }
+          }
+          &.bg-color-d {
+            &:before {
+              background: var(--color-brand-d);
+            }
+          }
+          &.bg-color-e {
+            &:before {
+              background: var(--color-brand-e);
+            }
+          }
+          &.bg-color-f {
+            &:before {
+              background: var(--color-brand-f);
+            }
+          }
+        }
+      }
+
+      // Sub Menu
+      .sub-menu {
+        .heading {
+          font-size: var(--nav-mega-menu-heading-size);
+          line-height: 1.25;
+        }
+      }
+
+      // Link lists
+      .module.link-list {
+        .media {
+          i {
+            font-size: var(--icon-small-font-size);
+            line-height: calc(var(--icon-small-font-size) * 1.5);
+          }
+        }
+        &:not(.flex-list) .media + .text {
+          margin-top: 12px;
+        }
+
+        // Heading
+        .heading {
+          font-size: var(--nav-mega-menu-heading-size);
+          line-height: 1.25;
+        }
+
+        // Links
+        .items {
+          > .item:first-child > a {
+            border: 0 !important;
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,127 @@
+// Split box
+.hero.split-box {  
+  > .link-wrapper {
+    @include breakpoint(medium-xlarge) {
+      width: 200%;
+    }
+  }
+
+  &.align-text-left {
+    > .link-wrapper {
+      @include breakpoint(medium-xlarge) {
+        left: -100%;
+      }
+    }
+  }
+
+  .text {
+
+    
+    > .wrap {
+      width: 100%!important;
+      @include breakpoint(large){
+        padding: 10%!important;
+      }
+      @include breakpoint(medium-small){
+        padding: 7%!important;
+      }
+      > h2,
+      > h1 {
+        line-height: 1.2;
+        font-weight: 700;
+      }
+    }
+  }
+
+  // Text left & image right
+  &.align-text-left {
+    @include breakpoint(medium-xlarge) {
+      left: 50%;
+      > .text {
+        right: auto !important;
+        left: -100% !important;
+      }
+    }
+  }
+
+  // Of hero has background image and/or video
+  &.bg-video,
+  &[style*='background-image'] {
+    width: 100%;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+
+    @include breakpoint(small) {
+      display: block;
+      margin-bottom: 0;
+      padding: 0;
+      height: auto;
+    }
+
+    @include breakpoint(medium-xlarge) {
+      width: 50%;
+      height: auto;
+      padding-bottom: 0;
+      display: flex;
+      > .text {
+        right: -100%;
+        width: 100%;
+        height: auto;
+        display: flex;
+        align-items: center;
+        left: auto;
+      }
+    }
+  }
+}
+
+// Split box in Grid
+div[class*='span'] {
+  @include breakpoint(medium-xlarge){
+    
+    > .slider .hero.split-box.align-text-left,
+    > .hero.split-box.align-text-left{
+      border-radius: 0 var(--universal-border-radius) var(--universal-border-radius) 0;
+      > .text{
+        border-radius: var(--universal-border-radius) 0 0 var(--universal-border-radius);  
+      }
+      > .media {
+        border-radius: 0 var(--universal-border-radius) var(--universal-border-radius) 0;
+      }
+    }
+    
+    > .slider .hero.split-box,
+    > .hero.split-box,
+    > .slider .hero.split-box.align-text-right,
+    > .hero.split-box.align-text-right,
+    > .slider .hero.split-box.align-text-center,
+    > .hero.split-box.align-text-center {
+      border-radius: var(--universal-border-radius) 0 0 var(--universal-border-radius);
+      > .text{
+        border-radius: 0 var(--universal-border-radius) var(--universal-border-radius) 0;
+      }
+      > .media {
+        border-radius: var(--universal-border-radius) 0 0 var(--universal-border-radius);
+      }
+    }
+    
+    > .slider .hero.split-box:not([class*='bg-color']),
+    > .hero.split-box:not([class*='bg-color']) {
+      > .media {
+        border-radius: var(--universal-border-radius);
+      }
+    } 
+  }
+}
+// Split box full width
+div:not([class*='span']) > .slider .hero.split-box,
+div:not([class*='span']) > .hero.split-box {
+  border-radius: 0;
+  > .media {
+    border-radius: 0;
+  }
+  > .text {
+    border-radius: 0;
+  }
+}

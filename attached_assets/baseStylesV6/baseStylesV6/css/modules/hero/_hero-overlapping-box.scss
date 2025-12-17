@@ -1,0 +1,220 @@
+.hero.text-in-box-overlapping {
+  overflow: visible;
+  height: auto!important;
+  .text > .wrap {
+    @include breakpoint(small) {
+      width: 100%;
+    }
+  }
+}
+
+// In Grid
+div[class*='span'] {
+  // Left aligned
+  > .hero.text-in-box-overlapping.align-text-left,
+  > .hero.text-in-box-overlapping {
+    @include breakpoint(medium-xlarge) {
+      overflow: visible;
+      margin-left: 100px;
+      .text {
+        margin-left: -100px;
+        > .wrap {
+          margin: 0;
+        }
+      }
+    }
+    @include breakpoint(medium) {
+      margin-left: calc(100px / 2);
+      .text {
+        margin-left: calc(0px - 100px / 2);
+      }
+    }
+  }
+
+  // Right aligned
+  > .hero.text-in-box-overlapping.align-text-right {
+    @include breakpoint(medium-xlarge) {
+      margin-left: auto;
+      margin-right: 100px;
+      .text {
+        margin-left: calc(50% + calc(100px / 2));
+        margin-right: -100px;
+        > .wrap {
+          width: 100%;
+          margin: 0;
+        }
+      }
+    }
+    @include breakpoint(medium) {
+      margin-right: calc(100px / 2);
+      .text {
+        margin-right: calc(0px - 100px / 2);
+      }
+    }
+    @include breakpoint(small) {
+      .text {
+        margin-left: auto;
+      }
+    }
+  }
+
+  // Center aligned
+  > .hero.text-in-box-overlapping.align-text-center {
+    @include breakpoint(small) {
+      > .background-mobile {
+        margin-bottom: 0 !important; // only for preview purpose in backend
+      }
+    }
+
+    @include breakpoint(medium-xlarge) {
+      margin-left: 0;
+      margin-right: 0;
+      .text {
+        align-items: flex-end;
+        width: auto;
+        margin-left: 100px;
+        margin-right: 100px;
+        > .wrap {
+          width: 100%;
+          margin: 0;
+          position: relative;
+        }
+      }
+    }
+  }
+}
+
+// Full Width
+div:not([class*='span']) {
+  > .hero.text-in-box-overlapping {
+    // Align text
+    &[class*='align-text-'] {
+      @include breakpoint(medium-xlarge) {
+        margin-left: 0;
+        margin-right: 0;
+        .text {
+          align-items: flex-end;
+          > .wrap {
+            position: relative;
+          }
+        }
+      }
+    }
+
+    // Text align left
+    &.align-text-left {
+      @include breakpoint(large) {
+        .text {
+          > .wrap {
+            margin-left: 16px;
+            margin-right: 0;
+            width: 66.66%;
+          }
+        }
+      }
+      @include breakpoint(xlarge) {
+        .text > .wrap {
+          margin-left: 0;
+        }
+      }
+    }
+
+    // Text align right
+    &.align-text-right {
+      .text {
+        > .wrap {
+          margin-left: 0;
+          margin-right: 0;
+        }
+      }
+      @include breakpoint(medium) {
+        .text {
+          > .wrap {
+            width: calc(50% - 8px);
+          }
+        }
+      }
+      @include breakpoint(large) {
+        .text {
+          > .wrap {
+            margin-left: 0;
+            margin-right: 0;
+            width: calc(50% - 16px);
+          }
+        }
+      }
+      @include breakpoint(xlarge) {
+        .text > .wrap {
+          width: 50%;
+        }
+      }
+    }
+
+    // Center styles
+    &.align-text-center {
+      @include breakpoint(medium-xlarge) {
+        .text {
+          > .wrap {
+            width: 83.33%;
+            margin: 0 auto;
+            padding-left: 100px;
+            padding-right: 100px;
+          }
+        }
+      }
+      @include breakpoint(medium) {
+        .text > .wrap {
+          padding-left: 50px;
+          padding-right: 50px;
+        }
+      }
+    }
+  }
+}
+
+@include loop-spans(8, 12) {
+  // Left aligned
+  > .hero.text-in-box-overlapping.align-text-left,
+  > .hero.text-in-box-overlapping {
+    @include breakpoint(medium-xlarge) {
+      margin-left: 100px * 2;
+      .text {
+        margin-left: -(100px * 2);
+        > .wrap {
+          margin: 0;
+        }
+      }
+    }
+    @include breakpoint(medium) {
+      margin-left: 100px;
+      .text {
+        margin-left: (-100px);
+      }
+    }
+  }
+
+  // Right aligned
+  > .hero.text-in-box-overlapping.align-text-right {
+    @include breakpoint(medium-xlarge) {
+      margin-left: auto;
+      margin-right: 100px * 2;
+      .text {
+        margin-left: calc(50% + 100px);
+        margin-right: calc(0px - (100px * 2));
+        > .wrap {
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  // Center aligned
+  > .hero.text-in-box-overlapping.align-text-center {
+    @include breakpoint(medium-xlarge) {
+      .text {
+        margin-left: 100px;
+        margin-right: 100px;
+      }
+    }
+  }
+}

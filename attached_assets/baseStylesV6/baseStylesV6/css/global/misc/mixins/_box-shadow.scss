@@ -1,0 +1,5 @@
+@mixin box-shadow($amount){
+  box-shadow: $amount;
+  -webkit-box-shadow: $amount;
+  -moz-box-shadow: $amount;
+}

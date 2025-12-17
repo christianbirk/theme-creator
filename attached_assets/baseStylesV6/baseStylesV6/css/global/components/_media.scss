@@ -1,0 +1,43 @@
+// Media
+.media {
+  display: inline-block;
+  width: 100%;
+  > a {
+    display: inline-flex;
+    width: 100%;
+    text-decoration: none;
+    &.link-arrow {
+      padding: 0;
+      &:before {
+        content: '';
+      }
+    }
+  }
+  + .text {
+    margin-top: 24px;
+  }
+  iframe {
+    border-radius: var(--universal-border-radius);
+  }
+  img {
+    width: auto;
+    border-radius: var(--universal-border-radius);
+  }
+  picture {
+    display: block;
+    width: 100%;
+  }
+  figure {
+    figcaption {
+      font-style: italic;
+      @include font-size(small);
+      margin: 16px 0 0;
+      font-weight: normal;
+    }
+  }
+
+  // Icon
+  i {
+    @include circle-icon();
+  }
+}

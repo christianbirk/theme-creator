@@ -1,0 +1,173 @@
+@media print {
+  html,
+  body {
+    height: 100vh;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  * {
+    page-break-after: auto;
+    page-break-before: auto;
+    box-shadow: none !important;
+  }
+  #wrapper * {
+    color: black !important;
+  }
+
+  footer,
+  .content-navigation,
+  .cookie-banner,
+  .cookie-info,
+  .alert.alert-info.no-cookies,
+  .cookie-container,
+  .download,
+  .mailing-list-subscription,
+  .rss-subscription,
+  .search-filter,
+  .slider,
+  .press-media,
+  .social-sharing,
+  .site-search-toggler,
+  .sub-menu,
+  .filter,
+  .pagination,
+  .sub-tree,
+  .tool-section,
+  .tree-nav,
+  nav,
+  nav.main,
+  .site-search,
+  a.fancybox-media,
+  .editor-link,
+  .multi-section-search,
+  .foldAll {
+    display: none !important;
+  }
+
+  [class*='span'] {
+    width: 100% !important;
+  }
+
+  // Global styles
+  body {
+    width: 100%;
+    float: none;
+    overflow: hidden !important;
+    position: relative;
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: transparent !important;
+
+    .logo {
+      padding-bottom: 20px;
+      img {
+        display: block !important;
+      }
+    }
+
+    img {
+      display: none !important;
+      max-width: 50%;
+    }
+
+    // Remove all padding
+    .module,
+    .text,
+    .inner-grid,
+    .inner,
+    .wrapper {
+      padding: 0px !important;
+      background-color: transparent !important;
+    }
+    nav.mobile {
+      display: none !important;
+    }
+  }
+
+  // Hero styling
+  .hero {
+    background-image: none !important;
+    .content {
+      position: relative !important;
+      right: 0 !important;
+    }
+  }
+
+  // Links and buttons
+  a {
+    text-decoration: underline;
+    &[class*='btn'],
+    &.archive-link {
+      background-color: #fff !important;
+      color: #000 !important;
+      text-decoration: underline;
+      padding: 0px;
+      span {
+        color: #000 !important;
+      }
+    }
+  }
+  // Boxed modules
+  .boxed {
+    padding: 0;
+    border: none !important;
+
+    &.contact > address {
+      padding: 0px;
+    }
+  }
+
+  // Highlighted modules
+  .highlighted {
+    box-shadow: none !important;
+    padding: 0px !important;
+  }
+
+  // Multi section :: Accordions
+  #wrapper .multi-section.accordion .sections .section {
+    .section-header {
+      border: 0 transparent !important;
+      a {
+        font-weight: bold !important;
+        padding: 0 !important;
+        &:before {
+          display: none !important;
+        }
+      }
+    }
+    .section-header,
+    .section-body {
+      display: block !important;
+      border: 0 none !important;
+      padding: 0 !important;
+    }
+  }
+
+  // Multi section :: Tabs
+  #wrapper .multi-section.tabs {
+    .tabs-navigation {
+      display: block !important;
+      a {
+        padding: 0;
+      }
+    }
+    .tab-content {
+      .tab-body.active {
+        padding: 0 !important;
+        display: block !important;
+      }
+    }
+  }
+
+  // HTML Publications
+  .html-publication-page {
+    header {
+      display: block !important;
+      .publication-info ul .print {
+        display: none;
+      }
+    }
+  }
+}

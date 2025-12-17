@@ -1,0 +1,89 @@
+// Custom fonts
+@mixin icon-pack($icons: var(--icon-default-font-family)) {
+  font-weight: 500;
+  font-family: $icons;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  @include font-smoothing;
+}
+
+@mixin insert-icon-after(
+  $icon,
+  $size: var(--icon-size),
+  $margin: var(--icon-margin),
+  $top: var(--icon-top-adjust)
+) {
+  &:after {
+    content: $icon;
+    @include icon-pack;
+    font-size: $size;
+    margin-left: $margin;
+    position: relative;
+    top: $top;
+  }
+}
+
+@mixin insert-icon-before(
+  $icon,
+  $size: var(--icon-size),
+  $margin: var(--icon-margin),
+  $top: var(--icon-top-adjust)
+) {
+  &:before {
+    position: relative;
+    content: $icon;
+    @include icon-pack;
+    font-size: $size;
+    margin-right: $margin;
+    top: $top;
+  }
+}
+
+@mixin circle-icon() {
+  display: flex;
+  font-style: normal !important;
+  font-family: var(--icon-default-font-family);
+  font-size: var(--icon-default-font-size);
+  justify-content: var(--icon-alignment);
+
+  &:before {
+    display: inline-block;
+    display: flex;
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: var(--icon-background-border-radius);
+    color: var(--icon-color);
+    background: var(--icon-background-color);
+    width: var(--icon-background-size);
+    height: var(--icon-background-size);
+    font-weight: var(--icon-font-weight);
+  }
+}
+
+@mixin small-icon() {
+  font-size: var(--icon-small-font-size);
+  line-height: calc(var(--icon-small-font-size) * 1.5);
+  justify-content: left;
+  &:before {
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    align-content: left;
+    align-items: left;
+    justify-content: left;
+    text-align: left;
+  }
+}
+
+
+@function url-encode-color($color) {
+  @return "rgb(#{red($color)},#{green($color)},#{blue($color)})";
+}
+@mixin set-picker-arrow-svg($color: #252525, $size: 11px) {
+  background-size: $size;
+  background-repeat: no-repeat;
+  background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' standalone='no'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 20010904//EN' 'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'%3E%3Csvg version='1.0' xmlns='http://www.w3.org/2000/svg' width='513.000000pt' height='305.000000pt' viewBox='0 0 513.000000 305.000000' preserveAspectRatio='xMidYMid meet'%3E%3Cg transform='translate(0.000000,305.000000) scale(0.100000,-0.100000)' fill='#{url-encode-color($color)}' stroke='none'%3E%3Cpath d='M222 3026 c-193 -63 -272 -286 -159 -451 27 -40 2248 -2436 2307%0A-2489 62 -56 122 -80 200 -80 95 1 150 28 242 122 41 42 567 608 1168 1257%0A860 928 1098 1191 1117 1232 33 71 39 137 19 204 -31 109 -104 177 -219 205%0A-62 16 -72 16 -133 1 -40 -10 -84 -30 -110 -49 -25 -18 -502 -526 -1061 -1128%0A-559 -602 -1020 -1095 -1024 -1095 -4 0 -471 500 -1038 1110 -797 858 -1043%0A1117 -1082 1139 -61 35 -159 44 -227 22z'/%3E%3C/g%3E%3C/svg%3E");
+}

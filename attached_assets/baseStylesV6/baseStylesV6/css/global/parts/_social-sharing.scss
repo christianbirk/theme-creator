@@ -1,0 +1,112 @@
+.social-sharing {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  @include breakpoint(small){
+    justify-content: right;
+  }
+  
+  > span {
+    @include font-size(small);
+    display: inline-block;
+    white-space: nowrap;
+    margin: 0;
+  }
+  ul {
+    display: inline-flex;
+    position: relative;
+  }
+  ul li {
+    display: inline-block;
+    a {
+      text-decoration: none;
+      margin-left: 10px;
+      text-align: center;
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      background: var(--color-neutral-e);
+      border-radius: 100%;
+      color: var(--color-brand-a);
+      display: flex;
+      align-items: center;
+      align-content: center;
+
+      &:hover,
+      &:focus,
+      &:active {
+        background: var(--color-brand-a);
+        color: var(--color-neutral-f);
+      }
+
+      > span {
+        display: none;
+      }
+      &:before {
+        font-size: 15px;
+        margin: 0 auto;
+        position: relative;
+        @include icon-pack();
+      }
+
+      &.facebook,
+      &.linkedin,
+      &.linked-in,
+      &.twitter,
+      &.google-plus,
+      &.pinterest,
+      &.bluesky,
+      &.youtube {
+        &:before {
+          @include icon-pack('Font Awesome 6 Brands');
+        }
+      }
+
+      &.facebook:before {
+        content: '\f09a';
+        font-size: 1.1rem;
+      }
+      &.linkedin:before {
+        content: '\f0e1';
+      }
+      &.bluesky:before {
+        content: '\e671';
+      }
+      &.linked-in:before {
+        content: '\f0e1';
+      }
+      &.twitter:before {
+        content: '\e61b';
+      }
+      &.google-plus:before {
+        content: '\f0d5';
+      }
+      &.pinterest:before {
+        content: '\f231';
+      }
+      &.email:before {
+        content: '\f0e0';
+      }
+      &.mail:before {
+        content: '\f0e0';
+      }
+      &.rss:before {
+        content: '\f09e';
+      }
+      &.more:before {
+        content: '\f067';
+      }
+      &.print:before {
+        content: '\f02f';
+      }
+      &.mail:before {
+        content: '\f0e0';
+      }
+      &.youtube:before {
+        content: '\f16a';
+      }
+    }
+  }
+}

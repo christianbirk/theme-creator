@@ -1,0 +1,16 @@
+$weights: 100, 200, 300, 400, 500, 600, 700, 800, 900;
+
+@each $weight in $weights {
+	@font-face {
+		font-family: 'Playfair Display';
+		font-style: normal;
+		font-weight: $weight;
+		src: url('/Assets/GoBasic/v1/fonts/PlayfairDisplay/PlayfairDisplay-VariableFont_wght.woff2') format('woff2');
+	}
+	@font-face {
+		font-family: 'Playfair Display';
+		font-style: Italic;
+		font-weight: $weight;
+		src: url('/Assets/GoBasic/v1/fonts/PlayfairDisplay/PlayfairDisplay-VariableFont_wght-italic.woff2') format('woff2');
+	}
+}

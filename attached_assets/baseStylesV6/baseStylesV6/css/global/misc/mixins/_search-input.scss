@@ -1,0 +1,124 @@
+@mixin search-input($wrap-display: flex) {
+	display: $wrap-display;
+	.multi-section-search, // Accordion Module
+	.search{
+		margin: 0;
+		width: 100%;
+		position: relative;
+		input{
+			width: 100%;
+			padding-left: 48px;
+		}
+		.search-icon, // Accordion Module
+		.btn{
+			background: transparent;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: auto;
+			height: var(--form-field-height);
+			width: auto;
+			padding-left: 16px;
+			padding-right: 12px;
+			> span{
+				display: none;
+			}
+			&:before{
+				content: "\f002";	
+				color: var(--color-brand-a);
+				font-family: var(--icon-default-font-family);
+				font-size: 20px;
+				font-weight: var(--icon-font-weight);
+			}
+			// Loader
+			&.loader {
+				&:before {
+					content: '';
+					height: 20px;
+					width: 20px;
+					border-radius: 50%;
+					border: 3px solid var(--color-brand-a);
+					border-left: 3px solid var(--color-neutral-d);
+					animation-name: spin;
+					animation-duration: 1000ms;
+					animation-iteration-count: infinite;
+					animation-timing-function: linear;
+					z-index: 2;
+				}
+			}
+		}
+		.search-autocomplete {
+			position: absolute;
+			top: 12.5px;
+			left: 42px;
+			pointer-events: none;
+			.autocomplete-input-value {
+				visibility: hidden;
+			}
+			.autocomplete-snippet-value {
+				display: inline-block;
+				transform: translateX(-5px);
+				color: var(--color-neutral-c);
+			}
+		}
+	}
+	.close-search-button{
+		margin: 0;
+		> i{
+			display: flex;
+			align-items: anchor-center;
+			font-weight: var(--icon-font-weight);
+		}
+	}
+	
+	// Search Extra Buttons
+	.search-extra-buttons{
+		display: flex;
+		height: 100%;
+		align-items: center;
+		position: absolute;
+		right: 0;
+		top: 0;
+		.search-input-button{
+			height: auto;
+		}
+		.clear-search-button{
+			display: none;
+			@include font-size(small);
+			color: var(--color-brand-a);
+			border-right: 1px solid var(--color-neutral-d);
+			padding-right: 16px;
+			&:hover,
+			&:focus,
+			&:active{
+				text-decoration: underline;
+			}
+		}
+		&.with-separator{
+			display: flex;	
+			.close-search-button{
+				> i{
+					color: var(--color-brand-a);
+				}
+			}	
+		}
+		.close-search-button{
+			padding: 0 16px;
+			> i{
+				font-size: 20px;
+			}
+		}
+	}
+}
+
+@keyframes spin {
+	from {
+		transform: rotate 0deg;
+	}
+	to {
+		transform: rotate 360deg;
+	}
+}

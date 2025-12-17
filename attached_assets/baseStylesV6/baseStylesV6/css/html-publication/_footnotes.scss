@@ -1,0 +1,91 @@
+// main: ../../../GoBasic/css/theme.scss
+
+.footnotes {
+  ol > li {
+    &:hover {
+      cursor: pointer;
+      text-decoration: underline;
+    }
+  }
+
+  position: fixed;
+  z-index: 999;
+  top: 0;
+  right: 0;
+  padding: 15px 0;
+  background: white;
+  height: 100%;
+  overflow: auto;
+
+  .head {
+    h2 {
+      margin-bottom: 15px;
+      margin-left: 5px;
+      @include font-size(xnormal);
+      &:before {
+        content: '\f02e';
+        @include icon-pack;
+        margin-right: 8px;
+        color: var(--color-brand-a);
+        font-size: 15px;
+        position: relative;
+        top: 0;
+      }
+    }
+  }
+
+  .cnt {
+    padding-left: 20px;
+    padding-right: 20px;
+    width: auto;
+    ol {
+      margin-left: 0;
+      padding-left: 15px;
+    }
+    ol li {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(var(--color-brand-a), 0.15);
+      @include font-size(small);
+      &:first-child {
+        border-top: 1px solid rgba(var(--color-brand-a), 0.15);
+      }
+      &.active {
+        padding: 10px;
+        background: rgba(var(--color-brand-a), 0.1);
+      }
+      > a {
+        margin: 10px 0;
+        display: block;
+        text-align: left;
+        color: var(--color-brand-a);
+      }
+    }
+  }
+
+  // Magazine
+  box-shadow: 0 0 10px 5px rgba(var(--color-neutral-a), 0.1);
+  width: 420px;
+  right: -420px;
+  &.expand,
+  &.visible {
+    right: 0;
+    transition: right 0.2s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  }
+}
+
+.footnote {
+  color: var(--color-brand-a);
+  text-decoration: underline;
+  font-size: 75%;
+  padding: 0 5px;
+  display: inline-block;
+  position: relative;
+  top: -5px;
+  outline: none;
+  cursor: pointer;
+  &.active {
+    outline: solid 2px;
+    outline-offset: 5px;
+    transition: outline-offset 0.2s;
+  }
+}

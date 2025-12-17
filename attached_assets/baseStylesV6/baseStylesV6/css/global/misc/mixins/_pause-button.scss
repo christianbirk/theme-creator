@@ -1,0 +1,48 @@
+
+// Play Pause Button
+$pause-height: 7px;
+$pause-width: 2px;
+
+$play-height: 4px;
+$play-width: 6px;
+
+$button-spacing-left: 6.5px;
+$button-spacing-bottom: $button-spacing-left;
+
+@mixin pause-button($pause-button-height: $pause-height, $pause-button-width: $pause-width, $button-spacing-left: $button-spacing-left, $button-spacing-bottom: $button-spacing-left){
+  cursor: pointer;
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 3;
+  &:after,
+  &:before{
+    content:'';
+    position: absolute;
+    height: $pause-button-height;
+    width: $pause-button-width;
+    background: white;
+    z-index: 5;
+    bottom: $button-spacing-bottom;
+  }
+  &:before{
+    left: $button-spacing-left;
+  }
+  &:after{
+    left: $button-spacing-left + ($pause-button-width * 2);
+  }
+}
+@mixin play-button($play-button-height: $play-height, $play-button-width: $play-width, $button-spacing-left: $button-spacing-left, $button-spacing-bottom: $button-spacing-left){
+  &:before{
+    display: none;
+  }
+  &:after{
+    left: $button-spacing-left;
+    width: 0;
+    height: 0;
+    border-top: $play-height solid transparent;
+    border-bottom: $play-height solid transparent;
+    border-left: $play-width solid white;
+    background: transparent !important;
+  }
+}

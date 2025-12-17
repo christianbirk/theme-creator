@@ -1,0 +1,37 @@
+// main: ../../../GoBasic/css/theme.scss
+
+.html-publication .prelude {
+  // Introduction
+  .introduction {
+    margin-top: calc((var(--html-publication-header-height, 0)) * -1);
+    background: var(--html-publication-prelude-background-color);
+    color: set-text-color(var(--html-publication-prelude-background-color));
+    padding-top: 40px;
+    padding-bottom: 40px;
+    @include breakpoint(medium-xlarge) {
+      padding-top: 80px;
+      padding-bottom: 80px;
+    }
+    padding-top: 100px;
+    padding-bottom: 80px;
+    @include breakpoint(medium-xlarge) {
+      padding-top: 200px;
+      padding-bottom: 120px;
+    }
+    .teaser {
+      font-size: var(--html-publication-prelude-teaser-font-size);
+    }
+    .teaser {
+      color: set-text-color(var(--html-publication-prelude-background-color));
+    }
+    .headline {
+      color: set-heading-color(var(--html-publication-prelude-background-color));
+    }
+    > .cnt > h1 {
+      font-size: var(--html-publication-prelude-heading-font-size);
+    }
+  }
+  video {
+    vertical-align: top;
+  }
+}

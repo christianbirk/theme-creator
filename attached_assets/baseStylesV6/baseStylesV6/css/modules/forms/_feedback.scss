@@ -1,0 +1,62 @@
+.feedback {
+  // Thumbs up down
+  > a {
+    @include icon-pack;
+    font-weight: normal;
+    height: 50px;
+    width: 50px;
+    border-radius: 100%;
+    background: var(--color-neutral-e);
+    text-align: center;
+    display: inline-block;
+    font-size: 20px;
+    &:last-of-type {
+      margin-left: 16px;
+    }
+    &:hover,
+    &:focus,
+    &:active,
+    &.active {
+      background: var(--color-brand-a);
+      color: var(--color-neutral-f);
+      &:before {
+        color: var(--color-neutral-f);
+      }
+    }
+    &:before {
+      display: inline-block;
+      position: relative;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-brand-a);
+    }
+    > span {
+      color: var(--color-brand-a) !important;
+      display: none;
+    }
+  }
+  > .positive {
+    &:before {
+      content: '\f087';
+    }
+  }
+  > .negative {
+    &:before {
+      content: '\f088';
+    }
+  }
+
+  // Toggle form
+  > .form {
+    > *:not([data-type='FormFeedbackInput']):not(h2) {
+      display: none;
+    }
+  }
+  &.add-comment {
+    > .form {
+      > *:not([data-type='FormFeedbackInput']):not(h2) {
+        display: block;
+      }
+    }
+  }
+}
