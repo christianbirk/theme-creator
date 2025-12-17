@@ -249,9 +249,37 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const cssVariablesStyle = useMemo(() => {
-    return variables.map(v => `${v.name}: ${v.value};`).join('\n      ');
+  // Build a map for resolving var() references
+  const variableMap = useMemo(() => {
+    const map = new Map<string, string>();
+    variables.forEach(v => map.set(v.name, v.value));
+    return map;
   }, [variables]);
+
+  // Resolve var() references to their computed values
+  const resolveVarReferences = useCallback((value: string, depth = 0): string => {
+    if (depth > 10) return value; // Prevent infinite recursion
+    
+    const varRegex = /var\(\s*(--[a-zA-Z0-9-]+)\s*(?:,\s*([^)]+))?\)/g;
+    
+    return value.replace(varRegex, (match, varName, fallback) => {
+      const resolvedValue = variableMap.get(varName);
+      if (resolvedValue) {
+        // Recursively resolve if the value contains more var() references
+        return resolveVarReferences(resolvedValue, depth + 1);
+      }
+      // Use fallback if provided, otherwise keep original
+      return fallback ? resolveVarReferences(fallback.trim(), depth + 1) : match;
+    });
+  }, [variableMap]);
+
+  // Generate CSS with all var() references resolved to computed values
+  const cssVariablesStyle = useMemo(() => {
+    return variables.map(v => {
+      const resolvedValue = resolveVarReferences(v.value);
+      return `${v.name}: ${resolvedValue};`;
+    }).join('\n      ');
+  }, [variables, resolveVarReferences]);
 
   const handleFetchUrl = useCallback(async () => {
     if (!urlInput.trim()) {
