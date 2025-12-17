@@ -198,7 +198,7 @@ export function ControlPanel({
             defaultValue={variable.defaultValue}
             onChange={(value) => onVariableChange(variable.name, value)}
             label={displayName}
-            fontOptions={baseFontFamilyOptions}
+            fontOptions={isFontFamilyReference(variable) ? baseFontFamilyOptions : []}
             isBaseFontFamily={isBaseFontFamily(variable)}
           />
         );
