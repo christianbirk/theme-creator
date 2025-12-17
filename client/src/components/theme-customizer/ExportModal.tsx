@@ -12,10 +12,9 @@ interface ExportModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   variables: CSSVariable[];
-  baseCSS?: string;
 }
 
-export function ExportModal({ open, onOpenChange, variables, baseCSS = '' }: ExportModalProps) {
+export function ExportModal({ open, onOpenChange, variables }: ExportModalProps) {
   const [filename, setFilename] = useState('theme');
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
@@ -33,14 +32,20 @@ export function ExportModal({ open, onOpenChange, variables, baseCSS = '' }: Exp
  * Modified variables: ${modifiedVars.length}/${variables.length}
  */
 
+// Importing Fundamentals Variables
+@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';
+
 :root {
 ${cssVarsBlock}
 }
 
-${baseCSS}`;
+// Importing Fundamentals Styles
+@import '../../../../../GoBasic/baseStylesV6/css/imports.scss';
+@import '../../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';
+`;
 
     return css;
-  }, [variables, filename, baseCSS]);
+  }, [variables, filename]);
 
   const handleCopy = async () => {
     try {
