@@ -303,6 +303,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   const iframeSrcDoc = useMemo(() => {
     const baseHtml = customHtml || defaultPreviewHtml;
     
+    // Generate CSS with high specificity to override external stylesheets
     const customCss = `
       :root {
         ${cssVariablesStyle}
@@ -317,7 +318,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       );
     }
     
-    // If no placeholder, inject before </head>
+    // If no placeholder, inject before </head> (after all stylesheets)
     if (baseHtml.includes('</head>')) {
       return baseHtml.replace(
         '</head>',
@@ -325,8 +326,16 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       );
     }
     
-    // Fallback: prepend the style
-    return `<style id="custom-variables">${customCss}</style>${baseHtml}`;
+    // If no head tag, inject before </body>
+    if (baseHtml.includes('</body>')) {
+      return baseHtml.replace(
+        '</body>',
+        `<style id="custom-variables">${customCss}</style></body>`
+      );
+    }
+    
+    // Fallback: append the style
+    return `${baseHtml}<style id="custom-variables">${customCss}</style>`;
   }, [customHtml, cssVariablesStyle]);
 
   return (
