@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Monitor, Tablet, Smartphone } from 'lucide-react';
+import { Monitor, Tablet, Smartphone, Loader2, X, ExternalLink } from 'lucide-react';
 import { CSSVariable } from './types';
+import { useToast } from '@/hooks/use-toast';
 
 interface PreviewPaneProps {
   variables: CSSVariable[];
@@ -18,10 +20,10 @@ const deviceWidths: Record<DeviceMode, string> = {
   mobile: '375px',
 };
 
-// HTML content from https://dominik.gopublic.dk/webpage
-const goPublicPreviewHtml = `
+// Default preview HTML with GoPublic theme structure
+const defaultPreviewHtml = `
 <!DOCTYPE html>
-<html lang="da">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -124,7 +126,7 @@ const goPublicPreviewHtml = `
                         <h5>Heading 5</h5>
                         <h6>Heading 6</h6>
                         <p class="lead" style="margin-top: 1rem;">This is a lead paragraph with larger text for introductions.</p>
-                        <p style="margin-top: 1rem;">This is regular body text demonstrating the base font settings. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                        <p style="margin-top: 1rem;">This is regular body text demonstrating the base font settings. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
                         <p class="pre-heading" style="margin-top: 1rem;">Pre-heading text</p>
                     </div>
                 </section>
@@ -198,14 +200,14 @@ const goPublicPreviewHtml = `
                     <div class="module-heading">
                         <h2 style="color: var(--font-heading-color-bg-dark);">Dark Background</h2>
                     </div>
-                    <p style="color: var(--font-base-color-bg-dark); margin-top: 1rem;">This section demonstrates text on a dark background using the dark background color variables.</p>
+                    <p style="color: var(--font-base-color-bg-dark); margin-top: 1rem;">This section demonstrates text on a dark background.</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
                         <button class="btn" style="background: var(--button-background-color-bg-dark); color: var(--button-font-color-bg-dark);">Button on Dark</button>
                         <button class="btn btn-outline" style="border-color: var(--button-outline-border-color-bg-dark); color: var(--button-outline-font-color-bg-dark);">Outline on Dark</button>
                     </div>
                 </section>
 
-                <!-- Cards/Boxes Section -->
+                <!-- Cards Section -->
                 <section class="module" style="padding: 2rem; margin: 1rem;">
                     <div class="module-heading alternate">
                         <h2>Cards</h2>
@@ -241,73 +243,188 @@ const goPublicPreviewHtml = `
 export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [zoom, setZoom] = useState<ZoomLevel>(100);
+  const [urlInput, setUrlInput] = useState('');
+  const [customHtml, setCustomHtml] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const cssVariablesStyle = useMemo(() => {
     return variables.map(v => `${v.name}: ${v.value};`).join('\n      ');
   }, [variables]);
 
+  const handleFetchUrl = useCallback(async () => {
+    if (!urlInput.trim()) {
+      toast({
+        title: 'URL required',
+        description: 'Please enter a URL to load',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/fetch-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlInput.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch URL');
+      }
+
+      setCustomHtml(data.html);
+      setLoadedUrl(data.url);
+      toast({
+        title: 'Preview loaded',
+        description: `Loaded HTML from ${data.url}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Failed to load URL',
+        description: err.message || 'Could not fetch the website',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [urlInput, toast]);
+
+  const handleClearCustom = useCallback(() => {
+    setCustomHtml(null);
+    setLoadedUrl(null);
+    setUrlInput('');
+  }, []);
+
   const iframeSrcDoc = useMemo(() => {
-    // Insert custom CSS variables into the HTML
+    const baseHtml = customHtml || defaultPreviewHtml;
+    
     const customCss = `
       :root {
         ${cssVariablesStyle}
       }
     `;
     
-    // Replace the placeholder style tag with actual variables
-    return goPublicPreviewHtml.replace(
-      '<style id="custom-variables"></style>',
-      `<style id="custom-variables">${customCss}</style>`
-    );
-  }, [cssVariablesStyle]);
+    // Inject CSS variables into the HTML
+    if (baseHtml.includes('<style id="custom-variables">')) {
+      return baseHtml.replace(
+        '<style id="custom-variables"></style>',
+        `<style id="custom-variables">${customCss}</style>`
+      );
+    }
+    
+    // If no placeholder, inject before </head>
+    if (baseHtml.includes('</head>')) {
+      return baseHtml.replace(
+        '</head>',
+        `<style id="custom-variables">${customCss}</style></head>`
+      );
+    }
+    
+    // Fallback: prepend the style
+    return `<style id="custom-variables">${customCss}</style>${baseHtml}`;
+  }, [customHtml, cssVariablesStyle]);
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between gap-4 p-3 border-b bg-muted/30">
-        <span className="text-sm font-medium">Preview</span>
-        
-        <div className="flex items-center gap-2">
-          <div className="flex items-center border rounded-md">
-            <Button
-              variant={device === 'desktop' ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => setDevice('desktop')}
-              className="h-8 w-8 rounded-r-none"
-              data-testid="preview-device-desktop"
-            >
-              <Monitor className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={device === 'tablet' ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => setDevice('tablet')}
-              className="h-8 w-8 rounded-none border-x"
-              data-testid="preview-device-tablet"
-            >
-              <Tablet className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={device === 'mobile' ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => setDevice('mobile')}
-              className="h-8 w-8 rounded-l-none"
-              data-testid="preview-device-mobile"
-            >
-              <Smartphone className="h-4 w-4" />
-            </Button>
-          </div>
+      <div className="flex flex-col gap-2 p-3 border-b bg-muted/30">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-sm font-medium">Preview</span>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center border rounded-md">
+              <Button
+                variant={device === 'desktop' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => setDevice('desktop')}
+                className="h-8 w-8 rounded-r-none"
+                data-testid="preview-device-desktop"
+              >
+                <Monitor className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={device === 'tablet' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => setDevice('tablet')}
+                className="h-8 w-8 rounded-none border-x"
+                data-testid="preview-device-tablet"
+              >
+                <Tablet className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={device === 'mobile' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => setDevice('mobile')}
+                className="h-8 w-8 rounded-l-none"
+                data-testid="preview-device-mobile"
+              >
+                <Smartphone className="h-4 w-4" />
+              </Button>
+            </div>
 
-          <Select value={zoom.toString()} onValueChange={(v) => setZoom(parseInt(v) as ZoomLevel)}>
-            <SelectTrigger className="w-20 h-8" data-testid="preview-zoom-select">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="50">50%</SelectItem>
-              <SelectItem value="75">75%</SelectItem>
-              <SelectItem value="100">100%</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={zoom.toString()} onValueChange={(v) => setZoom(parseInt(v) as ZoomLevel)}>
+              <SelectTrigger className="w-20 h-8" data-testid="preview-zoom-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="50">50%</SelectItem>
+                <SelectItem value="75">75%</SelectItem>
+                <SelectItem value="100">100%</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex-1 relative">
+            <Input
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              placeholder="Enter URL to load preview (e.g., https://example.com)"
+              className="pr-8 h-8 text-sm"
+              onKeyDown={(e) => e.key === 'Enter' && handleFetchUrl()}
+              data-testid="input-preview-url"
+            />
+            {loadedUrl && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClearCustom}
+                className="absolute right-0 top-0 h-8 w-8"
+                data-testid="button-clear-url"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+          <Button
+            onClick={handleFetchUrl}
+            disabled={isLoading}
+            size="sm"
+            className="h-8"
+            data-testid="button-load-url"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                Load
+              </>
+            )}
+          </Button>
+        </div>
+
+        {loadedUrl && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Loaded:</span>
+            <span className="truncate font-mono">{loadedUrl}</span>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto bg-muted/50 p-4">
@@ -325,6 +442,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
             srcDoc={iframeSrcDoc}
             className="w-full h-[800px] border-0"
             title="Theme Preview"
+            sandbox="allow-same-origin"
             data-testid="preview-iframe"
           />
         </div>

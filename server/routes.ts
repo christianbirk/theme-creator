@@ -331,6 +331,78 @@ export async function registerRoutes(
     }
   });
 
+  app.post('/api/fetch-preview', async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: 'URL is required' });
+      }
+
+      // Validate URL
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(url);
+      } catch {
+        return res.status(400).json({ error: 'Invalid URL format' });
+      }
+
+      // Only allow http/https
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return res.status(400).json({ error: 'Only HTTP and HTTPS URLs are allowed' });
+      }
+
+      // Fetch the HTML
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Theme-Customizer-Preview/1.0',
+            'Accept': 'text/html,application/xhtml+xml,*/*',
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          return res.status(response.status).json({ 
+            error: `Failed to fetch: ${response.statusText}` 
+          });
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
+          return res.status(400).json({ error: 'URL does not return HTML content' });
+        }
+
+        const html = await response.text();
+
+        // Limit response size (5MB)
+        if (html.length > 5 * 1024 * 1024) {
+          return res.status(400).json({ error: 'Response too large (max 5MB)' });
+        }
+
+        res.json({
+          success: true,
+          html,
+          url: parsedUrl.origin + parsedUrl.pathname,
+        });
+      } catch (fetchErr: any) {
+        clearTimeout(timeoutId);
+        if (fetchErr.name === 'AbortError') {
+          return res.status(408).json({ error: 'Request timeout' });
+        }
+        throw fetchErr;
+      }
+    } catch (err) {
+      console.error('Fetch preview error:', err);
+      res.status(500).json({ error: 'Failed to fetch URL' });
+    }
+  });
+
   app.get('/api/sample-scss', async (req, res) => {
     try {
       const samplePath = path.join(process.cwd(), 'server/sample-scss/variables.scss');
