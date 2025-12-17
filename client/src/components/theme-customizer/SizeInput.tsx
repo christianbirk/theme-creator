@@ -1,7 +1,6 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RotateCcw } from 'lucide-react';
 
 interface SizeInputProps {
@@ -12,32 +11,8 @@ interface SizeInputProps {
   description?: string;
 }
 
-const unitOptions = ['px', 'rem', 'em', '%', 'vh', 'vw'];
-
-function parseValue(value: string): { number: number; unit: string } {
-  const match = value.match(/^([\d.]+)(.*)$/);
-  if (match) {
-    return { number: parseFloat(match[1]) || 0, unit: match[2] || 'px' };
-  }
-  return { number: 0, unit: 'px' };
-}
-
 export function SizeInput({ value, defaultValue, onChange, label, description }: SizeInputProps) {
   const isModified = value !== defaultValue;
-  const [parsed, setParsed] = useState(() => parseValue(value));
-
-  useEffect(() => {
-    setParsed(parseValue(value));
-  }, [value]);
-
-  const handleNumberChange = useCallback((newNumber: number) => {
-    const clamped = Math.max(0, newNumber);
-    onChange(`${clamped}${parsed.unit}`);
-  }, [parsed.unit, onChange]);
-
-  const handleUnitChange = useCallback((newUnit: string) => {
-    onChange(`${parsed.number}${newUnit}`);
-  }, [parsed.number, onChange]);
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -48,7 +23,7 @@ export function SizeInput({ value, defaultValue, onChange, label, description }:
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm truncate" data-testid={`size-label-${label}`}>
+          <span className="text-sm truncate capitalize" data-testid={`size-label-${label}`}>
             {label}
           </span>
           {isModified && (
@@ -60,28 +35,13 @@ export function SizeInput({ value, defaultValue, onChange, label, description }:
         )}
       </div>
 
-      <div className="flex items-center gap-1">
-        <Input
-          type="number"
-          value={parsed.number}
-          onChange={(e) => handleNumberChange(parseFloat(e.target.value) || 0)}
-          className="w-24 h-8 text-center font-mono text-sm"
-          data-testid={`size-input-${label}`}
-        />
-
-        <Select value={parsed.unit} onValueChange={handleUnitChange}>
-          <SelectTrigger className="w-16 h-8" data-testid={`size-unit-${label}`}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {unitOptions.map((unit) => (
-              <SelectItem key={unit} value={unit}>
-                {unit}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-60 h-8 font-mono text-sm"
+        data-testid={`size-input-${label}`}
+      />
 
       <Button
         variant="ghost"

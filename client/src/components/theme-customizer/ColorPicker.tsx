@@ -21,15 +21,9 @@ export function ColorPicker({ value, defaultValue, onChange, label, description 
 
   return (
     <div className="flex items-center gap-3 py-2">
-      <div
-        className="w-9 h-9 rounded-md border-2 border-input flex-shrink-0"
-        style={{ backgroundColor: value }}
-        data-testid={`color-swatch-${label}`}
-      />
-
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm truncate" data-testid={`color-label-${label}`}>
+          <span className="text-sm truncate capitalize" data-testid={`color-label-${label}`}>
             {label}
           </span>
           {isModified && (
@@ -41,10 +35,16 @@ export function ColorPicker({ value, defaultValue, onChange, label, description 
         )}
       </div>
 
+      <div
+        className="w-8 h-8 rounded-md border-2 border-input flex-shrink-0"
+        style={{ backgroundColor: value }}
+        data-testid={`color-swatch-${label}`}
+      />
+
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-40 h-8 font-mono text-xs"
+        className="w-60 h-8 font-mono text-xs"
         placeholder="#000000"
         data-testid={`color-input-${label}`}
       />

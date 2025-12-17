@@ -24,7 +24,7 @@ export function FontPicker({ value, defaultValue, onChange, label, description }
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm truncate" data-testid={`font-label-${label}`}>
+          <span className="text-sm truncate capitalize" data-testid={`font-label-${label}`}>
             {label}
           </span>
           {isModified && (
@@ -37,7 +37,7 @@ export function FontPicker({ value, defaultValue, onChange, label, description }
       </div>
 
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-40 h-8" data-testid={`font-select-${label}`}>
+        <SelectTrigger className="w-60 h-8" data-testid={`font-select-${label}`}>
           <SelectValue placeholder="Select font" />
         </SelectTrigger>
         <SelectContent>

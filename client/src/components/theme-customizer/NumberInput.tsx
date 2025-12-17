@@ -29,7 +29,7 @@ export function NumberInput({
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm truncate" data-testid={`number-label-${label}`}>
+          <span className="text-sm truncate capitalize" data-testid={`number-label-${label}`}>
             {label}
           </span>
           {isModified && (
@@ -45,7 +45,7 @@ export function NumberInput({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-40 h-8 font-mono text-sm"
+        className="w-60 h-8 font-mono text-sm"
         data-testid={`number-input-${label}`}
       />
 
