@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -247,6 +247,8 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   const [customHtml, setCustomHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
 
   // Build a map for resolving var() references
@@ -328,29 +330,33 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     setUrlInput('');
   }, []);
 
-  const iframeSrcDoc = useMemo(() => {
-    const baseHtml = customHtml || defaultPreviewHtml;
-    
-    // Generate CSS with high specificity to override external stylesheets
-    const customCss = `
+  // Generate CSS content
+  const customCssContent = useMemo(() => {
+    return `
       :root {
         ${cssVariablesStyle}
       }
     `;
+  }, [cssVariablesStyle]);
+
+  // Base HTML for initial iframe load (includes initial CSS, subsequent updates via useEffect)
+  const iframeSrcDoc = useMemo(() => {
+    const baseHtml = customHtml || defaultPreviewHtml;
+    const initialCss = customCssContent;
     
-    // Inject CSS variables into the HTML
+    // Ensure there's a style placeholder for dynamic updates
     if (baseHtml.includes('<style id="custom-variables">')) {
       return baseHtml.replace(
-        '<style id="custom-variables"></style>',
-        `<style id="custom-variables">${customCss}</style>`
+        /<style id="custom-variables">.*?<\/style>/s,
+        `<style id="custom-variables">${initialCss}</style>`
       );
     }
     
-    // If no placeholder, inject before </head> (after all stylesheets)
+    // If no placeholder, inject before </head>
     if (baseHtml.includes('</head>')) {
       return baseHtml.replace(
         '</head>',
-        `<style id="custom-variables">${customCss}</style></head>`
+        `<style id="custom-variables">${initialCss}</style></head>`
       );
     }
     
@@ -358,13 +364,51 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     if (baseHtml.includes('</body>')) {
       return baseHtml.replace(
         '</body>',
-        `<style id="custom-variables">${customCss}</style></body>`
+        `<style id="custom-variables">${initialCss}</style></body>`
       );
     }
     
-    // Fallback: append the style
-    return `${baseHtml}<style id="custom-variables">${customCss}</style>`;
-  }, [customHtml, cssVariablesStyle]);
+    return `${baseHtml}<style id="custom-variables">${initialCss}</style>`;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customHtml]); // Only rebuild iframe when HTML source changes
+
+  // Dynamically update CSS in iframe without re-rendering
+  useEffect(() => {
+    if (!iframeLoaded || !iframeRef.current) return;
+    
+    try {
+      const iframeDoc = iframeRef.current.contentDocument;
+      if (!iframeDoc) return;
+      
+      let styleEl = iframeDoc.getElementById('custom-variables') as HTMLStyleElement;
+      
+      if (!styleEl) {
+        // Create style element if it doesn't exist
+        styleEl = iframeDoc.createElement('style');
+        styleEl.id = 'custom-variables';
+        const head = iframeDoc.head || iframeDoc.querySelector('head');
+        if (head) {
+          head.appendChild(styleEl);
+        } else {
+          iframeDoc.body?.appendChild(styleEl);
+        }
+      }
+      
+      styleEl.textContent = customCssContent;
+    } catch (e) {
+      // Cross-origin restrictions may prevent access
+      console.warn('Could not update iframe styles dynamically:', e);
+    }
+  }, [customCssContent, iframeLoaded]);
+
+  const handleIframeLoad = useCallback(() => {
+    setIframeLoaded(true);
+  }, []);
+
+  // Reset iframe loaded state when HTML changes
+  useEffect(() => {
+    setIframeLoaded(false);
+  }, [customHtml]);
 
   return (
     <div className="flex flex-col h-full">
@@ -480,7 +524,9 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
           }}
         >
           <iframe
+            ref={iframeRef}
             srcDoc={iframeSrcDoc}
+            onLoad={handleIframeLoad}
             className="w-full h-[800px] border-0"
             title="Theme Preview"
             sandbox="allow-same-origin"
