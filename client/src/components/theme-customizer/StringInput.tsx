@@ -38,7 +38,7 @@ export function StringInput({ value, defaultValue, onChange, label, description 
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-60 h-8 font-mono text-sm"
+        className="w-1/2 h-8 font-mono text-sm"
         data-testid={`string-input-${label}`}
       />
 

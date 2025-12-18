@@ -21,8 +21,10 @@ function detectVariableType(name: string, value: string): CSSVariable['type'] {
   const lowerValue = value.toLowerCase();
 
   // Check for font-family first (before other checks)
+  // Match both '--font-family' patterns AND '--font-*-family' patterns (like --font-base-family, --font-heading-family)
   if (lowerName.includes('font-family') || lowerName.includes('font-sans') || 
-      lowerName.includes('font-serif') || lowerName.includes('font-mono')) {
+      lowerName.includes('font-serif') || lowerName.includes('font-mono') ||
+      (lowerName.includes('-family') && lowerName.includes('font'))) {
     return 'font';
   }
 

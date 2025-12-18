@@ -49,7 +49,7 @@ export function SelectInput({
       </div>
 
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-40 h-8" data-testid={`select-trigger-${label}`}>
+        <SelectTrigger className="w-1/2 h-8" data-testid={`select-trigger-${label}`}>
           <SelectValue placeholder="Select..." />
         </SelectTrigger>
         <SelectContent>

@@ -47,7 +47,7 @@ export function LinkStyleSelect({
       </div>
 
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-60 h-8" data-testid={`link-style-select-${label}`}>
+        <SelectTrigger className="w-1/2 h-8" data-testid={`link-style-select-${label}`}>
           <SelectValue placeholder="Select style" />
         </SelectTrigger>
         <SelectContent>

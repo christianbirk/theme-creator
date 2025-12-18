@@ -106,7 +106,7 @@ export function NumberInput({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-60 h-8 font-mono text-sm"
+          className="w-1/2 h-8 font-mono text-sm"
           data-testid={`number-input-${label}`}
         />
 
@@ -144,7 +144,7 @@ export function NumberInput({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="w-60 h-8 px-3 flex items-center border rounded-md bg-background text-xs font-mono truncate cursor-pointer hover:border-primary transition-colors text-left"
+            className="w-1/2 h-8 px-3 flex items-center border rounded-md bg-background text-xs font-mono truncate cursor-pointer hover:border-primary transition-colors text-left"
             data-testid={`number-trigger-${label}`}
           >
             {isVarReference ? (

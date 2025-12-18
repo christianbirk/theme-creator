@@ -61,7 +61,7 @@ export function FamilyReferenceSelect({
       </div>
 
       <Select value={displayValue} onValueChange={handleChange}>
-        <SelectTrigger className="w-48 h-8" data-testid={`family-ref-trigger-${label}`}>
+        <SelectTrigger className="w-1/2 h-8" data-testid={`family-ref-trigger-${label}`}>
           <SelectValue placeholder="Select family...">
             {value.startsWith('var(') ? (
               <span className="capitalize">{formatLabel(value.replace(/var\(([^)]+)\)/, '$1'))}</span>

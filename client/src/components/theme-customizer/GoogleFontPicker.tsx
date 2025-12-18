@@ -127,7 +127,7 @@ export function GoogleFontPicker({
 
       <Select value={value} onValueChange={handleValueChange}>
         <SelectTrigger 
-          className="w-60" 
+          className="w-1/2" 
           style={{ fontFamily: value }}
           data-testid={`font-trigger-${label}`}
         >

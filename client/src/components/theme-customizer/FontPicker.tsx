@@ -76,7 +76,7 @@ export function FontPicker({
         </div>
 
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="w-60 h-8" data-testid={`font-select-${label}`}>
+          <SelectTrigger className="w-1/2 h-8" data-testid={`font-select-${label}`}>
             <SelectValue placeholder="Select font" />
           </SelectTrigger>
           <SelectContent>
@@ -122,7 +122,7 @@ export function FontPicker({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="w-60 h-8 px-3 flex items-center border rounded-md bg-background text-xs font-mono truncate cursor-pointer hover:border-primary transition-colors text-left"
+            className="w-1/2 h-8 px-3 flex items-center border rounded-md bg-background text-xs font-mono truncate cursor-pointer hover:border-primary transition-colors text-left"
             data-testid={`font-trigger-${label}`}
           >
             {isVarReference ? (
