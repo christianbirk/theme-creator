@@ -22,7 +22,7 @@ const deviceWidths: Record<DeviceMode, string> = {
   mobile: '375px',
 };
 
-// Variables preview HTML - showing all variable sections
+// Variables preview HTML - organized by control panel sections
 const variablesPreviewHtml = `
 <!DOCTYPE html>
 <html lang="en">
@@ -32,207 +32,425 @@ const variablesPreviewHtml = `
     <link rel="stylesheet" href="https://poc.media.gopublic.eu/Assets/Clients/dominiktest/Themes/new-v6-style/Release/theme.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style id="custom-variables"></style>
+    <style>
+        .preview-section { padding: 2rem; margin: 1rem; }
+        .preview-section-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--boxed-border-color); display: flex; align-items: center; gap: 0.5rem; }
+        .preview-subsection { margin-bottom: 2rem; }
+        .preview-subsection-title { font-size: 1rem; font-weight: 500; margin-bottom: 1rem; color: var(--color-neutral-b); }
+        .color-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; }
+        .color-swatch { text-align: center; }
+        .color-swatch-box { width: 100%; height: 50px; border-radius: var(--universal-border-radius); border: 1px solid var(--boxed-border-color); }
+        .color-swatch-label { margin-top: 0.25rem; font-size: var(--font-xsmall); }
+    </style>
     <title>Variables Preview</title>
 </head>
 <body id="body" class="wide-page">
 <div class="overflow">
-    <div id="wrapper" class="wrapper" style="padding-top: 1rem;">
+    <div id="wrapper" class="wrapper" style="padding-top: 0.5rem;">
         <div role="main">
             <div name="content" id="content-main">
-                <!-- Brand Colors Section -->
-                <section class="module boxed" style="padding: 2rem; margin: 1rem;">
-                    <div class="module-heading">
-                        <h2>Brand Colors</h2>
+
+                <!-- ==================== COLORS ==================== -->
+                <section class="preview-section boxed">
+                    <h2 class="preview-section-title"><i class="fa-light fa-palette" style="color: var(--color-brand-a);"></i> Colors</h2>
+                    
+                    <!-- Brand Colors -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Brand Colors</h3>
+                        <div class="color-grid">
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-brand-a);"></div>
+                                <p class="color-swatch-label">Brand A</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-brand-b);"></div>
+                                <p class="color-swatch-label">Brand B</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-brand-c);"></div>
+                                <p class="color-swatch-label">Brand C</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-brand-d);"></div>
+                                <p class="color-swatch-label">Brand D</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-brand-e);"></div>
+                                <p class="color-swatch-label">Brand E</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-brand-f);"></div>
+                                <p class="color-swatch-label">Brand F</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-brand-g);"></div>
+                                <p class="color-swatch-label">Brand G</p>
+                            </div>
+                        </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 60px; background: var(--color-brand-a); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.5rem; font-size: var(--font-small);">Brand A</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 60px; background: var(--color-brand-b); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.5rem; font-size: var(--font-small);">Brand B</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 60px; background: var(--color-brand-c); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.5rem; font-size: var(--font-small);">Brand C</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 60px; background: var(--color-brand-d); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.5rem; font-size: var(--font-small);">Brand D</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 60px; background: var(--color-brand-e); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.5rem; font-size: var(--font-small);">Brand E</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 60px; background: var(--color-brand-f); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.5rem; font-size: var(--font-small);">Brand F</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 60px; background: var(--color-brand-g); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.5rem; font-size: var(--font-small);">Brand G</p>
+
+                    <!-- Neutral Colors -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Neutral Colors</h3>
+                        <div class="color-grid">
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-neutral-a);"></div>
+                                <p class="color-swatch-label">Neutral A</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-neutral-b);"></div>
+                                <p class="color-swatch-label">Neutral B</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-neutral-c);"></div>
+                                <p class="color-swatch-label">Neutral C</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-neutral-d);"></div>
+                                <p class="color-swatch-label">Neutral D</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-neutral-e);"></div>
+                                <p class="color-swatch-label">Neutral E</p>
+                            </div>
+                            <div class="color-swatch">
+                                <div class="color-swatch-box" style="background: var(--color-neutral-f);"></div>
+                                <p class="color-swatch-label">Neutral F</p>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- Neutral Colors Section -->
-                <section class="module" style="padding: 2rem; margin: 1rem;">
-                    <div class="module-heading alternate">
-                        <h2>Neutral Colors</h2>
+                <!-- ==================== COLOR COMBINATIONS ==================== -->
+                <section class="preview-section">
+                    <h2 class="preview-section-title"><i class="fa-light fa-layer-group" style="color: var(--color-brand-a);"></i> Color Combinations</h2>
+                    
+                    <!-- Light Background Tones -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Light Background Tones</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <div class="boxed" style="padding: 1rem;">
+                                <h4 style="color: var(--font-heading-color);">Heading Color</h4>
+                                <p style="color: var(--font-base-color); margin-top: 0.5rem;">Body text color on light background.</p>
+                                <a href="#" style="color: var(--link-color); margin-top: 0.5rem; display: inline-block;">Link color</a>
+                            </div>
+                            <div class="boxed" style="padding: 1rem;">
+                                <p class="pre-heading" style="color: var(--pre-heading-color);">Pre-heading</p>
+                                <p class="lead" style="color: var(--lead-color); margin-top: 0.5rem;">Lead text color</p>
+                            </div>
+                        </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 0.75rem; margin-top: 1rem;">
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 50px; background: var(--color-neutral-a); border-radius: var(--universal-border-radius); border: 1px solid var(--boxed-border-color);"></div>
-                            <p style="margin-top: 0.25rem; font-size: var(--font-xsmall);">Neutral A</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 50px; background: var(--color-neutral-b); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.25rem; font-size: var(--font-xsmall);">Neutral B</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 50px; background: var(--color-neutral-c); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.25rem; font-size: var(--font-xsmall);">Neutral C</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 50px; background: var(--color-neutral-d); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.25rem; font-size: var(--font-xsmall);">Neutral D</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 50px; background: var(--color-neutral-e); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.25rem; font-size: var(--font-xsmall);">Neutral E</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 100%; height: 50px; background: var(--color-neutral-f); border-radius: var(--universal-border-radius);"></div>
-                            <p style="margin-top: 0.25rem; font-size: var(--font-xsmall);">Neutral F</p>
+
+                    <!-- Dark Background Tones -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Dark Background Tones</h3>
+                        <div style="background: var(--color-brand-a); padding: 1.5rem; border-radius: var(--universal-border-radius);">
+                            <h4 style="color: var(--font-heading-color-bg-dark);">Heading on Dark</h4>
+                            <p style="color: var(--font-base-color-bg-dark); margin-top: 0.5rem;">Body text on dark background.</p>
+                            <p class="pre-heading" style="color: var(--pre-heading-color-bg-dark); margin-top: 0.5rem;">Pre-heading on dark</p>
+                            <p class="lead" style="color: var(--lead-color-bg-dark); margin-top: 0.5rem;">Lead text on dark</p>
+                            <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                                <button class="btn" style="background: var(--button-background-color-bg-dark); color: var(--button-font-color-bg-dark);">Button</button>
+                                <button class="btn btn-outline" style="border-color: var(--button-outline-border-color-bg-dark); color: var(--button-outline-font-color-bg-dark);">Outline</button>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- Typography Section -->
-                <section class="module boxed" style="padding: 2rem; margin: 1rem;">
-                    <div class="module-heading">
-                        <h2>Typography</h2>
+                <!-- ==================== TYPOGRAPHY ==================== -->
+                <section class="preview-section boxed">
+                    <h2 class="preview-section-title"><i class="fa-light fa-font" style="color: var(--color-brand-a);"></i> Typography</h2>
+                    
+                    <!-- Font Sizes -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Font Sizes</h3>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <span style="font-size: var(--font-xsmall);">XSmall: The quick brown fox</span>
+                            <span style="font-size: var(--font-small);">Small: The quick brown fox</span>
+                            <span style="font-size: var(--font-normal);">Normal: The quick brown fox</span>
+                            <span style="font-size: var(--font-xnormal);">XNormal: The quick brown fox</span>
+                            <span style="font-size: var(--font-medium);">Medium: The quick brown fox</span>
+                            <span style="font-size: var(--font-xmedium);">XMedium: The quick brown fox</span>
+                            <span style="font-size: var(--font-large);">Large: The quick brown fox</span>
+                            <span style="font-size: var(--font-xlarge);">XLarge: The quick brown fox</span>
+                            <span style="font-size: var(--font-xxlarge);">XXLarge: The quick</span>
+                        </div>
                     </div>
-                    <div style="margin-top: 1rem;">
-                        <p class="pre-heading">Pre-heading text</p>
+
+                    <!-- Headings -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Headings</h3>
                         <h1>Heading 1</h1>
                         <h2>Heading 2</h2>
                         <h3>Heading 3</h3>
                         <h4>Heading 4</h4>
                         <h5>Heading 5</h5>
                         <h6>Heading 6</h6>
-                        <p class="lead" style="margin-top: 1rem;">This is a lead paragraph with larger text for introductions and summaries.</p>
-                        <p style="margin-top: 1rem;">This is regular body text demonstrating the base font settings. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-                        <p style="margin-top: 0.5rem;"><a href="#">This is a link</a> within body text.</p>
+                    </div>
+
+                    <!-- Body & Lead -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Body Text & Lead</h3>
+                        <p class="pre-heading">Pre-heading text style</p>
+                        <p class="lead" style="margin-top: 0.5rem;">This is a lead paragraph demonstrating larger introductory text styling.</p>
+                        <p style="margin-top: 0.5rem;">Regular body text with <a href="#">inline link</a> demonstrating base font family, size, weight, and line height settings.</p>
                     </div>
                 </section>
 
-                <!-- Buttons Section -->
-                <section class="module" style="padding: 2rem; margin: 1rem;">
-                    <div class="module-heading alternate">
-                        <h2>Buttons</h2>
+                <!-- ==================== LAYOUT AND SPACING ==================== -->
+                <section class="preview-section">
+                    <h2 class="preview-section-title"><i class="fa-light fa-grid-2" style="color: var(--color-brand-a);"></i> Layout and Spacing</h2>
+                    
+                    <!-- Borders & Radius -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Borders & Border Radius</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                            <div style="padding: 1rem; border: 1px solid var(--boxed-border-color); border-radius: var(--universal-border-radius); text-align: center;">
+                                <p style="font-size: var(--font-small);">Universal Radius</p>
+                            </div>
+                            <div style="padding: 1rem; border: 1px solid var(--boxed-border-color); border-radius: var(--button-border-radius); text-align: center;">
+                                <p style="font-size: var(--font-small);">Button Radius</p>
+                            </div>
+                        </div>
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; align-items: center;">
-                        <button class="btn">Primary Button</button>
-                        <button class="btn btn-outline">Outline Button</button>
-                        <button class="btn btn-alternate">Alternate Button</button>
-                        <a href="#" class="link-arrow">Link with Arrow</a>
-                    </div>
-                </section>
 
-                <!-- Labels Section -->
-                <section class="module boxed" style="padding: 2rem; margin: 1rem;">
-                    <div class="module-heading">
-                        <h2>Labels</h2>
+                    <!-- Grid & Spacing -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Grid & Box Padding</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--grid-gutter);">
+                            <div class="boxed" style="padding: var(--grid-box-padding);">
+                                <p style="font-size: var(--font-small);">Box with grid-box-padding</p>
+                            </div>
+                            <div class="boxed" style="padding: var(--grid-box-padding);">
+                                <p style="font-size: var(--font-small);">Grid gutter spacing</p>
+                            </div>
+                        </div>
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
-                        <span class="label">Default Label</span>
-                        <span class="label">Category</span>
-                        <span class="label">Tag</span>
-                        <span class="label">News</span>
-                    </div>
-                </section>
 
-                <!-- Icons Section -->
-                <section class="module" style="padding: 2rem; margin: 1rem;">
-                    <div class="module-heading alternate">
-                        <h2>Icons</h2>
-                    </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1rem;">
-                        <div class="icon-circle">
-                            <i class="fa-light fa-home"></i>
-                        </div>
-                        <div class="icon-circle">
-                            <i class="fa-light fa-user"></i>
-                        </div>
-                        <div class="icon-circle">
-                            <i class="fa-light fa-envelope"></i>
-                        </div>
-                        <div class="icon-circle">
-                            <i class="fa-light fa-cog"></i>
-                        </div>
-                        <div class="icon-circle">
-                            <i class="fa-light fa-search"></i>
-                        </div>
-                        <div class="icon-circle">
-                            <i class="fa-light fa-phone"></i>
+                    <!-- Shadows -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Shadows</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem;">
+                            <div class="boxed" style="padding: 1.5rem; text-align: center;">
+                                <p style="font-size: var(--font-small);">Boxed style</p>
+                            </div>
+                            <div class="highlighted" style="padding: 1.5rem; text-align: center;">
+                                <p style="font-size: var(--font-small);">Highlighted style</p>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- Form Section -->
-                <section class="module boxed" style="padding: 2rem; margin: 1rem;">
-                    <div class="module-heading">
-                        <h2>Form Elements</h2>
+                <!-- ==================== HEADER, BODY AND FOOTER ==================== -->
+                <section class="preview-section boxed">
+                    <h2 class="preview-section-title"><i class="fa-light fa-window-maximize" style="color: var(--color-brand-a);"></i> Header, Body and Footer</h2>
+                    
+                    <!-- Header Preview -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Header</h3>
+                        <div style="background: var(--header-background-color, var(--color-neutral-f)); padding: 1rem; border-radius: var(--universal-border-radius);">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-weight: 600;">Logo Area</span>
+                                <nav style="display: flex; gap: 1.5rem;">
+                                    <a href="#" style="text-decoration: none;">Menu Item</a>
+                                    <a href="#" style="text-decoration: none;">Menu Item</a>
+                                </nav>
+                            </div>
+                        </div>
                     </div>
-                    <form style="max-width: 400px; margin-top: 1rem;">
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem;">Text Input</label>
-                            <input type="text" class="form-control" placeholder="Enter text..." style="width: 100%; height: var(--form-field-height); padding: 0 1rem; border: 1px solid var(--boxed-border-color); border-radius: var(--universal-border-radius);" />
+
+                    <!-- Body Background -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Body Background</h3>
+                        <div style="background: var(--main-bg-color, var(--color-neutral-f)); padding: 1.5rem; border-radius: var(--universal-border-radius); border: 1px dashed var(--boxed-border-color);">
+                            <p style="font-size: var(--font-small); color: var(--color-neutral-b);">Main background color area</p>
                         </div>
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem;">Select</label>
-                            <select style="width: 100%; height: var(--form-field-height); padding: 0 1rem; border: 1px solid var(--boxed-border-color); border-radius: var(--universal-border-radius);">
-                                <option>Option 1</option>
-                                <option>Option 2</option>
-                                <option>Option 3</option>
-                            </select>
+                    </div>
+
+                    <!-- Footer Preview -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Footer</h3>
+                        <div style="background: var(--footer-background-color, var(--color-neutral-e)); padding: 1.5rem; border-radius: var(--universal-border-radius);">
+                            <h4 style="font-family: var(--footer-heading-font-family); font-weight: var(--footer-heading-font-weight);">Footer Heading</h4>
+                            <p style="margin-top: 0.5rem; font-size: var(--font-small); color: var(--color-neutral-b);">Footer content area</p>
                         </div>
-                        <button type="submit" class="btn">Submit</button>
-                    </form>
+                    </div>
                 </section>
 
-                <!-- Dark Background Section -->
-                <section class="module bg-dark" style="padding: 2rem; margin: 1rem; background: var(--color-brand-a);">
-                    <div class="module-heading">
-                        <h2 style="color: var(--font-heading-color-bg-dark);">Dark Background</h2>
+                <!-- ==================== NAVIGATION ==================== -->
+                <section class="preview-section">
+                    <h2 class="preview-section-title"><i class="fa-light fa-bars" style="color: var(--color-brand-a);"></i> Navigation</h2>
+                    
+                    <!-- Breadcrumb -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Breadcrumb</h3>
+                        <nav aria-label="Breadcrumb" class="breadcrumb">
+                            <div>
+                                <ul>
+                                    <li><span class="breadcrumb-label">You are here:</span></li>
+                                    <li><a href="#"><span>Home</span></a></li>
+                                    <li><a href="#"><span>Section</span></a></li>
+                                    <li class="active"><span>Current Page</span></li>
+                                </ul>
+                            </div>
+                        </nav>
                     </div>
-                    <p style="color: var(--font-base-color-bg-dark); margin-top: 1rem;">This section demonstrates text and buttons on a dark background using the dark background color tokens.</p>
-                    <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
-                        <button class="btn" style="background: var(--button-background-color-bg-dark); color: var(--button-font-color-bg-dark);">Button on Dark</button>
-                        <button class="btn btn-outline" style="border-color: var(--button-outline-border-color-bg-dark); color: var(--button-outline-font-color-bg-dark);">Outline on Dark</button>
+
+                    <!-- Service Menu -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Service Menu & Burger</h3>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <button class="site-search-toggler" style="position: relative;"><span></span></button>
+                            <div class="nav-toggle" style="position: relative;">
+                                <span class="dropdown-toggle" role="button">
+                                    <span class="title">menu</span>
+                                    <span class="button"></span>
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
-                <!-- Cards Section -->
-                <section class="module" style="padding: 2rem; margin: 1rem;">
-                    <div class="module-heading alternate">
-                        <h2>Cards & Boxes</h2>
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
-                        <div class="boxed" style="padding: var(--grid-box-padding);">
-                            <h3>Boxed Card</h3>
-                            <p style="margin-top: 0.5rem; color: var(--color-neutral-b);">This is a boxed card using the boxed border styles.</p>
-                            <button class="btn" style="margin-top: 1rem;">Learn More</button>
+                <!-- ==================== BUTTONS ==================== -->
+                <section class="preview-section boxed">
+                    <h2 class="preview-section-title"><i class="fa-light fa-hand-pointer" style="color: var(--color-brand-a);"></i> Buttons</h2>
+                    
+                    <!-- Primary Buttons -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Button Styles</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                            <button class="btn">Primary Button</button>
+                            <button class="btn btn-outline">Outline Button</button>
+                            <button class="btn btn-alternate">Alternate Button</button>
                         </div>
-                        <div class="highlighted" style="padding: var(--grid-box-padding);">
-                            <h3>Highlighted Card</h3>
-                            <p style="margin-top: 0.5rem; color: var(--color-neutral-b);">This card uses the highlighted box shadow.</p>
-                            <button class="btn btn-alternate" style="margin-top: 1rem;">Explore</button>
+                    </div>
+
+                    <!-- Link Styles -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Link Styles</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+                            <a href="#" class="link-arrow">Link with Arrow</a>
+                            <a href="#">Standard Link</a>
                         </div>
                     </div>
                 </section>
+
+                <!-- ==================== ICONS ==================== -->
+                <section class="preview-section">
+                    <h2 class="preview-section-title"><i class="fa-light fa-star" style="color: var(--color-brand-a);"></i> Icons</h2>
+                    
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Icon Circles</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
+                            <div class="icon-circle">
+                                <i class="fa-light fa-home"></i>
+                            </div>
+                            <div class="icon-circle">
+                                <i class="fa-light fa-user"></i>
+                            </div>
+                            <div class="icon-circle">
+                                <i class="fa-light fa-envelope"></i>
+                            </div>
+                            <div class="icon-circle">
+                                <i class="fa-light fa-phone"></i>
+                            </div>
+                            <div class="icon-circle">
+                                <i class="fa-light fa-cog"></i>
+                            </div>
+                            <div class="icon-circle">
+                                <i class="fa-light fa-search"></i>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== LABELS ==================== -->
+                <section class="preview-section boxed">
+                    <h2 class="preview-section-title"><i class="fa-light fa-tag" style="color: var(--color-brand-a);"></i> Labels</h2>
+                    
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Label Styles</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            <span class="label">Default</span>
+                            <span class="label">Category</span>
+                            <span class="label">News</span>
+                            <span class="label">Event</span>
+                            <span class="label">Featured</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== FORMS ==================== -->
+                <section class="preview-section">
+                    <h2 class="preview-section-title"><i class="fa-light fa-rectangle-list" style="color: var(--color-brand-a);"></i> Forms</h2>
+                    
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Form Elements</h3>
+                        <form style="max-width: 400px;">
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem;">Text Input</label>
+                                <input type="text" placeholder="Enter text..." style="width: 100%; height: var(--form-field-height); padding: 0 1rem; border: 1px solid var(--boxed-border-color); border-radius: var(--universal-border-radius);" />
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem;">Email</label>
+                                <input type="email" placeholder="email@example.com" style="width: 100%; height: var(--form-field-height); padding: 0 1rem; border: 1px solid var(--boxed-border-color); border-radius: var(--universal-border-radius);" />
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem;">Select</label>
+                                <select style="width: 100%; height: var(--form-field-height); padding: 0 1rem; border: 1px solid var(--boxed-border-color); border-radius: var(--universal-border-radius);">
+                                    <option>Option 1</option>
+                                    <option>Option 2</option>
+                                    <option>Option 3</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem;">Textarea</label>
+                                <textarea rows="3" placeholder="Enter message..." style="width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--boxed-border-color); border-radius: var(--universal-border-radius); resize: vertical;"></textarea>
+                            </div>
+                            <button type="submit" class="btn">Submit Form</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- ==================== HERO AND RATIOS ==================== -->
+                <section class="preview-section boxed">
+                    <h2 class="preview-section-title"><i class="fa-light fa-image" style="color: var(--color-brand-a);"></i> Hero and Ratios</h2>
+                    
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Hero Section</h3>
+                        <div style="background: linear-gradient(135deg, var(--color-brand-a), var(--color-brand-b)); padding: 3rem 2rem; border-radius: var(--universal-border-radius); text-align: center;">
+                            <h1 style="color: var(--font-heading-color-bg-dark); font-size: var(--hero-h1-font-size);">Hero Heading</h1>
+                            <h2 style="color: var(--font-heading-color-bg-dark); font-size: var(--hero-h2-font-size); margin-top: 0.5rem; opacity: 0.9;">Hero Subheading</h2>
+                            <p class="lead" style="color: var(--lead-color-bg-dark); margin-top: 1rem; max-width: 600px; margin-left: auto; margin-right: auto;">Hero lead text demonstrating the hero typography settings.</p>
+                            <button class="btn" style="margin-top: 1.5rem; background: var(--button-background-color-bg-dark); color: var(--button-font-color-bg-dark);">Call to Action</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== OTHER ==================== -->
+                <section class="preview-section">
+                    <h2 class="preview-section-title"><i class="fa-light fa-sliders" style="color: var(--color-brand-a);"></i> Other</h2>
+                    
+                    <!-- Module Headings -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Module Headings</h3>
+                        <div style="display: grid; gap: 1rem;">
+                            <div class="module-heading">
+                                <h3>Default Module Heading</h3>
+                            </div>
+                            <div class="module-heading alternate">
+                                <h3>Alternate Module Heading</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transitions Demo -->
+                    <div class="preview-subsection">
+                        <h3 class="preview-subsection-title">Transitions</h3>
+                        <p style="font-size: var(--font-small); color: var(--color-neutral-b);">Hover over the buttons and elements above to see transition effects applied throughout the theme.</p>
+                    </div>
+                </section>
+
             </div>
         </div>
     </div>
