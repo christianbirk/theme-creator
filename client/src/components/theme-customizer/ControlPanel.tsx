@@ -10,12 +10,36 @@ import { CSSVariable, VariableCategory, formatVariableName, formatSectionName, s
 import { ColorPicker } from './ColorPicker';
 import { SizeInput } from './SizeInput';
 import { FontPicker } from './FontPicker';
+import { GoogleFontPicker } from './GoogleFontPicker';
 import { NumberInput } from './NumberInput';
 import { StringInput } from './StringInput';
 import { LinkStyleSelect } from './LinkStyleSelect';
+import { SelectInput } from './SelectInput';
+import { FamilyReferenceSelect } from './FamilyReferenceSelect';
 
 // Subsections that are only visible in expert mode
 const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors'];
+
+// Individual variables that are only visible in expert mode
+const EXPERT_ONLY_VARIABLES = [
+  '--h1-font-family', '--h2-font-family', '--h3-font-family', '--h4-font-family', '--h5-font-family', '--h6-font-family',
+  '--h1-font-weight', '--h2-font-weight', '--h3-font-weight', '--h4-font-weight', '--h5-font-weight', '--h6-font-weight',
+  '--h1-text-transform', '--h2-text-transform', '--h3-text-transform', '--h4-text-transform', '--h5-text-transform', '--h6-text-transform',
+];
+
+// Variables that should use text-transform select (none/uppercase)
+const TEXT_TRANSFORM_VARIABLES = [
+  '--btn-universal-text-transform',
+  '--label-text-transform',
+  '--h1-text-transform', '--h2-text-transform', '--h3-text-transform',
+  '--h4-text-transform', '--h5-text-transform', '--h6-text-transform',
+];
+
+// Variables that should use alignment select (left/center)
+const ALIGNMENT_VARIABLES = ['--nav-main-align'];
+
+// Variables that should use family reference select (base/heading)
+const FAMILY_REFERENCE_VARIABLES = ['--pre-heading-font-family'];
 
 interface ControlPanelProps {
   categories: VariableCategory[];
@@ -138,6 +162,11 @@ export function ControlPanel({
         return;
       }
 
+      // Filter out expert-only individual variables when not in expert mode
+      if (!expertMode && EXPERT_ONLY_VARIABLES.includes(v.name)) {
+        return;
+      }
+
       if (query && !v.name.toLowerCase().includes(query)) {
         return;
       }
@@ -217,6 +246,52 @@ export function ControlPanel({
   const renderVariableInput = (variable: CSSVariable) => {
     const displayName = formatVariableName(variable.name);
     
+    // Handle special select inputs first (before type-based routing)
+    if (TEXT_TRANSFORM_VARIABLES.includes(variable.name)) {
+      return (
+        <SelectInput
+          key={variable.name}
+          value={variable.value}
+          defaultValue={variable.defaultValue}
+          onChange={(value) => onVariableChange(variable.name, value)}
+          label={displayName}
+          options={[
+            { value: 'none', label: 'None' },
+            { value: 'uppercase', label: 'Uppercase' },
+          ]}
+        />
+      );
+    }
+    
+    if (ALIGNMENT_VARIABLES.includes(variable.name)) {
+      return (
+        <SelectInput
+          key={variable.name}
+          value={variable.value}
+          defaultValue={variable.defaultValue}
+          onChange={(value) => onVariableChange(variable.name, value)}
+          label={displayName}
+          options={[
+            { value: 'left', label: 'Left' },
+            { value: 'center', label: 'Center' },
+          ]}
+        />
+      );
+    }
+    
+    if (FAMILY_REFERENCE_VARIABLES.includes(variable.name)) {
+      return (
+        <FamilyReferenceSelect
+          key={variable.name}
+          value={variable.value}
+          defaultValue={variable.defaultValue}
+          onChange={(value) => onVariableChange(variable.name, value)}
+          label={displayName}
+          baseFamilyOptions={baseFontFamilyOptions}
+        />
+      );
+    }
+    
     switch (variable.type) {
       case 'color':
         return (
@@ -231,6 +306,19 @@ export function ControlPanel({
           />
         );
       case 'font':
+        // Use GoogleFontPicker for base font families
+        if (isBaseFontFamily(variable)) {
+          return (
+            <GoogleFontPicker
+              key={variable.name}
+              value={variable.value}
+              defaultValue={variable.defaultValue}
+              onChange={(value) => onVariableChange(variable.name, value)}
+              label={displayName}
+            />
+          );
+        }
+        // Use FontPicker with reference options for derived font families
         return (
           <FontPicker
             key={variable.name}
@@ -239,7 +327,7 @@ export function ControlPanel({
             onChange={(value) => onVariableChange(variable.name, value)}
             label={displayName}
             fontOptions={isFontFamilyReference(variable) ? baseFontFamilyOptions : []}
-            isBaseFontFamily={isBaseFontFamily(variable)}
+            isBaseFontFamily={false}
           />
         );
       case 'size':

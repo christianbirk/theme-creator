@@ -20,16 +20,7 @@ function detectVariableType(name: string, value: string): CSSVariable['type'] {
   const lowerName = name.toLowerCase();
   const lowerValue = value.toLowerCase();
 
-  if (lowerValue.match(/^#[0-9a-f]{3,8}$/i) || 
-      lowerValue.match(/^rgba?\s*\(/) || 
-      lowerValue.match(/^hsla?\s*\(/) ||
-      lowerName.includes('color') ||
-      lowerName.includes('background') ||
-      lowerName.includes('foreground') ||
-      lowerName.includes('border') && !lowerName.includes('radius') && !lowerName.includes('width')) {
-    return 'color';
-  }
-
+  // Check for font-family first (before other checks)
   if (lowerName.includes('font-family') || lowerName.includes('font-sans') || 
       lowerName.includes('font-serif') || lowerName.includes('font-mono')) {
     return 'font';
@@ -42,6 +33,8 @@ function detectVariableType(name: string, value: string): CSSVariable['type'] {
     return 'number';
   }
 
+  // Check for size BEFORE color (so --icon-background-size is 'size' not 'color')
+  // Also handles: --icon-background-border-radius, --button-outline-border-size
   if (lowerValue.match(/^[\d.]+\s*(px|rem|em|%|vh|vw|pt|cm|mm|in)$/i) ||
       lowerName.includes('size') || lowerName.includes('spacing') ||
       lowerName.includes('radius') || lowerName.includes('width') ||
@@ -49,6 +42,17 @@ function detectVariableType(name: string, value: string): CSSVariable['type'] {
       lowerName.includes('padding') ||
       lowerName.includes('margin') || lowerName.includes('gap')) {
     return 'size';
+  }
+
+  // Check for color types - now AFTER size check
+  if (lowerValue.match(/^#[0-9a-f]{3,8}$/i) || 
+      lowerValue.match(/^rgba?\s*\(/) || 
+      lowerValue.match(/^hsla?\s*\(/) ||
+      lowerName.includes('color') ||
+      lowerName.includes('background') ||
+      lowerName.includes('foreground') ||
+      (lowerName.includes('border') && !lowerName.includes('radius') && !lowerName.includes('width') && !lowerName.includes('size'))) {
+    return 'color';
   }
 
   return 'string';
