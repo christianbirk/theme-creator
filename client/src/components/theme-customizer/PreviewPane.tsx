@@ -799,13 +799,37 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     }).join('\n        ');
   }, [variables, resolveVarReferences]);
 
+  // Generate surface overrides for .bg-color-* classes
+  // These classes have hardcoded hex values from SCSS compilation, so we need to override them
+  const surfaceOverrides = useMemo(() => {
+    const colorMappings = [
+      { class: 'bg-color-a', variable: '--color-brand-a' },
+      { class: 'bg-color-b', variable: '--color-brand-b' },
+      { class: 'bg-color-c', variable: '--color-brand-c' },
+      { class: 'bg-color-d', variable: '--color-brand-d' },
+      { class: 'bg-color-e', variable: '--color-brand-e' },
+      { class: 'bg-color-f', variable: '--color-brand-f' },
+      { class: 'bg-color-g', variable: '--color-brand-g' },
+    ];
+    
+    return colorMappings.map(({ class: className, variable }) => `
+      .${className} {
+        --surface: var(${variable}) !important;
+        background-color: var(${variable}) !important;
+      }
+    `).join('\n');
+  }, []);
+
   const customCssContent = useMemo(() => {
     return `
       :root, html, body {
         ${cssVariablesImportant}
       }
+      
+      /* Surface overrides for bg-color-* classes */
+      ${surfaceOverrides}
     `;
-  }, [cssVariablesImportant]);
+  }, [cssVariablesImportant, surfaceOverrides]);
 
   // Get the current HTML based on selected tab
   const getCurrentHtml = useCallback(() => {
