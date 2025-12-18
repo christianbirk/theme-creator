@@ -672,17 +672,44 @@ const frontpagePreviewHtml = `
 </html>
 `;
 
+const FRONTPAGE_URL = 'https://dominik.gopublic.dk';
+
 export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [zoom, setZoom] = useState<ZoomLevel>(100);
   const [previewTab, setPreviewTab] = useState<PreviewTab>('variables');
   const [urlInput, setUrlInput] = useState('');
   const [customHtml, setCustomHtml] = useState<string | null>(null);
+  const [frontpageHtml, setFrontpageHtml] = useState<string | null>(null);
+  const [frontpageLoading, setFrontpageLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
+
+  // Load frontpage HTML on mount
+  useEffect(() => {
+    const loadFrontpage = async () => {
+      setFrontpageLoading(true);
+      try {
+        const response = await fetch('/api/fetch-preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: FRONTPAGE_URL }),
+        });
+        const data = await response.json();
+        if (response.ok && data.html) {
+          setFrontpageHtml(data.html);
+        }
+      } catch (err) {
+        console.warn('Could not load frontpage:', err);
+      } finally {
+        setFrontpageLoading(false);
+      }
+    };
+    loadFrontpage();
+  }, []);
 
   // Build a map for resolving var() references
   const variableMap = useMemo(() => {
@@ -779,10 +806,10 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       return customHtml;
     }
     if (previewTab === 'frontpage') {
-      return frontpagePreviewHtml;
+      return frontpageHtml || variablesPreviewHtml;
     }
     return variablesPreviewHtml;
-  }, [previewTab, customHtml]);
+  }, [previewTab, customHtml, frontpageHtml]);
 
   // Base HTML for initial iframe load
   const iframeSrcDoc = useMemo(() => {
@@ -791,7 +818,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     
     if (baseHtml.includes('<style id="custom-variables">')) {
       return baseHtml.replace(
-        /<style id="custom-variables">.*?<\/style>/s,
+        /<style id="custom-variables">[\s\S]*?<\/style>/,
         `<style id="custom-variables">${initialCss}</style>`
       );
     }
@@ -847,7 +874,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   // Reset iframe loaded state when HTML changes
   useEffect(() => {
     setIframeLoaded(false);
-  }, [previewTab, customHtml]);
+  }, [previewTab, customHtml, frontpageHtml]);
 
   return (
     <div className="flex flex-col h-full">
@@ -860,7 +887,11 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
                 Variables
               </TabsTrigger>
               <TabsTrigger value="frontpage" className="text-xs gap-1.5 px-3" data-testid="tab-frontpage">
-                <FileText className="h-3.5 w-3.5" />
+                {frontpageLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <FileText className="h-3.5 w-3.5" />
+                )}
                 Frontpage
               </TabsTrigger>
               {loadedUrl && (
