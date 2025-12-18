@@ -1,15 +1,9 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { RotateCcw } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { RotateCcw, Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface GoogleFontPickerProps {
   value: string;
@@ -87,6 +81,7 @@ export function GoogleFontPicker({
   label, 
   description,
 }: GoogleFontPickerProps) {
+  const [open, setOpen] = useState(false);
   const isModified = value !== defaultValue;
 
   useEffect(() => {
@@ -104,10 +99,16 @@ export function GoogleFontPicker({
     onChange(defaultValue);
   }, [defaultValue, onChange]);
 
-  const handleValueChange = useCallback((newValue: string) => {
-    loadGoogleFont(newValue);
-    onChange(newValue);
+  const handleSelect = useCallback((fontName: string) => {
+    loadGoogleFont(fontName);
+    onChange(fontName);
+    setOpen(false);
   }, [onChange]);
+
+  const displayValue = useMemo(() => {
+    if (!value) return 'Select font...';
+    return value;
+  }, [value]);
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -125,56 +126,86 @@ export function GoogleFontPicker({
         )}
       </div>
 
-      <Select value={value} onValueChange={handleValueChange}>
-        <SelectTrigger 
-          className="w-1/2" 
-          style={{ fontFamily: value }}
-          data-testid={`font-trigger-${label}`}
-        >
-          <SelectValue placeholder="Select font..." />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectLabel>Sans-Serif</SelectLabel>
-            {sansSerifFonts.map((font) => (
-              <SelectItem 
-                key={font.name} 
-                value={font.name}
-                style={{ fontFamily: font.name }}
-                data-testid={`font-option-${font.name}`}
-              >
-                {font.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-          <SelectGroup>
-            <SelectLabel>Serif</SelectLabel>
-            {serifFonts.map((font) => (
-              <SelectItem 
-                key={font.name} 
-                value={font.name}
-                style={{ fontFamily: font.name }}
-                data-testid={`font-option-${font.name}`}
-              >
-                {font.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-          <SelectGroup>
-            <SelectLabel>Monospace</SelectLabel>
-            {monospaceFonts.map((font) => (
-              <SelectItem 
-                key={font.name} 
-                value={font.name}
-                style={{ fontFamily: font.name }}
-                data-testid={`font-option-${font.name}`}
-              >
-                {font.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-1/2 justify-between font-normal"
+            style={{ fontFamily: value }}
+            data-testid={`font-trigger-${label}`}
+          >
+            <span className="truncate">{displayValue}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[250px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search fonts..." data-testid={`font-search-${label}`} />
+            <CommandList>
+              <CommandEmpty>No font found.</CommandEmpty>
+              <CommandGroup heading="Sans-Serif">
+                {sansSerifFonts.map((font) => (
+                  <CommandItem
+                    key={font.name}
+                    value={font.name}
+                    onSelect={() => handleSelect(font.name)}
+                    style={{ fontFamily: font.name }}
+                    data-testid={`font-option-${font.name}`}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === font.name ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {font.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              <CommandGroup heading="Serif">
+                {serifFonts.map((font) => (
+                  <CommandItem
+                    key={font.name}
+                    value={font.name}
+                    onSelect={() => handleSelect(font.name)}
+                    style={{ fontFamily: font.name }}
+                    data-testid={`font-option-${font.name}`}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === font.name ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {font.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              <CommandGroup heading="Monospace">
+                {monospaceFonts.map((font) => (
+                  <CommandItem
+                    key={font.name}
+                    value={font.name}
+                    onSelect={() => handleSelect(font.name)}
+                    style={{ fontFamily: font.name }}
+                    data-testid={`font-option-${font.name}`}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === font.name ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {font.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
 
       <Button
         variant="ghost"
