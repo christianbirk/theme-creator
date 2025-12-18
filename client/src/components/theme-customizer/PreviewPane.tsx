@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Monitor, Tablet, Smartphone, Loader2 } from 'lucide-react';
+import { Monitor, Tablet, Smartphone, Loader2, ExternalLink } from 'lucide-react';
 import { CSSVariable } from './types';
 
 interface PreviewPaneProps {
@@ -18,7 +19,7 @@ const deviceWidths: Record<DeviceMode, string> = {
   mobile: '375px',
 };
 
-const TEMPLATE_URL = 'https://dominik.gopublic.dk/theme-creator-template';
+const DEFAULT_TEMPLATE_URL = 'https://dominik.gopublic.dk/theme-creator-template';
 
 const loadingHtml = `
 <!DOCTYPE html>
@@ -67,30 +68,47 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   const [templateHtml, setTemplateHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [templateUrl, setTemplateUrl] = useState(DEFAULT_TEMPLATE_URL);
+  const [urlInput, setUrlInput] = useState(DEFAULT_TEMPLATE_URL);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Load template HTML on mount
-  useEffect(() => {
-    const loadTemplate = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/fetch-preview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: TEMPLATE_URL }),
-        });
-        const data = await response.json();
-        if (response.ok && data.html) {
-          setTemplateHtml(data.html);
-        }
-      } catch (err) {
-        console.warn('Could not load template:', err);
-      } finally {
-        setIsLoading(false);
+  // Load template HTML
+  const loadTemplate = useCallback(async (url: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/fetch-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await response.json();
+      if (response.ok && data.html) {
+        setTemplateHtml(data.html);
+        setTemplateUrl(url);
       }
-    };
-    loadTemplate();
+    } catch (err) {
+      console.warn('Could not load template:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  // Load template on mount
+  useEffect(() => {
+    loadTemplate(DEFAULT_TEMPLATE_URL);
+  }, [loadTemplate]);
+
+  const handleLoadUrl = useCallback(() => {
+    if (urlInput.trim()) {
+      loadTemplate(urlInput.trim());
+    }
+  }, [urlInput, loadTemplate]);
+
+  const handleUrlKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleLoadUrl();
+    }
+  }, [handleLoadUrl]);
 
   // Build a map for resolving var() references
   const variableMap = useMemo(() => {
@@ -221,59 +239,88 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between gap-4 p-3 border-b bg-muted/30">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Loading template...</span>
-            </>
-          ) : (
-            <span className="font-medium">Theme Preview</span>
-          )}
-        </div>
-        
+      <div className="flex flex-col gap-2 p-3 border-b bg-muted/30">
         <div className="flex items-center gap-2">
-          <div className="flex items-center border rounded-md">
-            <Button
-              variant={device === 'desktop' ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => setDevice('desktop')}
-              className="h-8 w-8 rounded-r-none"
-              data-testid="preview-device-desktop"
-            >
-              <Monitor className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={device === 'tablet' ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => setDevice('tablet')}
-              className="h-8 w-8 rounded-none border-x"
-              data-testid="preview-device-tablet"
-            >
-              <Tablet className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={device === 'mobile' ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => setDevice('mobile')}
-              className="h-8 w-8 rounded-l-none"
-              data-testid="preview-device-mobile"
-            >
-              <Smartphone className="h-4 w-4" />
-            </Button>
-          </div>
+          <Input
+            type="url"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={handleUrlKeyDown}
+            placeholder="Enter template URL..."
+            className="flex-1 h-8 text-sm"
+            data-testid="preview-url-input"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLoadUrl}
+            disabled={isLoading}
+            className="h-8"
+            data-testid="preview-load-url"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ExternalLink className="h-4 w-4" />
+            )}
+            <span className="ml-1">Load</span>
+          </Button>
+        </div>
 
-          <Select value={zoom.toString()} onValueChange={(v) => setZoom(parseInt(v) as ZoomLevel)}>
-            <SelectTrigger className="w-20 h-8" data-testid="preview-zoom-select">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="50">50%</SelectItem>
-              <SelectItem value="75">75%</SelectItem>
-              <SelectItem value="100">100%</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading template...</span>
+              </>
+            ) : (
+              <span className="font-medium">Theme Preview</span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center border rounded-md">
+              <Button
+                variant={device === 'desktop' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => setDevice('desktop')}
+                className="h-8 w-8 rounded-r-none"
+                data-testid="preview-device-desktop"
+              >
+                <Monitor className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={device === 'tablet' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => setDevice('tablet')}
+                className="h-8 w-8 rounded-none border-x"
+                data-testid="preview-device-tablet"
+              >
+                <Tablet className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={device === 'mobile' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => setDevice('mobile')}
+                className="h-8 w-8 rounded-l-none"
+                data-testid="preview-device-mobile"
+              >
+                <Smartphone className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <Select value={zoom.toString()} onValueChange={(v) => setZoom(parseInt(v) as ZoomLevel)}>
+              <SelectTrigger className="w-20 h-8" data-testid="preview-zoom-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="50">50%</SelectItem>
+                <SelectItem value="75">75%</SelectItem>
+                <SelectItem value="100">100%</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
