@@ -791,14 +791,21 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     setPreviewTab('variables');
   }, []);
 
-  // Generate CSS content
+  // Generate CSS content with !important to override existing styles
+  const cssVariablesImportant = useMemo(() => {
+    return variables.map(v => {
+      const resolvedValue = resolveVarReferences(v.value);
+      return `${v.name}: ${resolvedValue} !important;`;
+    }).join('\n        ');
+  }, [variables, resolveVarReferences]);
+
   const customCssContent = useMemo(() => {
     return `
-      :root {
-        ${cssVariablesStyle}
+      :root, html, body {
+        ${cssVariablesImportant}
       }
     `;
-  }, [cssVariablesStyle]);
+  }, [cssVariablesImportant]);
 
   // Get the current HTML based on selected tab
   const getCurrentHtml = useCallback(() => {
@@ -811,33 +818,25 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     return variablesPreviewHtml;
   }, [previewTab, customHtml, frontpageHtml]);
 
-  // Base HTML for initial iframe load
+  // Base HTML for initial iframe load - inject styles at the very end for maximum specificity
   const iframeSrcDoc = useMemo(() => {
     const baseHtml = getCurrentHtml();
     const initialCss = customCssContent;
+    const styleTag = `<style id="custom-variables">${initialCss}</style>`;
     
-    if (baseHtml.includes('<style id="custom-variables">')) {
-      return baseHtml.replace(
-        /<style id="custom-variables">[\s\S]*?<\/style>/,
-        `<style id="custom-variables">${initialCss}</style>`
-      );
+    // First remove any existing custom-variables style tag
+    let cleanedHtml = baseHtml.replace(/<style id="custom-variables">[\s\S]*?<\/style>/g, '');
+    
+    // Inject at the very end of body for maximum specificity
+    if (cleanedHtml.includes('</body>')) {
+      return cleanedHtml.replace('</body>', `${styleTag}</body>`);
     }
     
-    if (baseHtml.includes('</head>')) {
-      return baseHtml.replace(
-        '</head>',
-        `<style id="custom-variables">${initialCss}</style></head>`
-      );
+    if (cleanedHtml.includes('</html>')) {
+      return cleanedHtml.replace('</html>', `${styleTag}</html>`);
     }
     
-    if (baseHtml.includes('</body>')) {
-      return baseHtml.replace(
-        '</body>',
-        `<style id="custom-variables">${initialCss}</style></body>`
-      );
-    }
-    
-    return `${baseHtml}<style id="custom-variables">${initialCss}</style>`;
+    return `${cleanedHtml}${styleTag}`;
   }, [getCurrentHtml, customCssContent]);
 
   // Dynamically update CSS in iframe without re-rendering
