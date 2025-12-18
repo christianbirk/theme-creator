@@ -842,11 +842,12 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     return variablesPreviewHtml;
   }, [previewTab, customHtml, frontpageHtml]);
 
-  // Base HTML for initial iframe load - inject styles at the very end for maximum specificity
+  // Base HTML for initial iframe load - only changes when tab/HTML source changes, NOT when variables change
+  // This prevents iframe reload flicker when editing variables
   const iframeSrcDoc = useMemo(() => {
     const baseHtml = getCurrentHtml();
-    const initialCss = customCssContent;
-    const styleTag = `<style id="custom-variables">${initialCss}</style>`;
+    // Insert an empty placeholder style tag that will be filled dynamically
+    const styleTag = `<style id="custom-variables"></style>`;
     
     // First remove any existing custom-variables style tag
     let cleanedHtml = baseHtml.replace(/<style id="custom-variables">[\s\S]*?<\/style>/g, '');
@@ -861,9 +862,10 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     }
     
     return `${cleanedHtml}${styleTag}`;
-  }, [getCurrentHtml, customCssContent]);
+  }, [getCurrentHtml]); // Note: removed customCssContent dependency
 
   // Dynamically update CSS in iframe without re-rendering
+  // This runs on every variable change and updates the style element in-place
   useEffect(() => {
     if (!iframeLoaded || !iframeRef.current) return;
     
@@ -874,17 +876,24 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       let styleEl = iframeDoc.getElementById('custom-variables') as HTMLStyleElement;
       
       if (!styleEl) {
+        // Create style element if it doesn't exist (fallback)
         styleEl = iframeDoc.createElement('style');
         styleEl.id = 'custom-variables';
-        const head = iframeDoc.head || iframeDoc.querySelector('head');
-        if (head) {
-          head.appendChild(styleEl);
+        // Append to body end for maximum specificity
+        if (iframeDoc.body) {
+          iframeDoc.body.appendChild(styleEl);
         } else {
-          iframeDoc.body?.appendChild(styleEl);
+          const head = iframeDoc.head || iframeDoc.querySelector('head');
+          if (head) {
+            head.appendChild(styleEl);
+          }
         }
       }
       
-      styleEl.textContent = customCssContent;
+      // Update content only if changed to minimize reflows
+      if (styleEl.textContent !== customCssContent) {
+        styleEl.textContent = customCssContent;
+      }
     } catch (e) {
       console.warn('Could not update iframe styles dynamically:', e);
     }
