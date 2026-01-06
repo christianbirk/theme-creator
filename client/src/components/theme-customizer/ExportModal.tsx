@@ -23,8 +23,33 @@ export function ExportModal({ open, onOpenChange, variables }: ExportModalProps)
     const modifiedVars = variables.filter(v => v.value !== v.defaultValue);
     const allVars = variables;
 
+    const scssVarMappings: Record<string, string> = {
+      '--color-brand-a': '$color-brand-a',
+      '--color-brand-b': '$color-brand-b',
+      '--color-brand-c': '$color-brand-c',
+      '--color-brand-d': '$color-brand-d',
+      '--color-brand-e': '$color-brand-e',
+      '--color-brand-f': '$color-brand-f',
+      '--color-brand-g': '$color-brand-g',
+      '--grid-max-width': '$grid-max-width',
+    };
+
+    const scssVarsBlock = Object.entries(scssVarMappings)
+      .map(([cssVar, scssVar]) => {
+        const variable = allVars.find(v => v.name === cssVar);
+        const value = variable ? variable.value : (cssVar === '--grid-max-width' ? '1240px' : '#000000');
+        return `${scssVar}: ${value};`;
+      })
+      .join('\n');
+
     const cssVarsBlock = allVars
-      .map(v => `  ${v.name}: ${v.value};`)
+      .map(v => {
+        const scssVar = scssVarMappings[v.name];
+        if (scssVar) {
+          return `  ${v.name}: #{${scssVar}};`;
+        }
+        return `  ${v.name}: ${v.value};`;
+      })
       .join('\n');
 
     const css = `/* Theme: ${filename}.css
@@ -34,6 +59,9 @@ export function ExportModal({ open, onOpenChange, variables }: ExportModalProps)
 
 // Importing Fundamentals Variables
 @import '../../../../../GoBasic/baseStylesV6/css/variables.scss';
+
+/* --- Color by SCSS --- */
+${scssVarsBlock}
 
 :root {
 ${cssVarsBlock}

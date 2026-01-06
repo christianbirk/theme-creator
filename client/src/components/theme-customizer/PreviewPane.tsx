@@ -750,7 +750,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
             onLoad={handleIframeLoad}
             className="w-full h-[800px] border-0"
             title="Theme Preview"
-            sandbox="allow-same-origin"
+            sandbox="allow-same-origin allow-scripts"
             data-testid="preview-iframe"
           />
         </div>
