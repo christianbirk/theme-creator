@@ -36,10 +36,15 @@ export function ExportModal({ open, onOpenChange, variables }: ExportModalProps)
     };
 
     const scssVarsToExport = new Map<string, string>();
+    
+    const gridMaxWidthVar = allVars.find(v => v.name === '--grid-container-max-width') 
+      || allVars.find(v => v.name === '--grid-max-width');
+    scssVarsToExport.set('$grid-max-width', gridMaxWidthVar?.value || '1240px');
+    
     Object.entries(scssVarMappings).forEach(([cssVar, scssVar]) => {
       if (!scssVarsToExport.has(scssVar)) {
         const variable = allVars.find(v => v.name === cssVar);
-        const value = variable ? variable.value : (cssVar.includes('grid') ? '1240px' : '#000000');
+        const value = variable ? variable.value : '#000000';
         scssVarsToExport.set(scssVar, value);
       }
     });
