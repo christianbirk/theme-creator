@@ -472,9 +472,24 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
         color: ${lightSurfaceTokens.text} !important;
       }
       
+      /* Boxed/Highlighted links */
+      .${className} .module.boxed a,
+      .${className} .module.boxed a.link-arrow,
+      .${className} .module.highlighted a,
+      .${className} .module.highlighted a.link-arrow {
+        color: ${lightSurfaceTokens.link} !important;
+      }
+      
       /* Boxed/Highlighted buttons */
       .${className} .module.boxed .btn,
       .${className} .module.highlighted .btn {
+        background-color: ${lightSurfaceTokens.btnBg} !important;
+        color: ${lightSurfaceTokens.btnFg} !important;
+      }
+      
+      /* Boxed/Highlighted alternate buttons */
+      .${className} .module.boxed .btn-alternate,
+      .${className} .module.highlighted .btn-alternate {
         background-color: ${lightSurfaceTokens.btnBg} !important;
         color: ${lightSurfaceTokens.btnFg} !important;
       }
@@ -492,6 +507,24 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       .${className} .module.highlighted .media i:before {
         background-color: ${lightSurfaceTokens.iconBg} !important;
         color: ${lightSurfaceTokens.iconFg} !important;
+      }
+      
+      /* Boxed/Highlighted list items */
+      .${className} .module.boxed .items .item,
+      .${className} .module.boxed .items .item:last-child,
+      .${className} .module.highlighted .items .item,
+      .${className} .module.highlighted .items .item:last-child {
+        border-color: color-mix(in srgb, ${lightSurfaceTokens.text} 25%, #ffffff) !important;
+      }
+      
+      /* Boxed/Highlighted list text */
+      .${className} .module.boxed li,
+      .${className} .module.boxed ul,
+      .${className} .module.boxed ol,
+      .${className} .module.highlighted li,
+      .${className} .module.highlighted ul,
+      .${className} .module.highlighted ol {
+        color: ${lightSurfaceTokens.text} !important;
       }
       
       /* Boxed border color */
