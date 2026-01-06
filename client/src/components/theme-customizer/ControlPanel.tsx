@@ -510,7 +510,7 @@ export function ControlPanel({
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="px-6 pb-2">
-                        <div className="space-y-1">
+                        <div className="space-y-1 pl-5">
                           {subSection.variables.map(renderVariableInput)}
                         </div>
                       </AccordionContent>
