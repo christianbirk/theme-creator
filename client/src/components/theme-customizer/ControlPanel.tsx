@@ -498,11 +498,11 @@ export function ControlPanel({
                       className="border-b-0 border-t"
                     >
                       <AccordionTrigger 
-                        className="px-6 py-2 hover:no-underline text-sm"
+                        className="group px-6 py-2 hover:no-underline text-sm"
                         data-testid={`accordion-subsection-${section.id}-${subSection.id}`}
                       >
                         <div className="flex items-center gap-2">
-                          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                          <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
                           <span>{subSection.name}</span>
                           <span className="text-xs text-muted-foreground">
                             ({subSection.variables.length})
