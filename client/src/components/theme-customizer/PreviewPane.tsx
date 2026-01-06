@@ -214,9 +214,20 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     // Get light background tone variables from the Light Background Tones section
     // These are the values specifically configured for use on light backgrounds
     const getLightBgVars = () => {
-      // Helper to get from light tones section first, then fall back to general variables
-      const getLight = (name: string, fallback: string) => 
-        resolveVarReferences(lightBgTonesMap.get(name) || variableMap.get(name) || fallback);
+      // Helper to get from light tones section first, checking multiple naming patterns
+      const getLight = (baseName: string, fallback: string) => {
+        // Try different naming patterns used in SCSS for light backgrounds
+        const patterns = [
+          baseName,
+          `${baseName}-bg-light`,
+          baseName.replace(/-color$/, '-color-bg-light'),
+        ];
+        for (const pattern of patterns) {
+          const val = lightBgTonesMap.get(pattern) || variableMap.get(pattern);
+          if (val) return resolveVarReferences(val);
+        }
+        return resolveVarReferences(fallback);
+      };
       
       const text = getLight('--font-base-color', 'var(--color-neutral-a)');
       const heading = getLight('--font-heading-color', text);
