@@ -211,19 +211,71 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     };
 
     // Get dark background tone variables (for dark backgrounds, use light text)
+    // Note: Check both -bg-dark and -on-bg-dark naming conventions used in SCSS
     const getDarkBgVars = () => {
-      const text = resolveVarReferences(variableMap.get('--font-base-color-on-bg-dark') || 'var(--color-neutral-f)');
-      const heading = resolveVarReferences(variableMap.get('--font-heading-color-on-bg-dark') || text);
-      const preHeading = resolveVarReferences(variableMap.get('--pre-heading-color-on-bg-dark') || text);
-      const lead = resolveVarReferences(variableMap.get('--lead-color-on-bg-dark') || text);
-      const link = resolveVarReferences(variableMap.get('--link-color-on-bg-dark') || text);
-      const accent = resolveVarReferences(variableMap.get('--universal-accent-color-on-bg-dark') || text);
-      const btnBg = resolveVarReferences(variableMap.get('--button-primary-background-color-on-bg-dark') || 'var(--color-neutral-f)');
-      const btnFg = resolveVarReferences(variableMap.get('--button-primary-text-color-on-bg-dark') || 'var(--color-neutral-a)');
-      const btnOutlineFg = resolveVarReferences(variableMap.get('--button-outline-color-on-bg-dark') || text);
-      const btnOutlineBorder = resolveVarReferences(variableMap.get('--button-outline-border-color-on-bg-dark') || text);
-      const iconBg = resolveVarReferences(variableMap.get('--icon-background-color-on-bg-dark') || btnBg);
-      const iconFg = resolveVarReferences(variableMap.get('--icon-color-on-bg-dark') || btnFg);
+      const text = resolveVarReferences(
+        variableMap.get('--font-base-color-bg-dark') || 
+        variableMap.get('--font-base-color-on-bg-dark') || 
+        'var(--color-neutral-f)'
+      );
+      const heading = resolveVarReferences(
+        variableMap.get('--font-heading-color-bg-dark') || 
+        variableMap.get('--font-heading-color-on-bg-dark') || 
+        text
+      );
+      const preHeading = resolveVarReferences(
+        variableMap.get('--pre-heading-color-bg-dark') || 
+        variableMap.get('--pre-heading-color-on-bg-dark') || 
+        text
+      );
+      const lead = resolveVarReferences(
+        variableMap.get('--lead-color-bg-dark') || 
+        variableMap.get('--lead-color-on-bg-dark') || 
+        text
+      );
+      const link = resolveVarReferences(
+        variableMap.get('--link-color-bg-dark') || 
+        variableMap.get('--link-color-on-bg-dark') || 
+        text
+      );
+      const accent = resolveVarReferences(
+        variableMap.get('--universal-accent-color-bg-dark') || 
+        variableMap.get('--universal-accent-color-on-bg-dark') || 
+        text
+      );
+      const btnBg = resolveVarReferences(
+        variableMap.get('--button-background-color-bg-dark') ||
+        variableMap.get('--button-primary-background-color-bg-dark') || 
+        variableMap.get('--button-primary-background-color-on-bg-dark') || 
+        'var(--color-neutral-f)'
+      );
+      const btnFg = resolveVarReferences(
+        variableMap.get('--button-font-color-bg-dark') ||
+        variableMap.get('--button-primary-text-color-bg-dark') || 
+        variableMap.get('--button-primary-text-color-on-bg-dark') || 
+        'var(--color-neutral-a)'
+      );
+      const btnOutlineFg = resolveVarReferences(
+        variableMap.get('--button-outline-font-color-bg-dark') ||
+        variableMap.get('--button-outline-color-bg-dark') || 
+        variableMap.get('--button-outline-color-on-bg-dark') || 
+        text
+      );
+      const btnOutlineBorder = resolveVarReferences(
+        variableMap.get('--button-outline-border-color-bg-dark') || 
+        variableMap.get('--button-outline-border-color-on-bg-dark') || 
+        text
+      );
+      const iconBg = resolveVarReferences(
+        variableMap.get('--icon-background-color-bg-dark') || 
+        variableMap.get('--icon-background-color-on-bg-dark') || 
+        btnBg
+      );
+      const iconFg = resolveVarReferences(
+        variableMap.get('--icon-color-bg-dark') || 
+        variableMap.get('--icon-color-on-bg-dark') || 
+        btnFg
+      );
       return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
     };
     
@@ -266,38 +318,118 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
         color: var(--text) !important;
       }
       
-      /* Direct element overrides for ${className} */
+      /* Direct element overrides for ${className} - comprehensive selectors */
+      
+      /* Headings - all variations */
       .${className} h1, .${className} h2, .${className} h3, 
       .${className} h4, .${className} h5, .${className} h6,
-      .${className} .heading {
-        color: var(--heading) !important;
+      .${className} h1 a, .${className} h2 a, .${className} h3 a,
+      .${className} h4 a, .${className} h5 a, .${className} h6 a,
+      .${className} .heading,
+      .${className} .heading a,
+      .${className} .module .heading,
+      .${className} .module .heading a,
+      .${className} .text .heading,
+      .${className} .introduction .heading,
+      .${className} .container .heading {
+        color: ${toneVars.heading} !important;
       }
-      .${className} .pre-heading {
-        color: var(--pre-heading) !important;
+      
+      /* Pre-headings */
+      .${className} .pre-heading,
+      .${className} .module .pre-heading,
+      .${className} [class*="pre-heading"] {
+        color: ${toneVars.preHeading} !important;
       }
-      .${className} .lead {
-        color: var(--lead) !important;
+      
+      /* Lead text */
+      .${className} .lead,
+      .${className} .module .lead {
+        color: ${toneVars.lead} !important;
       }
-      .${className} a, .${className} a.link-arrow {
-        color: var(--link) !important;
+      
+      /* Links */
+      .${className} a,
+      .${className} a.link-arrow,
+      .${className} .link-arrow {
+        color: ${toneVars.link} !important;
       }
-      .${className} p, .${className} span, .${className} li {
-        color: var(--text) !important;
+      
+      /* Body text */
+      .${className} p,
+      .${className} span:not([class*="btn"]):not([class*="icon"]),
+      .${className} li,
+      .${className} .rich-text,
+      .${className} .rich-text p,
+      .${className} .rich-text li {
+        color: ${toneVars.text} !important;
       }
-      .${className} .btn {
-        background-color: var(--btn-bg) !important;
-        color: var(--btn-fg) !important;
+      
+      /* Primary/filled buttons */
+      .${className} .btn,
+      .${className} .btn-self-service,
+      .${className} [class*="btn-icon-"],
+      .${className} .button {
+        background-color: ${toneVars.btnBg} !important;
+        color: ${toneVars.btnFg} !important;
       }
-      .${className} .btn:hover, .${className} .btn:focus {
-        background-color: var(--btn-bg-hover) !important;
+      .${className} .btn i,
+      .${className} .btn-self-service i,
+      .${className} [class*="btn-icon-"] i {
+        color: ${toneVars.btnFg} !important;
       }
-      .${className} .btn-outline {
-        color: var(--btn-outline-fg) !important;
-        box-shadow: inset 0 0 0 var(--button-outline-border-size, 1px) var(--btn-outline-border) !important;
+      .${className} .btn:hover, .${className} .btn:focus,
+      .${className} .btn-self-service:hover, .${className} .btn-self-service:focus {
+        background-color: color-mix(in srgb, ${toneVars.btnBg} 90%, var(--surface)) !important;
+        color: ${toneVars.btnFg} !important;
       }
+      
+      /* Alternate buttons */
+      .${className} .btn-alternate {
+        background-color: ${toneVars.btnBg} !important;
+        color: ${toneVars.btnFg} !important;
+      }
+      
+      /* Outline buttons */
+      .${className} .btn-outline,
+      .${className} .multi-section .foldAll {
+        color: ${toneVars.btnOutlineFg} !important;
+        box-shadow: inset 0 0 0 var(--button-outline-border-size, 1px) ${toneVars.btnOutlineBorder} !important;
+        background-color: transparent !important;
+      }
+      .${className} .btn-outline i {
+        color: ${toneVars.btnOutlineFg} !important;
+      }
+      .${className} .btn-outline:hover, .${className} .btn-outline:focus {
+        background-color: ${toneVars.btnOutlineBorder} !important;
+        color: ${toneVars.btnFg} !important;
+      }
+      
+      /* Icons */
       .${className} .media i:before {
-        background-color: var(--icon-bg) !important;
-        color: var(--icon-fg) !important;
+        background-color: ${toneVars.iconBg} !important;
+        color: ${toneVars.iconFg} !important;
+      }
+      
+      /* Key numbers */
+      .${className} .key-number > .number {
+        color: ${toneVars.text} !important;
+      }
+      
+      /* Module heading borders */
+      .${className}.module.module-heading > .text > .heading,
+      .${className}.module.module-heading > .introduction > .heading,
+      .${className}.module.module-heading > .container > .heading,
+      .${className} .module.module-heading > .text > .heading,
+      .${className} .module.module-heading > .introduction > .heading,
+      .${className} .module.module-heading > .container > .heading {
+        border-color: ${toneVars.text} !important;
+      }
+      
+      /* Dividers */
+      .${className} .spacer.divider:before,
+      .${className}.spacer.divider:before {
+        background-color: color-mix(in srgb, ${toneVars.text} 25%, var(--surface)) !important;
       }
     `;
     }).join('\n');
