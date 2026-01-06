@@ -181,6 +181,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   }, [variables, resolveVarReferences]);
 
   // Generate surface overrides for .bg-color-* classes with luminance-aware foreground colors
+  // Following the SCSS surface-theme mixin pattern with --text, --heading, --link, --btn-bg, etc.
   const surfaceOverrides = useMemo(() => {
     const colorMappings = [
       { class: 'bg-color-a', variable: '--color-brand-a' },
@@ -192,74 +193,111 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       { class: 'bg-color-g', variable: '--color-brand-g' },
     ];
 
-    // Get light and dark background tone variables from the current variable set
-    const getLightBgVars = () => ({
-      textColor: variableMap.get('--font-base-color') || 'var(--color-neutral-a)',
-      headingColor: variableMap.get('--font-heading-color') || 'var(--color-neutral-a)',
-      linkColor: variableMap.get('--link-color') || 'var(--color-brand-a)',
-      buttonBg: variableMap.get('--button-primary-background-color') || 'var(--color-brand-a)',
-      buttonText: variableMap.get('--button-primary-text-color') || 'var(--color-neutral-f)',
-      accentColor: variableMap.get('--universal-accent-color') || 'var(--color-brand-a)',
-    });
+    // Get light background tone variables (for light backgrounds, use dark text)
+    const getLightBgVars = () => {
+      const text = resolveVarReferences(variableMap.get('--font-base-color') || 'var(--color-neutral-a)');
+      const heading = resolveVarReferences(variableMap.get('--font-heading-color') || text);
+      const preHeading = resolveVarReferences(variableMap.get('--pre-heading-color') || text);
+      const lead = resolveVarReferences(variableMap.get('--lead-color') || text);
+      const link = resolveVarReferences(variableMap.get('--link-color') || 'var(--color-brand-a)');
+      const accent = resolveVarReferences(variableMap.get('--universal-accent-color') || 'var(--color-brand-a)');
+      const btnBg = resolveVarReferences(variableMap.get('--button-primary-background-color') || 'var(--color-brand-a)');
+      const btnFg = resolveVarReferences(variableMap.get('--button-primary-text-color') || 'var(--color-neutral-f)');
+      const btnOutlineFg = resolveVarReferences(variableMap.get('--button-outline-color') || text);
+      const btnOutlineBorder = resolveVarReferences(variableMap.get('--button-outline-border-color') || text);
+      const iconBg = resolveVarReferences(variableMap.get('--icon-background-color') || btnBg);
+      const iconFg = resolveVarReferences(variableMap.get('--icon-color') || btnFg);
+      return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
+    };
 
-    const getDarkBgVars = () => ({
-      textColor: variableMap.get('--font-base-color-on-bg-dark') || 'var(--color-neutral-f)',
-      headingColor: variableMap.get('--font-heading-color-on-bg-dark') || 'var(--color-neutral-f)',
-      linkColor: variableMap.get('--link-color-on-bg-dark') || 'var(--color-neutral-f)',
-      buttonBg: variableMap.get('--button-primary-background-color-on-bg-dark') || 'var(--color-neutral-f)',
-      buttonText: variableMap.get('--button-primary-text-color-on-bg-dark') || 'var(--color-neutral-a)',
-      accentColor: variableMap.get('--universal-accent-color-on-bg-dark') || 'var(--color-neutral-f)',
-    });
+    // Get dark background tone variables (for dark backgrounds, use light text)
+    const getDarkBgVars = () => {
+      const text = resolveVarReferences(variableMap.get('--font-base-color-on-bg-dark') || 'var(--color-neutral-f)');
+      const heading = resolveVarReferences(variableMap.get('--font-heading-color-on-bg-dark') || text);
+      const preHeading = resolveVarReferences(variableMap.get('--pre-heading-color-on-bg-dark') || text);
+      const lead = resolveVarReferences(variableMap.get('--lead-color-on-bg-dark') || text);
+      const link = resolveVarReferences(variableMap.get('--link-color-on-bg-dark') || text);
+      const accent = resolveVarReferences(variableMap.get('--universal-accent-color-on-bg-dark') || text);
+      const btnBg = resolveVarReferences(variableMap.get('--button-primary-background-color-on-bg-dark') || 'var(--color-neutral-f)');
+      const btnFg = resolveVarReferences(variableMap.get('--button-primary-text-color-on-bg-dark') || 'var(--color-neutral-a)');
+      const btnOutlineFg = resolveVarReferences(variableMap.get('--button-outline-color-on-bg-dark') || text);
+      const btnOutlineBorder = resolveVarReferences(variableMap.get('--button-outline-border-color-on-bg-dark') || text);
+      const iconBg = resolveVarReferences(variableMap.get('--icon-background-color-on-bg-dark') || btnBg);
+      const iconFg = resolveVarReferences(variableMap.get('--icon-color-on-bg-dark') || btnFg);
+      return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
+    };
     
     return colorMappings.map(({ class: className, variable }) => {
       const colorValue = variableMap.get(variable) || '';
-      const isLight = isLightColor(colorValue);
-      const toneVars = isLight ? getLightBgVars() : getDarkBgVars();
-      const resolvedTextColor = resolveVarReferences(toneVars.textColor);
-      const resolvedHeadingColor = resolveVarReferences(toneVars.headingColor);
-      const resolvedLinkColor = resolveVarReferences(toneVars.linkColor);
-      const resolvedButtonBg = resolveVarReferences(toneVars.buttonBg);
-      const resolvedButtonText = resolveVarReferences(toneVars.buttonText);
-      const resolvedAccentColor = resolveVarReferences(toneVars.accentColor);
+      const isDark = !isLightColor(colorValue);
+      const toneVars = isDark ? getDarkBgVars() : getLightBgVars();
       
+      // Set the surface-level CSS variables that the template's CSS reads from
       return `
       .${className} {
         --surface: var(${variable}) !important;
         background-color: var(${variable}) !important;
         
-        /* Text colors for ${isLight ? 'light' : 'dark'} background */
-        --font-base-color: ${resolvedTextColor} !important;
-        --font-heading-color: ${resolvedHeadingColor} !important;
-        --link-color: ${resolvedLinkColor} !important;
-        --universal-accent-color: ${resolvedAccentColor} !important;
-        color: ${resolvedTextColor} !important;
+        /* Surface tokens for ${isDark ? 'dark' : 'light'} background (WCAG compliant) */
+        --text: ${toneVars.text} !important;
+        --heading: ${toneVars.heading} !important;
+        --pre-heading: ${toneVars.preHeading} !important;
+        --lead: ${toneVars.lead} !important;
+        --link: ${toneVars.link} !important;
+        --accent: ${toneVars.accent} !important;
+        --fg: var(--text) !important;
+        
+        /* Button tokens */
+        --btn-bg: ${toneVars.btnBg} !important;
+        --btn-fg: ${toneVars.btnFg} !important;
+        --btn-outline-fg: ${toneVars.btnOutlineFg} !important;
+        --btn-outline-border: ${toneVars.btnOutlineBorder} !important;
+        
+        /* Icon tokens */
+        --icon-bg: ${toneVars.iconBg} !important;
+        --icon-fg: ${toneVars.iconFg} !important;
+        
+        /* Derived tokens */
+        --muted-bg: color-mix(in srgb, var(--fg) 5%, var(--surface)) !important;
+        --border: color-mix(in srgb, var(--fg) 25%, var(--surface)) !important;
+        --btn-bg-hover: color-mix(in srgb, var(--btn-bg) 90%, var(--surface)) !important;
+        
+        /* Apply base text color */
+        color: var(--text) !important;
       }
+      
+      /* Direct element overrides for ${className} */
       .${className} h1, .${className} h2, .${className} h3, 
-      .${className} h4, .${className} h5, .${className} h6 {
-        color: ${resolvedHeadingColor} !important;
+      .${className} h4, .${className} h5, .${className} h6,
+      .${className} .heading {
+        color: var(--heading) !important;
       }
-      .${className} a:not(.btn):not(.button):not([class*="btn"]) {
-        color: ${resolvedLinkColor} !important;
-      }
-      .${className} p, .${className} span, .${className} li, 
-      .${className} div:not([class*="btn"]):not([class*="button"]) {
-        color: ${resolvedTextColor} !important;
-      }
-      .${className} .btn-primary, .${className} .button-primary,
-      .${className} [class*="btn-primary"], .${className} [class*="button-primary"] {
-        background-color: ${resolvedButtonBg} !important;
-        color: ${resolvedButtonText} !important;
-      }
-      .${className} .btn-outline, .${className} .button-outline,
-      .${className} [class*="btn-outline"], .${className} [class*="button-outline"] {
-        border-color: ${resolvedTextColor} !important;
-        color: ${resolvedTextColor} !important;
-      }
-      .${className} .pre-heading, .${className} [class*="pre-heading"] {
-        color: ${resolvedTextColor} !important;
+      .${className} .pre-heading {
+        color: var(--pre-heading) !important;
       }
       .${className} .lead {
-        color: ${resolvedTextColor} !important;
+        color: var(--lead) !important;
+      }
+      .${className} a, .${className} a.link-arrow {
+        color: var(--link) !important;
+      }
+      .${className} p, .${className} span, .${className} li {
+        color: var(--text) !important;
+      }
+      .${className} .btn {
+        background-color: var(--btn-bg) !important;
+        color: var(--btn-fg) !important;
+      }
+      .${className} .btn:hover, .${className} .btn:focus {
+        background-color: var(--btn-bg-hover) !important;
+      }
+      .${className} .btn-outline {
+        color: var(--btn-outline-fg) !important;
+        box-shadow: inset 0 0 0 var(--button-outline-border-size, 1px) var(--btn-outline-border) !important;
+      }
+      .${className} .media i:before {
+        background-color: var(--icon-bg) !important;
+        color: var(--icon-fg) !important;
       }
     `;
     }).join('\n');

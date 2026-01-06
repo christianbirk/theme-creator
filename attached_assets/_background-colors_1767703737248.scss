@@ -1,0 +1,561 @@
+/* =========================================================
+   Utilities (Contrast helpers)
+   ========================================================= */
+@use "sass:math";
+
+@function _lin($x) {
+  @return if($x <= 0.04045, math.div($x, 12.92), math.pow(math.div($x + 0.055, 1.055), 2.4));
+}
+
+@function _lum($c) {
+  $r: _lin(math.div(red($c), 255));
+  $g: _lin(math.div(green($c), 255));
+  $b: _lin(math.div(blue($c), 255));
+  @return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
+}
+
+@function _contrast($a, $b) {
+  $L1: _lum($a);
+  $L2: _lum($b);
+  $hi: if($L1 > $L2, $L1, $L2);
+  $lo: if($L1 > $L2, $L2, $L1);
+  @return math.div($hi + 0.05, $lo + 0.05);
+}
+
+@function auto-contrast($bg, $light: #fff, $dark: #252525) {
+  @return if(_contrast($bg, $dark) >= _contrast($bg, $light), $dark, $light);
+}
+
+@function is-dark($bg, $light: #fff, $dark: #252525) {
+  @return _contrast($bg, $light) >= _contrast($bg, $dark);
+}
+
+// @function is-light($bg) { @return _contrast($bg, #000) > _contrast($bg, #fff); }
+@function is-light($bg, $light: #fff, $dark: #252525) {
+  @return not is-dark($bg, $light, $dark);
+}
+
+/* =========================================================
+   Surface Tokens
+   ========================================================= */
+@mixin surface-theme($surface, $link: null) {
+  // Sass-derived fallbacks from the actual background
+  $fg: auto-contrast($surface);
+  $inv-bg: $fg; // for filled UI (buttons/pills)
+  $inv-fg: auto-contrast($inv-bg);
+
+  --surface: #{$surface};
+
+  // Role tokens chosen by surface parity (override via CSS vars if desired)
+  @if is-dark($surface) {
+    /* Text / links */
+    --text: var(--font-base-color-bg-dark, #{$fg});
+    --heading: var(--font-heading-color-bg-dark, var(--text));
+    --pre-heading: var(--pre-heading-color-bg-dark, var(--text));
+    --lead: var(--lead-color-bg-dark, var(--text));
+    --link: #{if($link == null, 'var(--link-color-bg-dark, var(--text))', $link)};
+    --accent: var(--universal-accent-color-on-bg-dark, var(--text));
+
+    /* Buttons */
+    --btn-bg: var(--button-background-color-bg-dark, #{$inv-bg});
+    --btn-fg: var(--button-font-color-bg-dark, #{$inv-fg});
+    --btn-outline-fg: var(--button-outline-font-color-bg-dark, var(--text));
+    --btn-outline-border: var(--button-outline-border-color-bg-dark, var(--text));
+
+    /* Alternate buttons */
+    --btn-alt-bg: var(--button-alternate-background-color-bg-dark, var(--btn-bg));
+    --btn-alt-fg: var(--button-alternate-font-color-bg-dark, var(--btn-fg));
+
+    /* Icons */
+    --icon-bg: var(--icon-background-color-bg-dark, var(--btn-bg));
+    --icon-fg: var(--icon-color-bg-dark, var(--btn-fg));
+
+    /* Labels */
+    --label-bg: var(--label-background-bg-dark, rgba(#{$fg}, .075));
+    --label-fg: var(--label-color-bg-dark, var(--text));
+    --label-border: var(--label-border-bg-dark, rgba(#{$fg}, .5));
+
+    /* Module adornments */
+    --boxed-border: var(--boxed-border-color-bg-dark, rgba(#{$fg}, .2));
+    --module-heading-border: var(--module-heading-border-color-bg-dark, var(--text));
+
+    /* Forms */
+    --form-border-width: 0;
+    --form-border-color: transparent;
+  } @else {
+    /* Text / links */
+    --text: var(--font-base-color, #{$fg});
+    --heading: var(--font-heading-color, var(--text));
+    --pre-heading: var(--pre-heading-color, var(--text));
+    --lead: var(--lead-color, var(--text));
+    --link: #{if($link == null, 'var(--link-color, var(--text))', $link)};
+    --accent: var(--universal-accent-color, var(--text));
+
+    /* Buttons */
+    --btn-bg: var(--button-background-color, #{$inv-bg});
+    --btn-fg: var(--button-color, #{$inv-fg});
+    --btn-outline-fg: var(--button-outline-color, var(--text));
+    --btn-outline-border: var(--button-outline-border-color, var(--text));
+
+    /* Alternate buttons */
+    --btn-alt-bg: var(--button-alternate-background-color, var(--btn-bg));
+    --btn-alt-fg: var(--button-alternate-color, var(--btn-fg));
+
+    /* Icons */
+    --icon-bg: var(--icon-background-color, var(--btn-bg));
+    --icon-fg: var(--icon-color, var(--btn-fg));
+
+    /* Labels */
+    --label-bg: var(--label-background, rgba(#{$fg}, .075));
+    --label-fg: var(--label-color, var(--text));
+    --label-border: var(--label-border-color, rgba(#{$fg}, .5));
+
+    /* Module adornments */
+    --boxed-border: var(--boxed-border-color, rgba(#{$fg}, .2));
+    --module-heading-border: var(--module-heading-border-color, var(--text));
+    --form-border-color: rgba(0,0,0,.25);
+
+  }
+
+  /* Back-compat: old rules reading --fg will still work */
+  --fg: var(--text);
+
+  /* Shared tokens that depend on the chosen roles */
+  --muted-bg: color-mix(in srgb, var(--fg) 5%, var(--surface));
+  --muted-bg-hover: color-mix(in srgb, var(--fg) 10%, var(--surface));
+  
+  --border: color-mix(in srgb, var(--fg) 25%, var(--surface));
+
+  /* Hover colors derive from current tokens */
+  --btn-bg-hover: color-mix(in srgb, var(--btn-bg) 90%, var(--surface));
+  --btn-alt-bg-hover: color-mix(in srgb, var(--btn-alt-bg) 90%, var(--surface));
+
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+/* =========================================================
+   Components living "on a surface"
+   (this mixin must be included inside a selector; it uses &)
+   ========================================================= */
+@mixin surface-components() {
+  /* --- Typography --- */
+  .heading { color: var(--heading); }
+  .pre-heading { color: var(--pre-heading); }
+  .lead { color: var(--lead); }
+
+  a, a.link-arrow {
+    color: var(--link);
+    &:hover, &:focus { color: var(--link); }
+  }
+  
+  $headings: (1,2,3,4,5,6);
+  @each $name in $headings {
+    h#{'' + $name},
+    h#{'' + $name} > a {
+      color: var(--heading);
+    }
+  }
+
+  .form .form-message.help,
+  blockquote::before,
+  .font .example,
+  footer, footer * { color: var(--text); }
+
+  // /* --- Icons --- */
+  .media i{
+    
+    &:before {
+      background-color: var(--icon-bg);
+      color: var(--icon-fg);
+    }
+  }
+  // Flex List Icons & Small Icons
+  .module.small-icon,
+  &.module.small-icon,
+  .module.flex-list,
+  &.module.flex-list{
+    > .media > a > i,
+    > .media > i{
+      
+      &:before{
+        background: transparent;
+        color: var(--text);
+      }
+    }
+  }
+    
+  /* --- Multi Box --- */
+  .multi-box,
+  &.multi-box{
+    .small-icon .media i:before {
+      background: transparent;
+      color: var(--text);
+    }
+    &.link-box .heading a:after{
+      color: var(--btn-fg);
+      background: var(--btn-bg); 
+    }
+  }
+
+  /* --- Dividers / borders --- */
+  .spacer.divider:before,
+  &.spacer.divider:before { background-color: var(--border); }
+  
+  .font, &.font,
+  .module .items,
+  &.module .items{
+    .item,
+    .item:last-child { 
+      border-color: var(--border); 
+    }
+  } 
+  
+  /* Module heading borders/rules */
+  .module.module-heading,
+  &.module.module-heading{
+    > .text,
+    > .introduction,
+    > .container {
+      > .heading{
+        border-color: var(--module-heading-border);    
+      }
+    }
+  } 
+
+  /* --- Filled buttons --- */
+  .btn,
+  .btn-self-service,
+  [class*="btn-icon-"] {
+    background-color: var(--btn-bg);
+    color: var(--btn-fg);
+    i { color: var(--btn-fg); }
+    &:hover, &:focus { background-color: var(--btn-bg-hover); color: var(--btn-fg); }
+  }
+
+  /* --- Alternate buttons --- */
+  .btn-alternate {
+    background-color: var(--btn-alt-bg);
+    color: var(--btn-alt-fg);
+    i { color: currentColor; }
+    &:hover, &:focus {
+      background-color: var(--btn-alt-bg-hover);
+      color: var(--btn-alt-fg);
+    }
+  }
+
+  /* --- Outline buttons --- */
+  .btn-outline,
+  .multi-section .foldAll {
+    color: var(--btn-outline-fg);
+    box-shadow: inset 0 0 0 var(--button-outline-border-size, 1px) var(--btn-outline-border);
+    i { color: currentColor; }
+    &:hover, &:focus {
+      background-color: var(--btn-outline-border);
+      color: var(--btn-fg);
+      i { color: var(--btn-fg); }
+    }
+  }
+  
+  /* --- Numbers --- */
+  .key-number > .number{
+    color: var(--text);
+  }
+
+  /* --- Download module --- */
+  .download .item {
+    &:hover, &:focus, &:active { background: var(--muted-bg); }
+    span[class*='icon-']:before { color: var(--text); }
+  }
+
+  /* --- Forms --- */
+  input, select, textarea {
+    border-color: var(--form-border-color);
+  }
+  .label:not(.clear-all) .remove::before { color: var(--universal-accent-color, var(--accent)); }
+
+  /* --- Labels --- */
+  .labels .label.clear-all,
+  .labels .label{
+    color: var(--label-fg);
+    border-color: var(--label-border);
+    background-color: var(--label-bg);
+    &:hover, &:focus {
+      background-color: color-mix(in srgb, var(--label-bg) 90%, var(--surface));
+    }
+    .remove{
+      &:before{
+        color: var(--universal-accent-color, var(--accent));
+      }
+    }
+  }
+  
+  /* --- Pagination --- */
+  ul.pagination{
+    border-color: var(--border);
+    > li > a{
+      box-shadow: inset 1px 0 0 var(--border);
+      color: var(--fg);
+      &:hover,
+      &:focus,
+      &:active{
+        color: var(--fg);
+        background-color: var(--muted-bg);
+      }
+    }
+    > li.active > a{
+      background-color: var(--muted-bg);
+    }
+  } 
+
+  /* --- Dropdowns --- */
+  .dropdown-menu a { color: var(--universal-accent-color, var(--accent)); }
+
+  /* --- Accordion --- */
+  .multi-section.accordion,
+  &.multi-section.accordion{
+    
+    .sections .section {
+      .section-header {
+        border-color: var(--border);
+        &:hover, &:focus, &:active { 
+          background-color: var(--muted-bg);
+          span:after{
+            background-color: var(--border);
+          }
+        }
+        span { 
+          color: var(--text); 
+          &:after{
+            background-color: var(--muted-bg);
+            color: var(--fg);
+          }
+        }
+      }
+      &:last-child > .section-header{
+        border-color: var(--border);
+      }
+      .section-body{
+        border-color: var(--border);
+      }
+      
+      &.expanded:last-child > .section-body{
+        border-color: var(--border);
+      }
+      
+      &.expanded .section-header{
+        border-bottom-color: var(--border);
+        span:after {
+          background-color: var(--btn-bg);
+          color: var(--btn-fg);
+        }
+      } 
+    }
+    // Timeline
+    > .sections.accordion-timeline{
+      
+      // Background
+      > .section > .section-header::after, 
+      > .section > .section-header > .accordion-icon{
+        background: var(--muted-bg);
+      }
+      // Icon Color
+      > .section >  .section-header > .accordion-icon i:before{
+        color: var(--text);
+      }
+            
+      // Active
+    
+      // Background
+      > .section.expanded > .section-header > .accordion-icon{
+        background: var(--btn-bg);
+      }
+      
+      > .section.expanded > .section-body:after{
+        background: var(--muted-bg);
+      }
+      
+      // Icon Color
+      > .section.expanded > .section-header{
+        &:before{
+          background: transparent;
+        }
+        > .accordion-icon i:before{
+          color: var(--btn-fg);
+        }
+      } 
+    }
+  }
+  
+  /* --- Tabs --- */
+  .multi-section.tabs,
+  &.multi-section.tabs {
+    .tabs-navigation{
+      border-bottom-color: var(--border);
+      ul > li.active { 
+        border-color: var(--btn-bg);
+      }
+      ul > li.active a,
+      ul > li:not(.active) a { 
+        color: var(--btn-bg);
+      }
+      .tabs-scroll-arrow{
+        background-color: var(--btn-bg);
+        color: var(--btn-fg);
+      }
+    }
+    
+    // Timeline
+    .tabs-navigation.tabs-timeline ul{
+      
+      // Background
+      > li::after, 
+      > li > .section-icon{
+        background: var(--muted-bg);
+      }
+      // Icon Color
+      > li > .section-icon i:before{
+        color: var(--text);
+      }
+            
+      // Active
+
+      // Background
+      > li.active > .section-icon{
+        background: var(--btn-bg);
+      }
+      
+      // Icon Color
+      > li.active{
+        &:before{
+          background: transparent;
+        }
+        > .section-icon i:before{
+          color: var(--btn-fg);
+        }
+      } 
+    }     
+  }
+
+  /* --- Tables --- */
+  .rich-text table tbody tr {
+    td, th {
+      border-color: var(--text);
+      color: var(--text);
+      background: transparent;
+    }
+    &:nth-of-type(even) { background-color: var(--muted-bg); }
+  }
+
+  /* --- Sub menu --- */
+  &.sub-menu{
+    background: transparent;
+    padding: 0!important;
+    .heading{
+      color: var(--font-heading-color);
+    }
+    > ul > li > a {
+      border-color: transparent;
+      background-color: var(--surface);
+      color: var(--text);
+      &.dropdown-toggle,
+      &[href]{
+        &:hover,
+        &:focus{
+          color: var(--text);
+          background-color: color-mix(in srgb, var(--text) 5%, var(--surface));
+        } 
+      }
+    }
+  }
+  .sub-menu{
+    > ul > li > a {
+      background-color: var(--muted-bg);
+      border-color: var(--border);
+      color: var(--text);
+      &.dropdown-toggle {
+        background-color: transparent;
+      }
+      &.dropdown-toggle,
+      &[href]{
+        &:hover,
+        &:focus{
+          color: var(--text);
+          background-color: var(--muted-bg-hover);  
+        } 
+      }
+    }
+  }
+  
+  // Event List
+  .event-list{
+    .event.item > .media{
+      background-color: color-mix(in srgb, var(--text) 5%, var(--surface));
+    }
+  }
+  
+  // Dynamic List
+  .dynamic-list,
+  &.dynamic-list{
+    .event {
+      .date:not(.last-updated) {
+        border-top-color: var(--text);
+      }
+    }  
+  }
+
+  /* --- Hero variations --- */
+  .hero, &.hero {
+    &[class*="text-in-box"] > .text > .wrap { background-color: var(--surface); }
+    
+    // Split Box
+    &.split-box{
+      .text { 
+        background-color: var(--surface); 
+      }  
+    }
+    
+    // Label Look
+    &.label-look {
+      @include breakpoint(medium-xlarge) {
+        .heading, .pre-heading, .rich-text {
+          background-color: color-mix(in srgb, var(--surface) 90%, transparent);
+        }
+      }
+    }
+  }
+}
+
+/* =========================================================
+   Usage over color map (your SCSS color variables)
+   ========================================================= */
+$colors: (
+  a: $color-brand-a,
+  b: $color-brand-b,
+  c: $color-brand-c,
+  d: $color-brand-d,
+  e: $color-brand-e,
+  f: $color-brand-f,
+  g: $color-brand-g,
+);
+
+@each $name, $surface in $colors {
+  /* Primary colored surfaces */
+  .bg-color-#{$name}{
+    @include surface-theme($surface);
+    @include surface-components();
+  }
+
+  /* Boxed / highlighted => white surface that auto-contrasts via tokens */
+  .bg-color-#{$name} .module.boxed,
+  .bg-color-#{$name} .module.highlighted {
+    @include surface-theme(#fff);
+    @include surface-components();
+  }
+  .bg-color-#{$name} .module.boxed{
+    @if is-dark($surface) {
+      border-color: var(--boxed-border-color-bg-dark);
+    }  
+  }
+  
+}
