@@ -35,23 +35,28 @@ export function ExportModal({ open, onOpenChange, variables }: ExportModalProps)
       '--grid-container-max-width': '$grid-max-width',
     };
 
-    const scssVarsToExport = new Map<string, string>();
+    const colorScssVars = [
+      '$color-brand-a', '$color-brand-b', '$color-brand-c', '$color-brand-d',
+      '$color-brand-e', '$color-brand-f', '$color-brand-g'
+    ];
     
-    const gridMaxWidthVar = allVars.find(v => v.name === '--grid-container-max-width') 
-      || allVars.find(v => v.name === '--grid-max-width');
-    scssVarsToExport.set('$grid-max-width', gridMaxWidthVar?.value || '1240px');
+    const scssVarsLines: string[] = [];
     
-    Object.entries(scssVarMappings).forEach(([cssVar, scssVar]) => {
-      if (!scssVarsToExport.has(scssVar)) {
+    colorScssVars.forEach(scssVar => {
+      const cssVar = Object.entries(scssVarMappings).find(([_, s]) => s === scssVar)?.[0];
+      if (cssVar) {
         const variable = allVars.find(v => v.name === cssVar);
         const value = variable ? variable.value : '#000000';
-        scssVarsToExport.set(scssVar, value);
+        scssVarsLines.push(`${scssVar}: ${value};`);
       }
     });
     
-    const scssVarsBlock = Array.from(scssVarsToExport.entries())
-      .map(([scssVar, value]) => `${scssVar}: ${value};`)
-      .join('\n');
+    const gridMaxWidthVar = allVars.find(v => v.name === '--grid-container-max-width') 
+      || allVars.find(v => v.name === '--grid-max-width');
+    scssVarsLines.push('');
+    scssVarsLines.push(`$grid-max-width: ${gridMaxWidthVar?.value || '1240px'};`);
+    
+    const scssVarsBlock = scssVarsLines.join('\n');
 
     const cssVarsBlock = allVars
       .map(v => {
