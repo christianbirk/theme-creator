@@ -117,6 +117,24 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     return map;
   }, [variables]);
 
+  // Build maps for Light Background Tones and Dark Background Tones sections
+  const lightBgTonesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    variables
+      .filter(v => v.subSection === 'light-background-tones' || v.category === 'light-bg-tones')
+      .forEach(v => map.set(v.name, v.value));
+    return map;
+  }, [variables]);
+
+  const darkBgTonesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    variables
+      .filter(v => v.subSection === 'dark-background-tones' || v.category === 'dark-bg-tones' || 
+                   v.name.includes('-bg-dark') || v.name.includes('-on-bg-dark'))
+      .forEach(v => map.set(v.name, v.value));
+    return map;
+  }, [variables]);
+
   // Resolve var() references to their computed values
   const resolveVarReferences = useCallback((value: string, depth = 0): string => {
     if (depth > 10) return value;
@@ -193,89 +211,59 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       { class: 'bg-color-g', variable: '--color-brand-g' },
     ];
 
-    // Get light background tone variables (for light backgrounds, use dark text)
+    // Get light background tone variables from the Light Background Tones section
+    // These are the values specifically configured for use on light backgrounds
     const getLightBgVars = () => {
-      const text = resolveVarReferences(variableMap.get('--font-base-color') || 'var(--color-neutral-a)');
-      const heading = resolveVarReferences(variableMap.get('--font-heading-color') || text);
-      const preHeading = resolveVarReferences(variableMap.get('--pre-heading-color') || text);
-      const lead = resolveVarReferences(variableMap.get('--lead-color') || text);
-      const link = resolveVarReferences(variableMap.get('--link-color') || 'var(--color-brand-a)');
-      const accent = resolveVarReferences(variableMap.get('--universal-accent-color') || 'var(--color-brand-a)');
-      const btnBg = resolveVarReferences(variableMap.get('--button-primary-background-color') || 'var(--color-brand-a)');
-      const btnFg = resolveVarReferences(variableMap.get('--button-primary-text-color') || 'var(--color-neutral-f)');
-      const btnOutlineFg = resolveVarReferences(variableMap.get('--button-outline-color') || text);
-      const btnOutlineBorder = resolveVarReferences(variableMap.get('--button-outline-border-color') || text);
-      const iconBg = resolveVarReferences(variableMap.get('--icon-background-color') || btnBg);
-      const iconFg = resolveVarReferences(variableMap.get('--icon-color') || btnFg);
+      // Helper to get from light tones section first, then fall back to general variables
+      const getLight = (name: string, fallback: string) => 
+        resolveVarReferences(lightBgTonesMap.get(name) || variableMap.get(name) || fallback);
+      
+      const text = getLight('--font-base-color', 'var(--color-neutral-a)');
+      const heading = getLight('--font-heading-color', text);
+      const preHeading = getLight('--pre-heading-color', text);
+      const lead = getLight('--lead-color', text);
+      const link = getLight('--link-color', 'var(--color-brand-a)');
+      const accent = getLight('--universal-accent-color', 'var(--color-brand-a)');
+      const btnBg = getLight('--button-background-color', getLight('--button-primary-background-color', 'var(--color-brand-a)'));
+      const btnFg = getLight('--button-font-color', getLight('--button-primary-text-color', 'var(--color-neutral-f)'));
+      const btnOutlineFg = getLight('--button-outline-font-color', getLight('--button-outline-color', text));
+      const btnOutlineBorder = getLight('--button-outline-border-color', text);
+      const iconBg = getLight('--icon-background-color', btnBg);
+      const iconFg = getLight('--icon-color', btnFg);
       return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
     };
 
-    // Get dark background tone variables (for dark backgrounds, use light text)
-    // Note: Check both -bg-dark and -on-bg-dark naming conventions used in SCSS
+    // Get dark background tone variables from the Dark Background Tones section
+    // These are the values specifically configured for use on dark backgrounds
     const getDarkBgVars = () => {
-      const text = resolveVarReferences(
-        variableMap.get('--font-base-color-bg-dark') || 
-        variableMap.get('--font-base-color-on-bg-dark') || 
-        'var(--color-neutral-f)'
-      );
-      const heading = resolveVarReferences(
-        variableMap.get('--font-heading-color-bg-dark') || 
-        variableMap.get('--font-heading-color-on-bg-dark') || 
-        text
-      );
-      const preHeading = resolveVarReferences(
-        variableMap.get('--pre-heading-color-bg-dark') || 
-        variableMap.get('--pre-heading-color-on-bg-dark') || 
-        text
-      );
-      const lead = resolveVarReferences(
-        variableMap.get('--lead-color-bg-dark') || 
-        variableMap.get('--lead-color-on-bg-dark') || 
-        text
-      );
-      const link = resolveVarReferences(
-        variableMap.get('--link-color-bg-dark') || 
-        variableMap.get('--link-color-on-bg-dark') || 
-        text
-      );
-      const accent = resolveVarReferences(
-        variableMap.get('--universal-accent-color-bg-dark') || 
-        variableMap.get('--universal-accent-color-on-bg-dark') || 
-        text
-      );
-      const btnBg = resolveVarReferences(
-        variableMap.get('--button-background-color-bg-dark') ||
-        variableMap.get('--button-primary-background-color-bg-dark') || 
-        variableMap.get('--button-primary-background-color-on-bg-dark') || 
-        'var(--color-neutral-f)'
-      );
-      const btnFg = resolveVarReferences(
-        variableMap.get('--button-font-color-bg-dark') ||
-        variableMap.get('--button-primary-text-color-bg-dark') || 
-        variableMap.get('--button-primary-text-color-on-bg-dark') || 
-        'var(--color-neutral-a)'
-      );
-      const btnOutlineFg = resolveVarReferences(
-        variableMap.get('--button-outline-font-color-bg-dark') ||
-        variableMap.get('--button-outline-color-bg-dark') || 
-        variableMap.get('--button-outline-color-on-bg-dark') || 
-        text
-      );
-      const btnOutlineBorder = resolveVarReferences(
-        variableMap.get('--button-outline-border-color-bg-dark') || 
-        variableMap.get('--button-outline-border-color-on-bg-dark') || 
-        text
-      );
-      const iconBg = resolveVarReferences(
-        variableMap.get('--icon-background-color-bg-dark') || 
-        variableMap.get('--icon-background-color-on-bg-dark') || 
-        btnBg
-      );
-      const iconFg = resolveVarReferences(
-        variableMap.get('--icon-color-bg-dark') || 
-        variableMap.get('--icon-color-on-bg-dark') || 
-        btnFg
-      );
+      // Helper to get from dark tones section first, checking multiple naming patterns
+      const getDark = (baseName: string, fallback: string) => {
+        // Try different naming patterns used in SCSS
+        const patterns = [
+          `${baseName}-bg-dark`,
+          `${baseName}-on-bg-dark`,
+          baseName.replace(/-color$/, '-color-bg-dark'),
+          baseName.replace(/-color$/, '-color-on-bg-dark'),
+        ];
+        for (const pattern of patterns) {
+          const val = darkBgTonesMap.get(pattern) || variableMap.get(pattern);
+          if (val) return resolveVarReferences(val);
+        }
+        return resolveVarReferences(fallback);
+      };
+      
+      const text = getDark('--font-base-color', 'var(--color-neutral-f)');
+      const heading = getDark('--font-heading-color', text);
+      const preHeading = getDark('--pre-heading-color', text);
+      const lead = getDark('--lead-color', text);
+      const link = getDark('--link-color', text);
+      const accent = getDark('--universal-accent-color', text);
+      const btnBg = getDark('--button-background-color', getDark('--button-primary-background-color', 'var(--color-neutral-f)'));
+      const btnFg = getDark('--button-font-color', getDark('--button-primary-text-color', 'var(--color-neutral-a)'));
+      const btnOutlineFg = getDark('--button-outline-font-color', getDark('--button-outline-color', text));
+      const btnOutlineBorder = getDark('--button-outline-border-color', text);
+      const iconBg = getDark('--icon-background-color', btnBg);
+      const iconFg = getDark('--icon-color', btnFg);
       return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
     };
     
@@ -433,7 +421,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       }
     `;
     }).join('\n');
-  }, [variableMap, isLightColor, resolveVarReferences]);
+  }, [variableMap, lightBgTonesMap, darkBgTonesMap, isLightColor, resolveVarReferences]);
 
   const customCssContent = useMemo(() => {
     return `
