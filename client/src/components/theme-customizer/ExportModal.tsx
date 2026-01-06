@@ -32,14 +32,20 @@ export function ExportModal({ open, onOpenChange, variables }: ExportModalProps)
       '--color-brand-f': '$color-brand-f',
       '--color-brand-g': '$color-brand-g',
       '--grid-max-width': '$grid-max-width',
+      '--grid-container-max-width': '$grid-max-width',
     };
 
-    const scssVarsBlock = Object.entries(scssVarMappings)
-      .map(([cssVar, scssVar]) => {
+    const scssVarsToExport = new Map<string, string>();
+    Object.entries(scssVarMappings).forEach(([cssVar, scssVar]) => {
+      if (!scssVarsToExport.has(scssVar)) {
         const variable = allVars.find(v => v.name === cssVar);
-        const value = variable ? variable.value : (cssVar === '--grid-max-width' ? '1240px' : '#000000');
-        return `${scssVar}: ${value};`;
-      })
+        const value = variable ? variable.value : (cssVar.includes('grid') ? '1240px' : '#000000');
+        scssVarsToExport.set(scssVar, value);
+      }
+    });
+    
+    const scssVarsBlock = Array.from(scssVarsToExport.entries())
+      .map(([scssVar, value]) => `${scssVar}: ${value};`)
       .join('\n');
 
     const cssVarsBlock = allVars
