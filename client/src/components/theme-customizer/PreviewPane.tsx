@@ -259,6 +259,9 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       }
     };
     
+    // Pre-compute light surface tokens for boxed/highlighted modules (always white background)
+    const lightSurfaceTokens = computeSurfaceTokens('#ffffff', false);
+    
     return colorMappings.map(({ class: className, variable }) => {
       const colorValue = variableMap.get(variable) || '';
       const resolvedColor = resolveVarReferences(colorValue);
@@ -412,6 +415,88 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       .${className} .spacer.divider:before,
       .${className}.spacer.divider:before {
         background-color: color-mix(in srgb, ${toneVars.text} 25%, var(--surface)) !important;
+      }
+      
+      /* Boxed and Highlighted modules - use white/light surface with contrasting tokens */
+      .${className} .module.boxed,
+      .${className} .module.highlighted {
+        --surface: #ffffff !important;
+        background-color: #ffffff !important;
+        color: ${lightSurfaceTokens.text} !important;
+        
+        /* Light surface tokens */
+        --text: ${lightSurfaceTokens.text} !important;
+        --heading: ${lightSurfaceTokens.heading} !important;
+        --pre-heading: ${lightSurfaceTokens.preHeading} !important;
+        --lead: ${lightSurfaceTokens.lead} !important;
+        --link: ${lightSurfaceTokens.link} !important;
+        --accent: ${lightSurfaceTokens.accent} !important;
+        --fg: var(--text) !important;
+        
+        /* Button tokens for light surface */
+        --btn-bg: ${lightSurfaceTokens.btnBg} !important;
+        --btn-fg: ${lightSurfaceTokens.btnFg} !important;
+        --btn-outline-fg: ${lightSurfaceTokens.btnOutlineFg} !important;
+        --btn-outline-border: ${lightSurfaceTokens.btnOutlineBorder} !important;
+        
+        /* Icon tokens */
+        --icon-bg: ${lightSurfaceTokens.iconBg} !important;
+        --icon-fg: ${lightSurfaceTokens.iconFg} !important;
+        
+        /* Derived tokens */
+        --muted-bg: color-mix(in srgb, var(--fg) 5%, var(--surface)) !important;
+        --border: color-mix(in srgb, var(--fg) 25%, var(--surface)) !important;
+      }
+      
+      /* Boxed/Highlighted headings */
+      .${className} .module.boxed h1, .${className} .module.boxed h2, .${className} .module.boxed h3,
+      .${className} .module.boxed h4, .${className} .module.boxed h5, .${className} .module.boxed h6,
+      .${className} .module.boxed .heading,
+      .${className} .module.highlighted h1, .${className} .module.highlighted h2, .${className} .module.highlighted h3,
+      .${className} .module.highlighted h4, .${className} .module.highlighted h5, .${className} .module.highlighted h6,
+      .${className} .module.highlighted .heading {
+        color: ${lightSurfaceTokens.heading} !important;
+      }
+      
+      /* Boxed/Highlighted pre-headings */
+      .${className} .module.boxed .pre-heading,
+      .${className} .module.highlighted .pre-heading {
+        color: ${lightSurfaceTokens.preHeading} !important;
+      }
+      
+      /* Boxed/Highlighted text */
+      .${className} .module.boxed p,
+      .${className} .module.boxed .rich-text,
+      .${className} .module.highlighted p,
+      .${className} .module.highlighted .rich-text {
+        color: ${lightSurfaceTokens.text} !important;
+      }
+      
+      /* Boxed/Highlighted buttons */
+      .${className} .module.boxed .btn,
+      .${className} .module.highlighted .btn {
+        background-color: ${lightSurfaceTokens.btnBg} !important;
+        color: ${lightSurfaceTokens.btnFg} !important;
+      }
+      
+      /* Boxed/Highlighted outline buttons */
+      .${className} .module.boxed .btn-outline,
+      .${className} .module.highlighted .btn-outline {
+        color: ${lightSurfaceTokens.btnOutlineFg} !important;
+        box-shadow: inset 0 0 0 var(--button-outline-border-size, 1px) ${lightSurfaceTokens.btnOutlineBorder} !important;
+        background-color: transparent !important;
+      }
+      
+      /* Boxed/Highlighted icons */
+      .${className} .module.boxed .media i:before,
+      .${className} .module.highlighted .media i:before {
+        background-color: ${lightSurfaceTokens.iconBg} !important;
+        color: ${lightSurfaceTokens.iconFg} !important;
+      }
+      
+      /* Boxed border color */
+      .${className} .module.boxed {
+        border-color: ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'} !important;
       }
     `;
     }).join('\n');
