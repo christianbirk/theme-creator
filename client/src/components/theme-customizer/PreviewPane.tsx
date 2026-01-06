@@ -396,6 +396,19 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
         color: ${toneVars.iconFg} !important;
       }
       
+      /* Small-icon and flex-list icons - transparent bg, text color */
+      .${className}.module.small-icon > .media > a > i:before,
+      .${className}.module.small-icon > .media > i:before,
+      .${className}.module.flex-list > .media > a > i:before,
+      .${className}.module.flex-list > .media > i:before,
+      .${className} .module.small-icon > .media > a > i:before,
+      .${className} .module.small-icon > .media > i:before,
+      .${className} .module.flex-list > .media > a > i:before,
+      .${className} .module.flex-list > .media > i:before {
+        background-color: transparent !important;
+        color: ${toneVars.text} !important;
+      }
+      
       /* Key numbers */
       .${className} .key-number > .number {
         color: ${toneVars.text} !important;
@@ -507,6 +520,27 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       .${className} .module.highlighted .media i:before {
         background-color: ${lightSurfaceTokens.iconBg} !important;
         color: ${lightSurfaceTokens.iconFg} !important;
+      }
+      
+      /* Small-icon and flex-list icons in boxed/highlighted - transparent bg, text color */
+      .${className} .module.boxed.small-icon > .media > a > i:before,
+      .${className} .module.boxed.small-icon > .media > i:before,
+      .${className} .module.boxed.flex-list > .media > a > i:before,
+      .${className} .module.boxed.flex-list > .media > i:before,
+      .${className} .module.highlighted.small-icon > .media > a > i:before,
+      .${className} .module.highlighted.small-icon > .media > i:before,
+      .${className} .module.highlighted.flex-list > .media > a > i:before,
+      .${className} .module.highlighted.flex-list > .media > i:before,
+      .${className} .module.boxed .module.small-icon > .media > a > i:before,
+      .${className} .module.boxed .module.small-icon > .media > i:before,
+      .${className} .module.boxed .module.flex-list > .media > a > i:before,
+      .${className} .module.boxed .module.flex-list > .media > i:before,
+      .${className} .module.highlighted .module.small-icon > .media > a > i:before,
+      .${className} .module.highlighted .module.small-icon > .media > i:before,
+      .${className} .module.highlighted .module.flex-list > .media > a > i:before,
+      .${className} .module.highlighted .module.flex-list > .media > i:before {
+        background-color: transparent !important;
+        color: ${lightSurfaceTokens.text} !important;
       }
       
       /* Boxed/Highlighted list items */
