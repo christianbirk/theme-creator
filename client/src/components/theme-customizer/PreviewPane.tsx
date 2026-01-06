@@ -211,77 +211,60 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       { class: 'bg-color-g', variable: '--color-brand-g' },
     ];
 
-    // Get light background tone variables from the Light Background Tones section
-    // These are the values specifically configured for use on light backgrounds
-    const getLightBgVars = () => {
-      // Helper to get from light tones section first, checking multiple naming patterns
-      const getLight = (baseName: string, fallback: string) => {
-        // Try different naming patterns used in SCSS for light backgrounds
-        const patterns = [
-          baseName,
-          `${baseName}-bg-light`,
-          baseName.replace(/-color$/, '-color-bg-light'),
-        ];
-        for (const pattern of patterns) {
-          const val = lightBgTonesMap.get(pattern) || variableMap.get(pattern);
-          if (val) return resolveVarReferences(val);
-        }
-        return resolveVarReferences(fallback);
-      };
+    // Dynamic auto-contrast surface tokens - mirrors the SCSS surface-theme mixin
+    // Instead of reading static parsed values, we compute them based on the actual brand color luminance
+    const computeSurfaceTokens = (bgColorValue: string, isDarkBg: boolean) => {
+      // Get the neutral palette endpoints (darkest and lightest)
+      const neutralDark = resolveVarReferences(variableMap.get('--color-neutral-a') || '#1a1a1a');
+      const neutralLight = resolveVarReferences(variableMap.get('--color-neutral-f') || '#ffffff');
       
-      const text = getLight('--font-base-color', 'var(--color-neutral-a)');
-      const heading = getLight('--font-heading-color', text);
-      const preHeading = getLight('--pre-heading-color', text);
-      const lead = getLight('--lead-color', text);
-      const link = getLight('--link-color', 'var(--color-brand-a)');
-      const accent = getLight('--universal-accent-color', 'var(--color-brand-a)');
-      const btnBg = getLight('--button-background-color', getLight('--button-primary-background-color', 'var(--color-brand-a)'));
-      const btnFg = getLight('--button-font-color', getLight('--button-primary-text-color', 'var(--color-neutral-f)'));
-      const btnOutlineFg = getLight('--button-outline-font-color', getLight('--button-outline-color', text));
-      const btnOutlineBorder = getLight('--button-outline-border-color', text);
-      const iconBg = getLight('--icon-background-color', btnBg);
-      const iconFg = getLight('--icon-color', btnFg);
-      return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
-    };
-
-    // Get dark background tone variables from the Dark Background Tones section
-    // These are the values specifically configured for use on dark backgrounds
-    const getDarkBgVars = () => {
-      // Helper to get from dark tones section first, checking multiple naming patterns
-      const getDark = (baseName: string, fallback: string) => {
-        // Try different naming patterns used in SCSS
-        const patterns = [
-          `${baseName}-bg-dark`,
-          `${baseName}-on-bg-dark`,
-          baseName.replace(/-color$/, '-color-bg-dark'),
-          baseName.replace(/-color$/, '-color-on-bg-dark'),
-        ];
-        for (const pattern of patterns) {
-          const val = darkBgTonesMap.get(pattern) || variableMap.get(pattern);
-          if (val) return resolveVarReferences(val);
-        }
-        return resolveVarReferences(fallback);
-      };
+      // Get the brand primary color for accents
+      const brandPrimary = resolveVarReferences(variableMap.get('--color-brand-a') || '#0066cc');
+      const isBrandDark = !isLightColor(brandPrimary);
       
-      const text = getDark('--font-base-color', 'var(--color-neutral-f)');
-      const heading = getDark('--font-heading-color', text);
-      const preHeading = getDark('--pre-heading-color', text);
-      const lead = getDark('--lead-color', text);
-      const link = getDark('--link-color', text);
-      const accent = getDark('--universal-accent-color', text);
-      const btnBg = getDark('--button-background-color', getDark('--button-primary-background-color', 'var(--color-neutral-f)'));
-      const btnFg = getDark('--button-font-color', getDark('--button-primary-text-color', 'var(--color-neutral-a)'));
-      const btnOutlineFg = getDark('--button-outline-font-color', getDark('--button-outline-color', text));
-      const btnOutlineBorder = getDark('--button-outline-border-color', text);
-      const iconBg = getDark('--icon-background-color', btnBg);
-      const iconFg = getDark('--icon-color', btnFg);
-      return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
+      if (isDarkBg) {
+        // Dark background: use light text, and light button fills
+        const text = neutralLight;
+        const heading = neutralLight;
+        const preHeading = neutralLight;
+        const lead = neutralLight;
+        const link = neutralLight;
+        const accent = neutralLight;
+        // Buttons on dark bg: use light fill with dark text, or brand if brand is light
+        const btnBg = isLightColor(brandPrimary) ? brandPrimary : neutralLight;
+        const btnFg = isLightColor(btnBg) ? neutralDark : neutralLight;
+        const btnOutlineFg = neutralLight;
+        const btnOutlineBorder = neutralLight;
+        // Icons follow button logic
+        const iconBg = btnBg;
+        const iconFg = btnFg;
+        return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
+      } else {
+        // Light background: use dark text, and brand or dark button fills
+        const text = neutralDark;
+        const heading = neutralDark;
+        const preHeading = neutralDark;
+        const lead = neutralDark;
+        const link = brandPrimary;
+        const accent = brandPrimary;
+        // Buttons on light bg: use brand color (or dark if brand is too light)
+        const btnBg = isBrandDark ? brandPrimary : neutralDark;
+        const btnFg = isLightColor(btnBg) ? neutralDark : neutralLight;
+        const btnOutlineFg = neutralDark;
+        const btnOutlineBorder = neutralDark;
+        // Icons follow button logic
+        const iconBg = btnBg;
+        const iconFg = btnFg;
+        return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
+      }
     };
     
     return colorMappings.map(({ class: className, variable }) => {
       const colorValue = variableMap.get(variable) || '';
-      const isDark = !isLightColor(colorValue);
-      const toneVars = isDark ? getDarkBgVars() : getLightBgVars();
+      const resolvedColor = resolveVarReferences(colorValue);
+      const isDark = !isLightColor(resolvedColor);
+      // Compute surface tokens dynamically based on the actual background color luminance
+      const toneVars = computeSurfaceTokens(resolvedColor, isDark);
       
       // Set the surface-level CSS variables that the template's CSS reads from
       return `
@@ -432,7 +415,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       }
     `;
     }).join('\n');
-  }, [variableMap, lightBgTonesMap, darkBgTonesMap, isLightColor, resolveVarReferences]);
+  }, [variableMap, isLightColor, resolveVarReferences]);
 
   const customCssContent = useMemo(() => {
     return `
