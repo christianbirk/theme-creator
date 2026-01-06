@@ -132,6 +132,46 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     });
   }, [variableMap]);
 
+  // Parse hex color to RGB
+  const hexToRgb = useCallback((hex: string): { r: number; g: number; b: number } | null => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (result) {
+      return {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      };
+    }
+    const shortResult = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(hex);
+    if (shortResult) {
+      return {
+        r: parseInt(shortResult[1] + shortResult[1], 16),
+        g: parseInt(shortResult[2] + shortResult[2], 16),
+        b: parseInt(shortResult[3] + shortResult[3], 16)
+      };
+    }
+    return null;
+  }, []);
+
+  // Calculate relative luminance (WCAG formula)
+  const getLuminance = useCallback((colorValue: string): number | null => {
+    const resolvedColor = resolveVarReferences(colorValue);
+    const rgb = hexToRgb(resolvedColor);
+    if (!rgb) return null;
+    
+    const { r, g, b } = rgb;
+    const [rs, gs, bs] = [r / 255, g / 255, b / 255].map(c => 
+      c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+    );
+    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+  }, [resolveVarReferences, hexToRgb]);
+
+  // Determine if a color is light (luminance > 0.5 means light background)
+  const isLightColor = useCallback((colorValue: string): boolean => {
+    const luminance = getLuminance(colorValue);
+    return luminance !== null && luminance > 0.5;
+  }, [getLuminance]);
+
   // Generate CSS content with !important to override existing styles
   const cssVariablesImportant = useMemo(() => {
     return variables.map(v => {
@@ -140,7 +180,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     }).join('\n        ');
   }, [variables, resolveVarReferences]);
 
-  // Generate surface overrides for .bg-color-* classes
+  // Generate surface overrides for .bg-color-* classes with luminance-aware foreground colors
   const surfaceOverrides = useMemo(() => {
     const colorMappings = [
       { class: 'bg-color-a', variable: '--color-brand-a' },
@@ -151,14 +191,79 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       { class: 'bg-color-f', variable: '--color-brand-f' },
       { class: 'bg-color-g', variable: '--color-brand-g' },
     ];
+
+    // Get light and dark background tone variables from the current variable set
+    const getLightBgVars = () => ({
+      textColor: variableMap.get('--font-base-color') || 'var(--color-neutral-a)',
+      headingColor: variableMap.get('--font-heading-color') || 'var(--color-neutral-a)',
+      linkColor: variableMap.get('--link-color') || 'var(--color-brand-a)',
+      buttonBg: variableMap.get('--button-primary-background-color') || 'var(--color-brand-a)',
+      buttonText: variableMap.get('--button-primary-text-color') || 'var(--color-neutral-f)',
+      accentColor: variableMap.get('--universal-accent-color') || 'var(--color-brand-a)',
+    });
+
+    const getDarkBgVars = () => ({
+      textColor: variableMap.get('--font-base-color-on-bg-dark') || 'var(--color-neutral-f)',
+      headingColor: variableMap.get('--font-heading-color-on-bg-dark') || 'var(--color-neutral-f)',
+      linkColor: variableMap.get('--link-color-on-bg-dark') || 'var(--color-neutral-f)',
+      buttonBg: variableMap.get('--button-primary-background-color-on-bg-dark') || 'var(--color-neutral-f)',
+      buttonText: variableMap.get('--button-primary-text-color-on-bg-dark') || 'var(--color-neutral-a)',
+      accentColor: variableMap.get('--universal-accent-color-on-bg-dark') || 'var(--color-neutral-f)',
+    });
     
-    return colorMappings.map(({ class: className, variable }) => `
+    return colorMappings.map(({ class: className, variable }) => {
+      const colorValue = variableMap.get(variable) || '';
+      const isLight = isLightColor(colorValue);
+      const toneVars = isLight ? getLightBgVars() : getDarkBgVars();
+      const resolvedTextColor = resolveVarReferences(toneVars.textColor);
+      const resolvedHeadingColor = resolveVarReferences(toneVars.headingColor);
+      const resolvedLinkColor = resolveVarReferences(toneVars.linkColor);
+      const resolvedButtonBg = resolveVarReferences(toneVars.buttonBg);
+      const resolvedButtonText = resolveVarReferences(toneVars.buttonText);
+      const resolvedAccentColor = resolveVarReferences(toneVars.accentColor);
+      
+      return `
       .${className} {
         --surface: var(${variable}) !important;
         background-color: var(${variable}) !important;
+        
+        /* Text colors for ${isLight ? 'light' : 'dark'} background */
+        --font-base-color: ${resolvedTextColor} !important;
+        --font-heading-color: ${resolvedHeadingColor} !important;
+        --link-color: ${resolvedLinkColor} !important;
+        --universal-accent-color: ${resolvedAccentColor} !important;
+        color: ${resolvedTextColor} !important;
       }
-    `).join('\n');
-  }, []);
+      .${className} h1, .${className} h2, .${className} h3, 
+      .${className} h4, .${className} h5, .${className} h6 {
+        color: ${resolvedHeadingColor} !important;
+      }
+      .${className} a:not(.btn):not(.button):not([class*="btn"]) {
+        color: ${resolvedLinkColor} !important;
+      }
+      .${className} p, .${className} span, .${className} li, 
+      .${className} div:not([class*="btn"]):not([class*="button"]) {
+        color: ${resolvedTextColor} !important;
+      }
+      .${className} .btn-primary, .${className} .button-primary,
+      .${className} [class*="btn-primary"], .${className} [class*="button-primary"] {
+        background-color: ${resolvedButtonBg} !important;
+        color: ${resolvedButtonText} !important;
+      }
+      .${className} .btn-outline, .${className} .button-outline,
+      .${className} [class*="btn-outline"], .${className} [class*="button-outline"] {
+        border-color: ${resolvedTextColor} !important;
+        color: ${resolvedTextColor} !important;
+      }
+      .${className} .pre-heading, .${className} [class*="pre-heading"] {
+        color: ${resolvedTextColor} !important;
+      }
+      .${className} .lead {
+        color: ${resolvedTextColor} !important;
+      }
+    `;
+    }).join('\n');
+  }, [variableMap, isLightColor, resolveVarReferences]);
 
   const customCssContent = useMemo(() => {
     return `
