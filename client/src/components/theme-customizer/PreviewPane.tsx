@@ -212,7 +212,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     ];
 
     // Dynamic auto-contrast surface tokens - mirrors the SCSS surface-theme mixin
-    // Instead of reading static parsed values, we compute them based on the actual brand color luminance
+    // First check Color Combinations section for user-configured values, then fall back to auto-computation
     const computeSurfaceTokens = (bgColorValue: string, isDarkBg: boolean) => {
       // Get the neutral palette endpoints (darkest and lightest)
       const neutralDark = resolveVarReferences(variableMap.get('--color-neutral-a') || '#1a1a1a');
@@ -222,39 +222,51 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       const brandPrimary = resolveVarReferences(variableMap.get('--color-brand-a') || '#0066cc');
       const isBrandDark = !isLightColor(brandPrimary);
       
+      // Check for user-configured Color Combinations values
+      const bgSuffix = isDarkBg ? 'bg-dark' : 'bg-light';
+      
+      // Helper to get user value or fall back to computed
+      const getUserValueOrDefault = (varName: string, defaultValue: string): string => {
+        const userValue = variableMap.get(varName);
+        if (userValue) {
+          return resolveVarReferences(userValue);
+        }
+        return defaultValue;
+      };
+      
       if (isDarkBg) {
         // Dark background: use light text, and light button fills
-        const text = neutralLight;
-        const heading = neutralLight;
-        const preHeading = neutralLight;
-        const lead = neutralLight;
-        const link = neutralLight;
-        const accent = neutralLight;
-        // Buttons on dark bg: use light fill with dark text, or brand if brand is light
-        const btnBg = isLightColor(brandPrimary) ? brandPrimary : neutralLight;
-        const btnFg = isLightColor(btnBg) ? neutralDark : neutralLight;
-        const btnOutlineFg = neutralLight;
-        const btnOutlineBorder = neutralLight;
-        // Icons follow button logic
-        const iconBg = btnBg;
-        const iconFg = btnFg;
+        const text = getUserValueOrDefault(`--font-text-color-${bgSuffix}`, neutralLight);
+        const heading = getUserValueOrDefault(`--font-heading-color-${bgSuffix}`, neutralLight);
+        const preHeading = getUserValueOrDefault(`--pre-heading-color-${bgSuffix}`, neutralLight);
+        const lead = getUserValueOrDefault(`--lead-color-${bgSuffix}`, neutralLight);
+        const link = getUserValueOrDefault(`--link-color-${bgSuffix}`, neutralLight);
+        const accent = getUserValueOrDefault(`--universal-accent-color-on-${bgSuffix}`, neutralLight);
+        // Buttons on dark bg
+        const btnBg = getUserValueOrDefault(`--button-default-bg-color-on-${bgSuffix}`, isLightColor(brandPrimary) ? brandPrimary : neutralLight);
+        const btnFg = getUserValueOrDefault(`--button-default-font-color-on-${bgSuffix}`, isLightColor(btnBg) ? neutralDark : neutralLight);
+        const btnOutlineFg = getUserValueOrDefault(`--button-outline-color-on-${bgSuffix}`, neutralLight);
+        const btnOutlineBorder = getUserValueOrDefault(`--button-outline-border-color-on-${bgSuffix}`, neutralLight);
+        // Icons
+        const iconBg = getUserValueOrDefault(`--icon-bg-color-on-${bgSuffix}`, btnBg);
+        const iconFg = getUserValueOrDefault(`--icon-font-color-on-${bgSuffix}`, btnFg);
         return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
       } else {
         // Light background: use dark text, and brand or dark button fills
-        const text = neutralDark;
-        const heading = neutralDark;
-        const preHeading = neutralDark;
-        const lead = neutralDark;
-        const link = brandPrimary;
-        const accent = brandPrimary;
-        // Buttons on light bg: use brand color (or dark if brand is too light)
-        const btnBg = isBrandDark ? brandPrimary : neutralDark;
-        const btnFg = isLightColor(btnBg) ? neutralDark : neutralLight;
-        const btnOutlineFg = neutralDark;
-        const btnOutlineBorder = neutralDark;
-        // Icons follow button logic
-        const iconBg = btnBg;
-        const iconFg = btnFg;
+        const text = getUserValueOrDefault(`--font-text-color-${bgSuffix}`, neutralDark);
+        const heading = getUserValueOrDefault(`--font-heading-color-${bgSuffix}`, neutralDark);
+        const preHeading = getUserValueOrDefault(`--pre-heading-color-${bgSuffix}`, neutralDark);
+        const lead = getUserValueOrDefault(`--lead-color-${bgSuffix}`, neutralDark);
+        const link = getUserValueOrDefault(`--link-color-${bgSuffix}`, brandPrimary);
+        const accent = getUserValueOrDefault(`--universal-accent-color-on-${bgSuffix}`, brandPrimary);
+        // Buttons on light bg
+        const btnBg = getUserValueOrDefault(`--button-default-bg-color-on-${bgSuffix}`, isBrandDark ? brandPrimary : neutralDark);
+        const btnFg = getUserValueOrDefault(`--button-default-font-color-on-${bgSuffix}`, isLightColor(btnBg) ? neutralDark : neutralLight);
+        const btnOutlineFg = getUserValueOrDefault(`--button-outline-color-on-${bgSuffix}`, neutralDark);
+        const btnOutlineBorder = getUserValueOrDefault(`--button-outline-border-color-on-${bgSuffix}`, neutralDark);
+        // Icons
+        const iconBg = getUserValueOrDefault(`--icon-bg-color-on-${bgSuffix}`, btnBg);
+        const iconFg = getUserValueOrDefault(`--icon-font-color-on-${bgSuffix}`, btnFg);
         return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, iconBg, iconFg };
       }
     };
