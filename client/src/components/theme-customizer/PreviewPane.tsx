@@ -261,30 +261,31 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
         return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, btnAltBg, btnAltFg, iconBg, iconFg, labelBg, labelFg, labelBorder, boxedBorder, moduleHeadingBorder };
       } else {
         // Light background: use dark text, and brand or dark button fills
-        const text = getUserValueOrDefault('--font-base-color-bg-light', neutralDark);
-        const heading = getUserValueOrDefault('--font-heading-color-bg-light', neutralDark);
-        const preHeading = getUserValueOrDefault('--pre-heading-color-bg-light', neutralDark);
-        const lead = getUserValueOrDefault('--lead-color-bg-light', neutralDark);
-        const link = getUserValueOrDefault('--link-color-bg-light', brandPrimary);
-        const accent = getUserValueOrDefault('--universal-accent-color-on-bg-light', brandPrimary);
+        // Variable names match SCSS: --font-base-color, --pre-heading-color, etc. (no -bg-light suffix)
+        const text = getUserValueOrDefault('--font-base-color', neutralDark);
+        const heading = getUserValueOrDefault('--font-heading-color', neutralDark);
+        const preHeading = getUserValueOrDefault('--pre-heading-color', neutralDark);
+        const lead = getUserValueOrDefault('--lead-color', neutralDark);
+        const link = getUserValueOrDefault('--link-color', brandPrimary);
+        const accent = getUserValueOrDefault('--universal-accent-color', brandPrimary);
         // Buttons on light bg
-        const btnBg = getUserValueOrDefault('--button-background-color-bg-light', isBrandDark ? brandPrimary : neutralDark);
-        const btnFg = getUserValueOrDefault('--button-font-color-bg-light', isLightColor(btnBg) ? neutralDark : neutralLight);
-        const btnOutlineFg = getUserValueOrDefault('--button-outline-font-color-bg-light', neutralDark);
-        const btnOutlineBorder = getUserValueOrDefault('--button-outline-border-color-bg-light', neutralDark);
+        const btnBg = getUserValueOrDefault('--button-background-color', isBrandDark ? brandPrimary : neutralDark);
+        const btnFg = getUserValueOrDefault('--button-color', isLightColor(btnBg) ? neutralDark : neutralLight);
+        const btnOutlineFg = getUserValueOrDefault('--button-outline-color', neutralDark);
+        const btnOutlineBorder = getUserValueOrDefault('--button-outline-border-color', neutralDark);
         // Alternate buttons
-        const btnAltBg = getUserValueOrDefault('--button-alternate-background-color-bg-light', btnBg);
-        const btnAltFg = getUserValueOrDefault('--button-alternate-font-color-bg-light', btnFg);
+        const btnAltBg = getUserValueOrDefault('--button-alternate-background-color', btnBg);
+        const btnAltFg = getUserValueOrDefault('--button-alternate-color', btnFg);
         // Icons
-        const iconBg = getUserValueOrDefault('--icon-background-color-bg-light', btnBg);
-        const iconFg = getUserValueOrDefault('--icon-color-bg-light', btnFg);
+        const iconBg = getUserValueOrDefault('--icon-background-color', btnBg);
+        const iconFg = getUserValueOrDefault('--icon-color', btnFg);
         // Labels
-        const labelBg = getUserValueOrDefault('--label-background-bg-light', neutralDark);
-        const labelFg = getUserValueOrDefault('--label-color-bg-light', neutralLight);
-        const labelBorder = getUserValueOrDefault('--label-border-bg-light', neutralDark);
+        const labelBg = getUserValueOrDefault('--label-background', neutralDark);
+        const labelFg = getUserValueOrDefault('--label-color', neutralLight);
+        const labelBorder = getUserValueOrDefault('--label-border-color', neutralDark);
         // Borders
-        const boxedBorder = getUserValueOrDefault('--boxed-border-color-bg-light', 'transparent');
-        const moduleHeadingBorder = getUserValueOrDefault('--module-heading-border-color-bg-light', neutralDark);
+        const boxedBorder = getUserValueOrDefault('--boxed-border-color', 'transparent');
+        const moduleHeadingBorder = getUserValueOrDefault('--module-heading-border-color', neutralDark);
         return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, btnAltBg, btnAltFg, iconBg, iconFg, labelBg, labelFg, labelBorder, boxedBorder, moduleHeadingBorder };
       }
     };
