@@ -615,6 +615,19 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
         ${cssVariablesImportant}
       }
       
+      /* Global pre-heading override - ensures template uses our variable */
+      .pre-heading,
+      span.pre-heading,
+      p.pre-heading,
+      div.pre-heading,
+      .module .pre-heading,
+      .text .pre-heading,
+      .introduction .pre-heading,
+      .module > .text > .pre-heading,
+      [class*="pre-heading"] {
+        color: var(--pre-heading-color) !important;
+      }
+      
       /* Surface overrides for bg-color-* classes */
       ${surfaceOverrides}
     `;
