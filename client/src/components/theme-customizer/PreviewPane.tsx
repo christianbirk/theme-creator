@@ -351,10 +351,19 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
         color: ${toneVars.heading} !important;
       }
       
-      /* Pre-headings */
+      /* Pre-headings - high specificity to override template styles */
       .${className} .pre-heading,
       .${className} .module .pre-heading,
-      .${className} [class*="pre-heading"] {
+      .${className} .text .pre-heading,
+      .${className} .introduction .pre-heading,
+      .${className} .container .pre-heading,
+      .${className} [class*="pre-heading"],
+      .${className} span.pre-heading,
+      .${className} p.pre-heading,
+      .${className} div.pre-heading,
+      .${className}.module .pre-heading,
+      .${className} .module > .text > .pre-heading,
+      .${className} .module > .pre-heading {
         color: ${toneVars.preHeading} !important;
       }
       
