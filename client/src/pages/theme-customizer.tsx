@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -97,7 +97,7 @@ export default function ThemeCustomizer() {
     setIsLoading(false);
   }, [toast]);
 
-  const handleLoadSample = useCallback(async () => {
+  const handleLoadSample = useCallback(async (showToast = true) => {
     setIsLoading(true);
     try {
       const { content, filename } = await fetchSampleScss();
@@ -119,20 +119,29 @@ export default function ThemeCustomizer() {
       setCategories(newCategories);
       setVariables(parsedVariables);
 
-      toast({
-        title: 'Sample loaded',
-        description: `Loaded ${parsedVariables.length} variables from ${filename}.`,
-      });
+      if (showToast) {
+        toast({
+          title: 'Sample loaded',
+          description: `Loaded ${parsedVariables.length} variables from ${filename}.`,
+        });
+      }
     } catch (err) {
       console.error('Load sample error:', err);
-      toast({
-        title: 'Failed to load sample',
-        description: 'Unable to fetch the sample SCSS file.',
-        variant: 'destructive',
-      });
+      if (showToast) {
+        toast({
+          title: 'Failed to load sample',
+          description: 'Unable to fetch the sample SCSS file.',
+          variant: 'destructive',
+        });
+      }
     }
     setIsLoading(false);
   }, [toast]);
+
+  // Load sample SCSS on mount
+  useEffect(() => {
+    handleLoadSample(false);
+  }, []);
 
   const handleExport = useCallback(async () => {
     setIsLoading(true);
@@ -178,7 +187,7 @@ export default function ThemeCustomizer() {
         </Tabs>
         <Button 
           variant="outline" 
-          onClick={handleLoadSample}
+          onClick={() => handleLoadSample(true)}
           disabled={isLoading}
           data-testid="button-load-sample"
         >
@@ -187,7 +196,7 @@ export default function ThemeCustomizer() {
           ) : (
             <FileCode className="h-4 w-4 mr-1.5" />
           )}
-          Load Sample SCSS
+          Reload Sample
         </Button>
       </header>
 
