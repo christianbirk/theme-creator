@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Monitor, Tablet, Smartphone, Loader2, ExternalLink } from 'lucide-react';
 import { CSSVariable } from './types';
 
@@ -11,7 +10,6 @@ interface PreviewPaneProps {
 }
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
-type ZoomLevel = 50 | 75 | 100;
 
 const deviceWidths: Record<DeviceMode, string> = {
   desktop: '100%',
@@ -64,7 +62,6 @@ const loadingHtml = `
 
 export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   const [device, setDevice] = useState<DeviceMode>('desktop');
-  const [zoom, setZoom] = useState<ZoomLevel>(100);
   const [templateHtml, setTemplateHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -701,89 +698,61 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col gap-2 p-3 border-b bg-muted/30">
-        <div className="flex items-center gap-2">
-          <Input
-            type="url"
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            onKeyDown={handleUrlKeyDown}
-            placeholder="Enter template URL..."
-            className="flex-1 h-8 text-sm"
-            data-testid="preview-url-input"
-          />
+      <div className="flex items-center gap-2 p-3 border-b bg-muted/30">
+        <div className="flex items-center border rounded-md">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLoadUrl}
-            disabled={isLoading}
-            className="h-8"
-            data-testid="preview-load-url"
+            variant={device === 'desktop' ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => setDevice('desktop')}
+            className="h-8 w-8 rounded-r-none"
+            data-testid="preview-device-desktop"
           >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ExternalLink className="h-4 w-4" />
-            )}
-            <span className="ml-1">Load</span>
+            <Monitor className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={device === 'tablet' ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => setDevice('tablet')}
+            className="h-8 w-8 rounded-none border-x"
+            data-testid="preview-device-tablet"
+          >
+            <Tablet className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={device === 'mobile' ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => setDevice('mobile')}
+            className="h-8 w-8 rounded-l-none"
+            data-testid="preview-device-mobile"
+          >
+            <Smartphone className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Loading template...</span>
-              </>
-            ) : (
-              <span className="font-medium">Theme Preview</span>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="flex items-center border rounded-md">
-              <Button
-                variant={device === 'desktop' ? 'secondary' : 'ghost'}
-                size="icon"
-                onClick={() => setDevice('desktop')}
-                className="h-8 w-8 rounded-r-none"
-                data-testid="preview-device-desktop"
-              >
-                <Monitor className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={device === 'tablet' ? 'secondary' : 'ghost'}
-                size="icon"
-                onClick={() => setDevice('tablet')}
-                className="h-8 w-8 rounded-none border-x"
-                data-testid="preview-device-tablet"
-              >
-                <Tablet className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={device === 'mobile' ? 'secondary' : 'ghost'}
-                size="icon"
-                onClick={() => setDevice('mobile')}
-                className="h-8 w-8 rounded-l-none"
-                data-testid="preview-device-mobile"
-              >
-                <Smartphone className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <Select value={zoom.toString()} onValueChange={(v) => setZoom(parseInt(v) as ZoomLevel)}>
-              <SelectTrigger className="w-20 h-8" data-testid="preview-zoom-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="50">50%</SelectItem>
-                <SelectItem value="75">75%</SelectItem>
-                <SelectItem value="100">100%</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <Input
+          type="url"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={handleUrlKeyDown}
+          placeholder="Enter template URL..."
+          className="flex-1 h-8 text-sm"
+          data-testid="preview-url-input"
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLoadUrl}
+          disabled={isLoading}
+          className="h-8"
+          data-testid="preview-load-url"
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ExternalLink className="h-4 w-4" />
+          )}
+          <span className="ml-1">Load</span>
+        </Button>
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto bg-muted/50 p-4">
@@ -792,8 +761,6 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
           style={{ 
             width: deviceWidths[device],
             maxWidth: '100%',
-            transform: `scale(${zoom / 100})`,
-            transformOrigin: 'top center',
           }}
         >
           <iframe
