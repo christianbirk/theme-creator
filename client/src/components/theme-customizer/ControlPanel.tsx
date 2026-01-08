@@ -1,11 +1,12 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Search, Upload, RotateCcw, ChevronRight } from 'lucide-react';
+import { Search, Upload, RotateCcw, ChevronRight, Settings2, Tag } from 'lucide-react';
 import { CSSVariable, VariableCategory, formatVariableName, formatSectionName, sectionIcons } from './types';
 import { ColorPicker } from './ColorPicker';
 import { SizeInput } from './SizeInput';
@@ -413,58 +414,80 @@ export function ControlPanel({
 
   return (
     <div className="flex flex-col h-full border-r">
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <h2 className="text-lg font-semibold">Theme Variables</h2>
-          <label>
-            <input
-              type="file"
-              accept=".scss,.css"
-              onChange={handleFileChange}
-              className="hidden"
-              data-testid="input-import-scss"
-            />
-            <Button variant="outline" size="sm" asChild>
-              <span className="cursor-pointer">
-                <Upload className="h-3.5 w-3.5 mr-1.5" />
-                Import
-              </span>
-            </Button>
-          </label>
+      <Tabs defaultValue="design" className="flex flex-col h-full">
+        <div className="border-b px-2 pt-2">
+          <TabsList className="w-full h-auto p-0 bg-transparent gap-0">
+            <TabsTrigger 
+              value="design" 
+              className="flex-1 gap-2 rounded-none rounded-t-md border border-b-0 data-[state=active]:bg-background data-[state=inactive]:bg-muted/50 data-[state=inactive]:border-transparent data-[state=active]:border-border py-2.5"
+              data-testid="tab-design-settings"
+            >
+              <Settings2 className="h-4 w-4" />
+              Design Settings
+            </TabsTrigger>
+            <TabsTrigger 
+              value="css-classes" 
+              className="flex-1 gap-2 rounded-none rounded-t-md border border-b-0 data-[state=active]:bg-background data-[state=inactive]:bg-muted/50 data-[state=inactive]:border-transparent data-[state=active]:border-border py-2.5"
+              data-testid="tab-css-classes"
+            >
+              <Tag className="h-4 w-4" />
+              CSS classes
+            </TabsTrigger>
+          </TabsList>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search variables..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-            data-testid="input-search-variables"
-          />
-        </div>
+        <TabsContent value="design" className="flex-1 flex flex-col mt-0 overflow-hidden">
+          <div className="p-4 border-b">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <label>
+                <input
+                  type="file"
+                  accept=".scss,.css"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  data-testid="input-import-scss"
+                />
+                <Button variant="outline" size="sm" asChild>
+                  <span className="cursor-pointer">
+                    <Upload className="h-3.5 w-3.5 mr-1.5" />
+                    Import SCSS
+                  </span>
+                </Button>
+              </label>
+              {modifiedCount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {modifiedCount} modified
+                </span>
+              )}
+            </div>
 
-        <div className="flex items-center justify-between mt-3 pt-3 border-t">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="expert-mode"
-              checked={expertMode}
-              onCheckedChange={setExpertMode}
-              data-testid="switch-expert-mode"
-            />
-            <Label htmlFor="expert-mode" className="text-sm cursor-pointer">
-              Expert mode
-            </Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search variables..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+                data-testid="input-search-variables"
+              />
+            </div>
+
+            <div className="flex items-center justify-between mt-3 pt-3 border-t">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="expert-mode"
+                  checked={expertMode}
+                  onCheckedChange={setExpertMode}
+                  data-testid="switch-expert-mode"
+                />
+                <Label htmlFor="expert-mode" className="text-sm cursor-pointer">
+                  Expert mode
+                </Label>
+              </div>
+            </div>
           </div>
-          {modifiedCount > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {modifiedCount} modified
-            </span>
-          )}
-        </div>
-      </div>
 
-      <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1">
         <Accordion 
           type="multiple" 
           value={expandedSections}
@@ -522,35 +545,47 @@ export function ControlPanel({
           ))}
         </Accordion>
 
-        {sections.length === 0 && searchQuery && (
-          <div className="p-8 text-center text-muted-foreground">
-            <p className="text-sm">No variables found matching "{searchQuery}"</p>
-          </div>
-        )}
-      </ScrollArea>
+            {sections.length === 0 && searchQuery && (
+              <div className="p-8 text-center text-muted-foreground">
+                <p className="text-sm">No variables found matching "{searchQuery}"</p>
+              </div>
+            )}
+          </ScrollArea>
 
-      <div className="p-4 border-t bg-muted/30">
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-xs text-muted-foreground">
-            {modifiedCount > 0 ? (
-              <span className="font-medium text-foreground">{modifiedCount}</span>
-            ) : '0'} of {variables.length} modified
-          </span>
-          
-          {modifiedCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onResetAll}
-              className="text-xs h-7"
-              data-testid="button-reset-all"
-            >
-              <RotateCcw className="h-3 w-3 mr-1" />
-              Reset all
-            </Button>
-          )}
-        </div>
-      </div>
+          <div className="p-4 border-t bg-muted/30">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-xs text-muted-foreground">
+                {modifiedCount > 0 ? (
+                  <span className="font-medium text-foreground">{modifiedCount}</span>
+                ) : '0'} of {variables.length} modified
+              </span>
+              
+              {modifiedCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onResetAll}
+                  className="text-xs h-7"
+                  data-testid="button-reset-all"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Reset all
+                </Button>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="css-classes" className="flex-1 flex flex-col mt-0 overflow-hidden">
+          <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground">
+            <div>
+              <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-sm">CSS classes will be configured here.</p>
+              <p className="text-xs mt-2">Coming soon...</p>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
