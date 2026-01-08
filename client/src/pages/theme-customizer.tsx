@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ControlPanel } from '@/components/theme-customizer/ControlPanel';
 import { PreviewPane } from '@/components/theme-customizer/PreviewPane';
@@ -8,7 +9,7 @@ import { ExportModal } from '@/components/theme-customizer/ExportModal';
 import { defaultCategories, CSSVariable, VariableCategory } from '@/components/theme-customizer/types';
 import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api';
 import { useToast } from '@/hooks/use-toast';
-import { FileCode, Loader2 } from 'lucide-react';
+import { FileCode, Loader2, Settings2, Tag } from 'lucide-react';
 
 export default function ThemeCustomizer() {
   const { toast } = useToast();
@@ -151,12 +152,26 @@ export default function ThemeCustomizer() {
   }, [variables, baseScss, toast]);
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="flex items-center justify-between gap-4 px-4 py-3 border-b bg-background">
-        <div>
-          <h1 className="text-xl font-semibold" data-testid="text-app-title">Theme Customizer</h1>
-          <p className="text-sm text-muted-foreground">Customize CSS variables and export your theme</p>
-        </div>
+    <Tabs defaultValue="design" className="flex flex-col h-screen">
+      <header className="flex items-center justify-between gap-4 px-4 py-2 border-b bg-background">
+        <TabsList className="h-auto p-1 bg-muted/50">
+          <TabsTrigger 
+            value="design" 
+            className="gap-2 px-4 py-2"
+            data-testid="tab-design-settings"
+          >
+            <Settings2 className="h-4 w-4" />
+            Design Settings
+          </TabsTrigger>
+          <TabsTrigger 
+            value="css-classes" 
+            className="gap-2 px-4 py-2"
+            data-testid="tab-css-classes"
+          >
+            <Tag className="h-4 w-4" />
+            CSS classes
+          </TabsTrigger>
+        </TabsList>
         <Button 
           variant="outline" 
           onClick={handleLoadSample}
@@ -172,38 +187,48 @@ export default function ThemeCustomizer() {
         </Button>
       </header>
 
-      <div className="flex-1 min-h-0">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
-            <ControlPanel
-              categories={categories}
-              variables={variables}
-              onVariableChange={handleVariableChange}
-              onResetAll={handleResetAll}
-              onResetCategory={handleResetCategory}
-              onImportSCSS={handleImportSCSS}
-            />
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
-          
-          <ResizablePanel defaultSize={65}>
-            <PreviewPane variables={variables} previewHtml={previewHtml} />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </div>
+      <TabsContent value="design" className="flex-1 min-h-0 mt-0 flex flex-col">
+        <div className="flex-1 min-h-0">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
+              <ControlPanel
+                categories={categories}
+                variables={variables}
+                onVariableChange={handleVariableChange}
+                onResetAll={handleResetAll}
+                onResetCategory={handleResetCategory}
+                onImportSCSS={handleImportSCSS}
+              />
+            </ResizablePanel>
+            
+            <ResizableHandle withHandle />
+            
+            <ResizablePanel defaultSize={65}>
+              <PreviewPane variables={variables} previewHtml={previewHtml} />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
 
-      <ActionBar
-        variables={variables}
-        onResetAll={handleResetAll}
-        onExport={handleExport}
-      />
+        <ActionBar
+          variables={variables}
+          onResetAll={handleResetAll}
+          onExport={handleExport}
+        />
+      </TabsContent>
+
+      <TabsContent value="css-classes" className="flex-1 min-h-0 mt-0 flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <Tag className="h-16 w-16 mx-auto mb-4 opacity-40" />
+          <h2 className="text-lg font-medium mb-2">CSS Classes</h2>
+          <p className="text-sm">CSS class configuration will be available here.</p>
+        </div>
+      </TabsContent>
 
       <ExportModal
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
         variables={variables}
       />
-    </div>
+    </Tabs>
   );
 }
