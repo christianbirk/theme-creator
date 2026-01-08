@@ -243,6 +243,41 @@ export function ControlPanel({
     return variable.name === '--link-style';
   }, []);
 
+  // Get the contrast background for a color variable
+  // Only checks direct hex/rgb values, not var() references
+  const getContrastBackground = useCallback((variable: CSSVariable): string | undefined => {
+    const name = variable.name.toLowerCase();
+    
+    // Only show contrast for text/foreground colors with direct values
+    const textColorPatterns = [
+      'font-base-color',
+      'heading-color',
+      'pre-heading-color',
+      'lead-color',
+      'link-color',
+      'accent-color',
+      '-fg', // foreground colors like btn-fg
+    ];
+    
+    // Check if this is a text color variable
+    const isTextColor = textColorPatterns.some(pattern => name.includes(pattern));
+    if (!isTextColor) return undefined;
+    
+    // Only check if the current value is a direct color (not a reference)
+    if (variable.value.startsWith('var(')) return undefined;
+    
+    // Find the appropriate background - use default backgrounds
+    const isDarkBg = name.includes('-bg-dark');
+    
+    if (isDarkBg) {
+      // Use a typical dark background
+      return '#1a1a1a';
+    } else {
+      // Use a typical light background
+      return '#ffffff';
+    }
+  }, []);
+
   const renderVariableInput = (variable: CSSVariable) => {
     const displayName = formatVariableName(variable.name);
     
@@ -303,6 +338,7 @@ export function ControlPanel({
             label={displayName}
             colorOptions={baseColorOptions}
             isBaseColor={isBaseColor(variable)}
+            contrastBackground={getContrastBackground(variable)}
           />
         );
       case 'font':

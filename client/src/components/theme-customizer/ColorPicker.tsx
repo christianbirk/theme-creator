@@ -6,11 +6,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HexColorPicker } from 'react-colorful';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { CSSVariable } from './types';
+import { getContrastInfo, ContrastLevel } from '@/lib/contrast-utils';
 
 interface ColorPickerProps {
   value: string;
@@ -20,6 +26,7 @@ interface ColorPickerProps {
   description?: string;
   colorOptions?: CSSVariable[];
   isBaseColor?: boolean;
+  contrastBackground?: string;
 }
 
 export function ColorPicker({ 
@@ -30,9 +37,50 @@ export function ColorPicker({
   description,
   colorOptions = [],
   isBaseColor = false,
+  contrastBackground,
 }: ColorPickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const isModified = value !== defaultValue;
+
+  const contrastInfo = useMemo(() => {
+    if (!contrastBackground) return null;
+    
+    // Resolve the foreground color value
+    let foregroundColor = value;
+    if (value.startsWith('var(')) {
+      const varMatch = value.match(/var\(([^)]+)\)/);
+      if (varMatch && colorOptions.length > 0) {
+        const varName = varMatch[1];
+        const colorVar = colorOptions.find(c => c.name === varName);
+        if (colorVar) {
+          foregroundColor = colorVar.value;
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
+    
+    // Check if we can parse the colors
+    if (!foregroundColor.startsWith('#') && !foregroundColor.startsWith('rgb')) {
+      return null;
+    }
+    if (!contrastBackground.startsWith('#') && !contrastBackground.startsWith('rgb')) {
+      return null;
+    }
+    
+    return getContrastInfo(foregroundColor, contrastBackground);
+  }, [value, contrastBackground, colorOptions]);
+
+  const getContrastLevelLabel = (level: ContrastLevel): string => {
+    switch (level) {
+      case 'aaa': return 'AAA - Excellent';
+      case 'aa': return 'AA - Good';
+      case 'aa-large': return 'AA Large - OK for large text';
+      case 'fail': return 'Fail - Poor contrast';
+    }
+  };
   
   // Check if current value is a var() reference
   const isVarReference = value.startsWith('var(');
@@ -186,6 +234,35 @@ export function ColorPicker({
           <span>{value}</span>
         )}
       </div>
+
+      {contrastInfo && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div 
+              className={`flex items-center justify-center w-8 h-8 rounded-md ${
+                contrastInfo.level === 'fail' 
+                  ? 'text-destructive' 
+                  : contrastInfo.level === 'aa-large'
+                  ? 'text-yellow-600 dark:text-yellow-500'
+                  : 'text-green-600 dark:text-green-500'
+              }`}
+              data-testid={`contrast-indicator-${label}`}
+            >
+              {contrastInfo.level === 'fail' ? (
+                <AlertTriangle className="h-4 w-4" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="text-xs">
+              <div className="font-medium">{getContrastLevelLabel(contrastInfo.level)}</div>
+              <div className="text-muted-foreground">Ratio: {contrastInfo.ratio.toFixed(2)}:1</div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      )}
 
       <Button
         variant="ghost"
