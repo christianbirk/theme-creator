@@ -16,6 +16,7 @@ import { StringInput } from './StringInput';
 import { LinkStyleSelect } from './LinkStyleSelect';
 import { SelectInput } from './SelectInput';
 import { FamilyReferenceSelect } from './FamilyReferenceSelect';
+import { WeightReferenceSelect } from './WeightReferenceSelect';
 
 // Subsections that are only visible in expert mode
 const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors'];
@@ -43,6 +44,9 @@ const FAMILY_REFERENCE_VARIABLES = ['--pre-heading-family'];
 
 // Variables that should use hyphens select (auto/none)
 const HYPHENS_VARIABLES = ['--font-heading-hyphens'];
+
+// Variables that should use weight reference select (base/heading weight)
+const WEIGHT_REFERENCE_VARIABLES = ['--pre-heading-weight'];
 
 interface ControlPanelProps {
   categories: VariableCategory[];
@@ -342,6 +346,19 @@ export function ControlPanel({
             { value: 'auto', label: 'Auto' },
             { value: 'none', label: 'None' },
           ]}
+        />
+      );
+    }
+    
+    if (WEIGHT_REFERENCE_VARIABLES.includes(variable.name)) {
+      return (
+        <WeightReferenceSelect
+          key={variable.name}
+          value={variable.value}
+          defaultValue={variable.defaultValue}
+          onChange={(value) => onVariableChange(variable.name, value)}
+          label={displayName}
+          baseWeightOptions={baseFontWeightOptions}
         />
       );
     }
