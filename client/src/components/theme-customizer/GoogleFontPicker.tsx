@@ -11,6 +11,7 @@ interface GoogleFontPickerProps {
   onChange: (value: string) => void;
   label: string;
   description?: string;
+  embedded?: boolean;
 }
 
 const POPULAR_GOOGLE_FONTS = [
@@ -80,6 +81,7 @@ export function GoogleFontPicker({
   onChange, 
   label, 
   description,
+  embedded = false,
 }: GoogleFontPickerProps) {
   const [open, setOpen] = useState(false);
   const isModified = value !== defaultValue;
@@ -109,6 +111,76 @@ export function GoogleFontPicker({
     if (!value) return 'Select font...';
     return value;
   }, [value]);
+
+  const fontCommandContent = (
+    <Command className={embedded ? "border rounded-md" : ""}>
+      <CommandInput placeholder="Search fonts..." data-testid={`font-search-${label}`} />
+      <CommandList className={embedded ? "max-h-[180px]" : ""}>
+        <CommandEmpty>No font found.</CommandEmpty>
+        <CommandGroup heading="Sans-Serif">
+          {sansSerifFonts.map((font) => (
+            <CommandItem
+              key={font.name}
+              value={font.name}
+              onSelect={() => handleSelect(font.name)}
+              style={{ fontFamily: font.name }}
+              data-testid={`font-option-${font.name}`}
+            >
+              <Check
+                className={cn(
+                  "mr-2 h-4 w-4",
+                  value === font.name ? "opacity-100" : "opacity-0"
+                )}
+              />
+              {font.name}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandGroup heading="Serif">
+          {serifFonts.map((font) => (
+            <CommandItem
+              key={font.name}
+              value={font.name}
+              onSelect={() => handleSelect(font.name)}
+              style={{ fontFamily: font.name }}
+              data-testid={`font-option-${font.name}`}
+            >
+              <Check
+                className={cn(
+                  "mr-2 h-4 w-4",
+                  value === font.name ? "opacity-100" : "opacity-0"
+                )}
+              />
+              {font.name}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandGroup heading="Monospace">
+          {monospaceFonts.map((font) => (
+            <CommandItem
+              key={font.name}
+              value={font.name}
+              onSelect={() => handleSelect(font.name)}
+              style={{ fontFamily: font.name }}
+              data-testid={`font-option-${font.name}`}
+            >
+              <Check
+                className={cn(
+                  "mr-2 h-4 w-4",
+                  value === font.name ? "opacity-100" : "opacity-0"
+                )}
+              />
+              {font.name}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </CommandList>
+    </Command>
+  );
+
+  if (embedded) {
+    return fontCommandContent;
+  }
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -141,69 +213,7 @@ export function GoogleFontPicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[250px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Search fonts..." data-testid={`font-search-${label}`} />
-            <CommandList>
-              <CommandEmpty>No font found.</CommandEmpty>
-              <CommandGroup heading="Sans-Serif">
-                {sansSerifFonts.map((font) => (
-                  <CommandItem
-                    key={font.name}
-                    value={font.name}
-                    onSelect={() => handleSelect(font.name)}
-                    style={{ fontFamily: font.name }}
-                    data-testid={`font-option-${font.name}`}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === font.name ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {font.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              <CommandGroup heading="Serif">
-                {serifFonts.map((font) => (
-                  <CommandItem
-                    key={font.name}
-                    value={font.name}
-                    onSelect={() => handleSelect(font.name)}
-                    style={{ fontFamily: font.name }}
-                    data-testid={`font-option-${font.name}`}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === font.name ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {font.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              <CommandGroup heading="Monospace">
-                {monospaceFonts.map((font) => (
-                  <CommandItem
-                    key={font.name}
-                    value={font.name}
-                    onSelect={() => handleSelect(font.name)}
-                    style={{ fontFamily: font.name }}
-                    data-testid={`font-option-${font.name}`}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === font.name ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {font.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
+          {fontCommandContent}
         </PopoverContent>
       </Popover>
 

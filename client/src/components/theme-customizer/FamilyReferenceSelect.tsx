@@ -1,8 +1,11 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RotateCcw } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { RotateCcw, ChevronDown } from 'lucide-react';
 import { CSSVariable } from './types';
+import { GoogleFontPicker } from './GoogleFontPicker';
 
 interface FamilyReferenceSelectProps {
   value: string;
@@ -21,7 +24,9 @@ export function FamilyReferenceSelect({
   baseFamilyOptions,
   description,
 }: FamilyReferenceSelectProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   const isModified = value !== defaultValue;
+  const isVarReference = value.startsWith('var(');
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -33,15 +38,21 @@ export function FamilyReferenceSelect({
   };
 
   const displayValue = useMemo(() => {
-    if (value.startsWith('var(')) {
+    if (isVarReference) {
       const match = value.match(/var\(([^)]+)\)/);
-      return match ? `var(${match[1]})` : value;
+      return match ? formatLabel(match[1]) : value;
     }
     return value;
-  }, [value]);
+  }, [value, isVarReference]);
 
-  const handleChange = useCallback((newValue: string) => {
-    onChange(newValue);
+  const handleSelectReference = useCallback((fontVar: CSSVariable) => {
+    onChange(`var(${fontVar.name})`);
+    setPickerOpen(false);
+  }, [onChange]);
+
+  const handleCustomFontChange = useCallback((fontValue: string) => {
+    onChange(fontValue);
+    setPickerOpen(false);
   }, [onChange]);
 
   return (
@@ -60,27 +71,62 @@ export function FamilyReferenceSelect({
         )}
       </div>
 
-      <Select value={displayValue} onValueChange={handleChange}>
-        <SelectTrigger className="w-1/2 h-8" data-testid={`family-ref-trigger-${label}`}>
-          <SelectValue placeholder="Select family...">
-            {value.startsWith('var(') ? (
-              <span className="capitalize">{formatLabel(value.replace(/var\(([^)]+)\)/, '$1'))}</span>
-            ) : (
-              value
-            )}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {baseFamilyOptions.map((fontVar) => (
-            <SelectItem key={fontVar.name} value={`var(${fontVar.name})`}>
-              <div className="flex flex-col">
-                <span className="capitalize">{formatLabel(fontVar.name)}</span>
-                <span className="text-xs text-muted-foreground">{fontVar.value}</span>
+      <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="w-1/2 h-8 justify-between font-normal"
+            data-testid={`family-ref-trigger-${label}`}
+          >
+            <span className={`truncate capitalize ${isVarReference ? 'text-muted-foreground' : ''}`}>
+              {displayValue}
+            </span>
+            <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[280px] p-3" align="end">
+          <Tabs defaultValue={isVarReference ? "reference" : "custom"} className="w-full">
+            <TabsList className="w-full">
+              <TabsTrigger value="reference" className="flex-1 text-xs">Reference</TabsTrigger>
+              <TabsTrigger value="custom" className="flex-1 text-xs">Custom</TabsTrigger>
+            </TabsList>
+            <TabsContent value="reference" className="mt-2">
+              <ScrollArea className="h-[150px]">
+                <div className="space-y-1">
+                  {baseFamilyOptions.map((fontVar) => (
+                    <button
+                      key={fontVar.name}
+                      type="button"
+                      onClick={() => handleSelectReference(fontVar)}
+                      className={`w-full flex flex-col px-2 py-1.5 rounded-md text-left text-sm hover-elevate ${
+                        value === `var(${fontVar.name})` ? 'bg-accent' : ''
+                      }`}
+                      data-testid={`family-option-${fontVar.name}`}
+                    >
+                      <span className="capitalize">{formatLabel(fontVar.name)}</span>
+                      <span className="text-xs text-muted-foreground truncate">{fontVar.value}</span>
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            <TabsContent value="custom" className="mt-2">
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Choose a custom font to override the reference:
+                </p>
+                <GoogleFontPicker
+                  value={isVarReference ? '' : value}
+                  defaultValue=""
+                  onChange={handleCustomFontChange}
+                  label=""
+                  embedded
+                />
               </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+            </TabsContent>
+          </Tabs>
+        </PopoverContent>
+      </Popover>
 
       <Button
         variant="ghost"
