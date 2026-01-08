@@ -187,8 +187,8 @@ export default function ThemeCustomizer() {
         </Button>
       </header>
 
-      <TabsContent value="design" className="flex-1 min-h-0 mt-0 flex flex-col">
-        <div className="flex-1 min-h-0">
+      <TabsContent value="design" className="flex-1 min-h-0 mt-0 flex flex-col" style={{ flexGrow: 1 }}>
+        <div className="flex-1 min-h-0 h-full">
           <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
               <ControlPanel
@@ -216,7 +216,7 @@ export default function ThemeCustomizer() {
         />
       </TabsContent>
 
-      <TabsContent value="css-classes" className="flex-1 min-h-0 mt-0 flex items-center justify-center">
+      <TabsContent value="css-classes" className="flex-1 min-h-0 mt-0 flex items-center justify-center" style={{ flexGrow: 1 }}>
         <div className="text-center text-muted-foreground">
           <Tag className="h-16 w-16 mx-auto mb-4 opacity-40" />
           <h2 className="text-lg font-medium mb-2">CSS Classes</h2>
