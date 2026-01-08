@@ -14,7 +14,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HexColorPicker } from 'react-colorful';
-import { RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { RotateCcw, AlertTriangle } from 'lucide-react';
 import { CSSVariable } from './types';
 import { getContrastInfo, ContrastLevel } from '@/lib/contrast-utils';
 
@@ -235,24 +235,18 @@ export function ColorPicker({
         )}
       </div>
 
-      {contrastInfo && (
+      {contrastInfo && (contrastInfo.level === 'fail' || contrastInfo.level === 'aa-large') && (
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
               className={`flex items-center justify-center w-8 h-8 rounded-md ${
                 contrastInfo.level === 'fail' 
                   ? 'text-destructive' 
-                  : contrastInfo.level === 'aa-large'
-                  ? 'text-yellow-600 dark:text-yellow-500'
-                  : 'text-green-600 dark:text-green-500'
+                  : 'text-yellow-600 dark:text-yellow-500'
               }`}
               data-testid={`contrast-indicator-${label}`}
             >
-              {contrastInfo.level === 'fail' ? (
-                <AlertTriangle className="h-4 w-4" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4" />
-              )}
+              <AlertTriangle className="h-4 w-4" />
             </div>
           </TooltipTrigger>
           <TooltipContent>
