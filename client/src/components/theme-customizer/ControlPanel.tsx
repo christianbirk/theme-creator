@@ -41,6 +41,9 @@ const ALIGNMENT_VARIABLES = ['--nav-main-align'];
 // Variables that should use family reference select (base/heading)
 const FAMILY_REFERENCE_VARIABLES = ['--pre-heading-font-family'];
 
+// Variables that should use hyphens select (auto/none)
+const HYPHENS_VARIABLES = ['--font-heading-hyphens'];
+
 interface ControlPanelProps {
   categories: VariableCategory[];
   variables: CSSVariable[];
@@ -323,6 +326,22 @@ export function ControlPanel({
           onChange={(value) => onVariableChange(variable.name, value)}
           label={displayName}
           baseFamilyOptions={baseFontFamilyOptions}
+        />
+      );
+    }
+    
+    if (HYPHENS_VARIABLES.includes(variable.name)) {
+      return (
+        <SelectInput
+          key={variable.name}
+          value={variable.value}
+          defaultValue={variable.defaultValue}
+          onChange={(value) => onVariableChange(variable.name, value)}
+          label={displayName}
+          options={[
+            { value: 'auto', label: 'Auto' },
+            { value: 'none', label: 'None' },
+          ]}
         />
       );
     }
