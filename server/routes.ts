@@ -259,6 +259,15 @@ function parseScssVariables(content: string): CSSVariable[] {
     }
   }
 
+  // Post-process: Rename "hero-and-ratios" or similar mainSection to "aspect-ratios"
+  for (const variable of variables) {
+    if (variable.mainSection === 'hero-and-ratios' || 
+        variable.mainSection === 'hero-ratios' ||
+        variable.mainSection === 'hero-&-ratios') {
+      variable.mainSection = 'aspect-ratios';
+    }
+  }
+
   return variables;
 }
 
