@@ -249,6 +249,16 @@ function parseScssVariables(content: string): CSSVariable[] {
     }
   }
 
+  // Post-process: Move hero typography variables (font-size, line-height) to typography section under "Hero Module" subsection
+  for (const variable of variables) {
+    const lowerName = variable.name.toLowerCase();
+    if (lowerName.includes('hero') && 
+        (lowerName.includes('font') || lowerName.includes('line-height'))) {
+      variable.mainSection = 'typography';
+      variable.subSection = 'hero-module';
+    }
+  }
+
   return variables;
 }
 
