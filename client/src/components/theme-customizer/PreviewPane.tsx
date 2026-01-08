@@ -786,22 +786,21 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-muted/50 p-4">
+      <div className="flex-1 min-h-0 overflow-auto bg-muted/50 p-4">
         <div 
-          className="mx-auto bg-background border rounded-md shadow-sm overflow-hidden transition-all duration-200"
+          className="mx-auto bg-background border rounded-md shadow-sm overflow-hidden transition-all duration-200 h-full"
           style={{ 
             width: deviceWidths[device],
             maxWidth: '100%',
             transform: `scale(${zoom / 100})`,
             transformOrigin: 'top center',
-            height: zoom < 100 ? `${100 / (zoom / 100)}%` : 'auto',
           }}
         >
           <iframe
             ref={iframeRef}
             srcDoc={iframeSrcDoc}
             onLoad={handleIframeLoad}
-            className="w-full h-[800px] border-0"
+            className="w-full h-full border-0"
             title="Theme Preview"
             sandbox="allow-same-origin allow-scripts"
             data-testid="preview-iframe"
