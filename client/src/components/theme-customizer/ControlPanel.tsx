@@ -34,6 +34,11 @@ const TEXT_TRANSFORM_VARIABLES = [
   '--label-text-transform',
   '--h1-text-transform', '--h2-text-transform', '--h3-text-transform',
   '--h4-text-transform', '--h5-text-transform', '--h6-text-transform',
+  '--pre-heading-text-transform',
+  '--footer-heading-text-transform',
+  '--nav-main-link-text-transform',
+  '--service-text-transform',
+  '--link-arrow-text-transform',
 ];
 
 // Variables that should use alignment select (left/center)
@@ -298,7 +303,7 @@ export function ControlPanel({
           onChange={(value) => onVariableChange(variable.name, value)}
           label={displayName}
           options={[
-            { value: 'none', label: 'None' },
+            { value: 'normal', label: 'Normal' },
             { value: 'uppercase', label: 'Uppercase' },
           ]}
         />
