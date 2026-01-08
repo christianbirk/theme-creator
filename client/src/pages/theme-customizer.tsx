@@ -9,7 +9,7 @@ import { ExportModal } from '@/components/theme-customizer/ExportModal';
 import { defaultCategories, CSSVariable, VariableCategory } from '@/components/theme-customizer/types';
 import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api';
 import { useToast } from '@/hooks/use-toast';
-import { FileCode, Loader2, Settings2, Tag } from 'lucide-react';
+import { Settings2, Tag } from 'lucide-react';
 
 export default function ThemeCustomizer() {
   const { toast } = useToast();
@@ -234,19 +234,6 @@ export default function ThemeCustomizer() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button 
-          variant="outline" 
-          onClick={() => handleLoadSample(true)}
-          disabled={isLoading}
-          data-testid="button-load-sample"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <FileCode className="h-4 w-4 mr-1.5" />
-          )}
-          Reload Sample
-        </Button>
       </header>
 
       {activeTab === 'design' && (
