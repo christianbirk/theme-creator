@@ -25,10 +25,57 @@ export default function ThemeCustomizer() {
 
   const [categories, setCategories] = useState<VariableCategory[]>(defaultCategories);
 
+  // Undo/Redo history - separate past and future stacks
+  const [past, setPast] = useState<CSSVariable[][]>([]);
+  const [future, setFuture] = useState<CSSVariable[][]>([]);
+
+  const canUndo = past.length > 0;
+  const canRedo = future.length > 0;
+
   const handleVariableChange = useCallback((name: string, value: string) => {
-    setVariables(prev => prev.map(v => 
-      v.name === name ? { ...v, value } : v
-    ));
+    setVariables(prev => {
+      const newVariables = prev.map(v => 
+        v.name === name ? { ...v, value } : v
+      );
+      
+      // Push current state to past, clear future
+      setPast(prevPast => {
+        const newPast = [...prevPast, prev];
+        // Keep max 50 history entries
+        return newPast.slice(-50);
+      });
+      setFuture([]);
+      
+      return newVariables;
+    });
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (past.length === 0) return;
+    
+    const newPast = [...past];
+    const previous = newPast.pop()!;
+    
+    setPast(newPast);
+    setFuture(prevFuture => [variables, ...prevFuture]);
+    setVariables(previous);
+  }, [past, variables]);
+
+  const handleRedo = useCallback(() => {
+    if (future.length === 0) return;
+    
+    const newFuture = [...future];
+    const next = newFuture.shift()!;
+    
+    setFuture(newFuture);
+    setPast(prevPast => [...prevPast, variables]);
+    setVariables(next);
+  }, [future, variables]);
+
+  // Reset history when loading new data
+  const resetHistory = useCallback(() => {
+    setPast([]);
+    setFuture([]);
   }, []);
 
   const handleResetAll = useCallback(() => {
@@ -81,6 +128,7 @@ export default function ThemeCustomizer() {
 
       setCategories(newCategories);
       setVariables(parsedVariables);
+      resetHistory();
 
       toast({
         title: 'Import successful',
@@ -95,7 +143,7 @@ export default function ThemeCustomizer() {
       });
     }
     setIsLoading(false);
-  }, [toast]);
+  }, [toast, resetHistory]);
 
   const handleLoadSample = useCallback(async (showToast = true) => {
     setIsLoading(true);
@@ -118,6 +166,7 @@ export default function ThemeCustomizer() {
 
       setCategories(newCategories);
       setVariables(parsedVariables);
+      resetHistory();
 
       if (showToast) {
         toast({
@@ -136,7 +185,7 @@ export default function ThemeCustomizer() {
       }
     }
     setIsLoading(false);
-  }, [toast]);
+  }, [toast, resetHistory]);
 
   // Load sample SCSS on mount
   useEffect(() => {
@@ -227,6 +276,10 @@ export default function ThemeCustomizer() {
             variables={variables}
             onResetAll={handleResetAll}
             onExport={handleExport}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
           />
         </div>
       )}
