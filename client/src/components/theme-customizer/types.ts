@@ -38,7 +38,7 @@ export const defaultCategories: VariableCategory[] = [
   { id: 'icons', name: 'Icons', icon: 'Star', variables: [] },
   { id: 'labels', name: 'Labels', icon: 'Tag', variables: [] },
   { id: 'forms', name: 'Forms', icon: 'FormInput', variables: [] },
-  { id: 'hero-and-ratios', name: 'Hero and Ratios', icon: 'Image', variables: [] },
+  { id: 'aspect-ratios', name: 'Aspect Ratios', icon: 'Image', variables: [] },
   { id: 'other', name: 'Other', icon: 'Settings', variables: [] },
 ];
 
@@ -53,7 +53,7 @@ export const sectionIcons: Record<string, string> = {
   'icons': 'Star',
   'labels': 'Tag',
   'forms': 'FormInput',
-  'hero-and-ratios': 'Image',
+  'aspect-ratios': 'Image',
 };
 
 export function formatVariableName(name: string): string {

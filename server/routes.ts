@@ -155,10 +155,9 @@ function categorizeVariable(name: string): string {
     return 'forms';
   }
 
-  // Hero & Aspect Ratios
-  if (lowerName.includes('hero') || lowerName.includes('aspect-ratio') ||
-      lowerName.includes('ratio')) {
-    return 'hero-ratios';
+  // Aspect Ratios (hero typography moved to typography section)
+  if (lowerName.includes('aspect-ratio') || lowerName.includes('ratio')) {
+    return 'aspect-ratios';
   }
 
   // Transitions
