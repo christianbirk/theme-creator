@@ -39,7 +39,7 @@ const TEXT_TRANSFORM_VARIABLES = [
 const ALIGNMENT_VARIABLES = ['--nav-main-align'];
 
 // Variables that should use family reference select (base/heading)
-const FAMILY_REFERENCE_VARIABLES = ['--pre-heading-font-family'];
+const FAMILY_REFERENCE_VARIABLES = ['--pre-heading-family'];
 
 // Variables that should use hyphens select (auto/none)
 const HYPHENS_VARIABLES = ['--font-heading-hyphens'];
