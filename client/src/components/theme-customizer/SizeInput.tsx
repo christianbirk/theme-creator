@@ -18,6 +18,7 @@ interface SizeInputProps {
   label: string;
   description?: string;
   sizeOptions?: CSSVariable[];
+  allVariables?: CSSVariable[];
   isBaseFontSize?: boolean;
 }
 
@@ -28,11 +29,12 @@ export function SizeInput({
   label, 
   description,
   sizeOptions = [],
+  allVariables = [],
   isBaseFontSize = false,
 }: SizeInputProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const isModified = value !== defaultValue;
-  const isVarReference = value.startsWith('var(');
+  const isVarReference = value.includes('var(');
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -48,13 +50,23 @@ export function SizeInput({
     setPickerOpen(false);
   }, [onChange]);
 
+  // Resolve var() references to actual values
+  const resolveVarReferences = useCallback((val: string): string => {
+    if (!val.includes('var(')) return val;
+    
+    return val.replace(/var\(([^)]+)\)/g, (_, varName) => {
+      const found = allVariables.find(v => v.name === varName);
+      return found ? found.value : varName;
+    });
+  }, [allVariables]);
+
   const displayValue = useMemo(() => {
     if (isVarReference) {
-      const match = value.match(/var\(([^)]+)\)/);
-      return match ? formatLabel(match[1]) : value;
+      // Resolve and show the actual value
+      return resolveVarReferences(value);
     }
     return value;
-  }, [value, isVarReference]);
+  }, [value, isVarReference, resolveVarReferences]);
 
   // If base font size or no options, show simple input
   if (isBaseFontSize || sizeOptions.length === 0) {
@@ -76,7 +88,7 @@ export function SizeInput({
 
         <Input
           type="text"
-          value={value}
+          value={displayValue}
           onChange={(e) => onChange(e.target.value)}
           className="w-1/2 h-8 font-mono text-sm"
           data-testid={`size-input-${label}`}

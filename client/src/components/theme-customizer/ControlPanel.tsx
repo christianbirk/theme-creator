@@ -435,6 +435,7 @@ export function ControlPanel({
             onChange={(value) => onVariableChange(variable.name, value)}
             label={displayName}
             sizeOptions={sizeOptions}
+            allVariables={variables}
             isBaseFontSize={isBaseFontSize(variable)}
           />
         );
