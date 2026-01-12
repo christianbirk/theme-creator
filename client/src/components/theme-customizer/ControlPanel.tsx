@@ -51,7 +51,20 @@ const FAMILY_REFERENCE_VARIABLES = ['--pre-heading-family', '--lead-font-family'
 const HYPHENS_VARIABLES = ['--font-heading-hyphens'];
 
 // Variables that should use weight reference select (base/heading weight)
-const WEIGHT_REFERENCE_VARIABLES = ['--pre-heading-weight'];
+// Excludes --font-base-weight and --font-heading-weight which are the base definitions
+const WEIGHT_REFERENCE_VARIABLES = [
+  '--pre-heading-weight',
+  '--h1-font-weight', '--h2-font-weight', '--h3-font-weight',
+  '--h4-font-weight', '--h5-font-weight', '--h6-font-weight',
+  '--lead-font-weight',
+  '--footer-heading-font-weight',
+  '--nav-main-link-font-weight',
+  '--service-font-weight',
+  '--button-universal-font-weight',
+  '--link-arrow-text-font-weight',
+  '--icon-font-weight',
+  '--label-font-weight',
+];
 
 interface ControlPanelProps {
   categories: VariableCategory[];
