@@ -212,7 +212,6 @@ export default function ThemeCustomizer() {
 
           <ActionBar
             variables={variables}
-            onResetAll={handleResetAll}
             onExport={handleExport}
           />
         </div>
