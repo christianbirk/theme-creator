@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Upload, RotateCcw, ChevronRight } from 'lucide-react';
 import { CSSVariable, VariableCategory, formatVariableName, formatSectionName, sectionIcons } from './types';
 import { ColorPicker } from './ColorPicker';
@@ -21,6 +22,23 @@ import { BorderInput } from './BorderInput';
 
 // Subsections that are only visible in expert mode
 const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors'];
+
+// Navigation mode types
+type NavigationMode = 'standard' | 'burger';
+
+// Subsections that belong exclusively to Burger Navigation mode
+const BURGER_ONLY_SUBSECTIONS = ['burger-navigation'];
+
+// Helper to check if a subsection should be shown based on navigation mode
+// Standard mode shows all navigation subsections EXCEPT burger-only ones
+// Burger mode shows ONLY burger-only subsections
+const isNavSubsectionVisible = (subSectionId: string, mode: NavigationMode): boolean => {
+  if (mode === 'burger') {
+    return BURGER_ONLY_SUBSECTIONS.includes(subSectionId);
+  }
+  // Standard mode: show everything except burger-only subsections
+  return !BURGER_ONLY_SUBSECTIONS.includes(subSectionId);
+};
 
 // Individual variables that are only visible in expert mode
 const EXPERT_ONLY_VARIABLES = [
@@ -105,11 +123,20 @@ export function ControlPanel({
     const stored = localStorage.getItem('theme-customizer-expert-mode');
     return stored === 'true';
   });
+  const [navigationMode, setNavigationMode] = useState<NavigationMode>(() => {
+    const stored = localStorage.getItem('theme-customizer-nav-mode');
+    return (stored === 'standard' || stored === 'burger') ? stored : 'standard';
+  });
 
   // Persist expert mode to localStorage
   useEffect(() => {
     localStorage.setItem('theme-customizer-expert-mode', String(expertMode));
   }, [expertMode]);
+
+  // Persist navigation mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('theme-customizer-nav-mode', navigationMode);
+  }, [navigationMode]);
 
   const baseColorOptions = useMemo(() => {
     return variables.filter(v => 
@@ -199,6 +226,13 @@ export function ControlPanel({
         return;
       }
 
+      // Filter navigation subsections based on selected navigation mode
+      if (mainSection === 'navigation') {
+        if (!isNavSubsectionVisible(subSection, navigationMode)) {
+          return;
+        }
+      }
+
       if (query && !v.name.toLowerCase().includes(query)) {
         return;
       }
@@ -231,7 +265,7 @@ export function ControlPanel({
     });
 
     return result;
-  }, [variables, searchQuery, expertMode]);
+  }, [variables, searchQuery, expertMode, navigationMode]);
 
   const modifiedCount = useMemo(() => 
     variables.filter(v => v.value !== v.defaultValue).length
@@ -595,6 +629,34 @@ export function ControlPanel({
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-0">
+                {/* Navigation mode toggle for navigation section */}
+                {section.id === 'navigation' && (
+                  <div className="px-4 py-3 border-b bg-muted/30">
+                    <Label className="text-xs text-muted-foreground mb-2 block">Navigation Type</Label>
+                    <Tabs 
+                      value={navigationMode} 
+                      onValueChange={(v) => setNavigationMode(v as NavigationMode)}
+                      className="w-full"
+                    >
+                      <TabsList className="w-full grid grid-cols-2">
+                        <TabsTrigger 
+                          value="standard" 
+                          className="text-xs"
+                          data-testid="tab-nav-standard"
+                        >
+                          Standard
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="burger" 
+                          className="text-xs"
+                          data-testid="tab-nav-burger"
+                        >
+                          Burger
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                )}
                 <Accordion 
                   type="multiple" 
                   value={expandedSubSections}
