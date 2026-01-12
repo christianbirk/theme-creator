@@ -625,6 +625,16 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
         color: var(--pre-heading-color) !important;
       }
       
+      /* Navigation border overrides */
+      .nav-main,
+      nav.nav-main,
+      .navigation-main,
+      header nav,
+      .header-navigation {
+        border-top: var(--nav-main-border-top) !important;
+        border-bottom: var(--nav-main-border-bottom) !important;
+      }
+      
       /* Surface overrides for bg-color-* classes */
       ${surfaceOverrides}
     `;

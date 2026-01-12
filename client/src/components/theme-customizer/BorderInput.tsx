@@ -37,19 +37,20 @@ const BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted', 'double', 'groove', 
 
 function parseBorderValue(value: string): BorderParts {
   if (!value || value.trim() === '') {
-    return { width: '', style: 'none', color: '' };
+    // Default to solid so user can start entering values
+    return { width: '', style: 'solid', color: '' };
   }
 
   const trimmed = value.trim();
   
   // Try to extract width (e.g., 1px, 2rem)
-  const widthMatch = trimmed.match(/^(\d+(?:\.\d+)?(?:px|rem|em|%)?)/);
+  const widthMatch = trimmed.match(/(\d+(?:\.\d+)?(?:px|rem|em|%)?)/);
   const width = widthMatch ? widthMatch[1] : '';
   
   // Try to extract style
   let style = 'solid';
   for (const s of BORDER_STYLES) {
-    if (trimmed.includes(s)) {
+    if (s !== 'solid' && trimmed.includes(s)) {
       style = s;
       break;
     }
@@ -76,10 +77,11 @@ function parseBorderValue(value: string): BorderParts {
 }
 
 function composeBorderValue(parts: BorderParts): string {
-  if (parts.style === 'none' || (!parts.width && !parts.color)) {
+  if (parts.style === 'none') {
     return '';
   }
   
+  // Always include the style, only add width/color if present
   const components = [parts.width, parts.style, parts.color].filter(Boolean);
   return components.join(' ');
 }
@@ -94,12 +96,16 @@ export function BorderInput({
 }: BorderInputProps) {
   const [parts, setParts] = useState<BorderParts>(() => parseBorderValue(value));
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [isLocalEdit, setIsLocalEdit] = useState(false);
   
   const isModified = value !== defaultValue;
   
-  // Sync parts when value changes externally
+  // Sync parts when value changes externally (not from local edits)
   useEffect(() => {
-    setParts(parseBorderValue(value));
+    if (!isLocalEdit) {
+      setParts(parseBorderValue(value));
+    }
+    setIsLocalEdit(false);
   }, [value]);
 
   const handleReset = useCallback((e: React.MouseEvent) => {
@@ -110,6 +116,7 @@ export function BorderInput({
   const updatePart = useCallback((key: keyof BorderParts, newValue: string) => {
     const newParts = { ...parts, [key]: newValue };
     setParts(newParts);
+    setIsLocalEdit(true);
     onChange(composeBorderValue(newParts));
   }, [parts, onChange]);
 
