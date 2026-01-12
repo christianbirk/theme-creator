@@ -180,7 +180,7 @@ function parseScssVariables(content: string): CSSVariable[] {
   const mainSectionRegex = /\/\*\s*---\s*(.+?)\s*---\s*\*\//;
   const subSectionRegex = /\/\*\s*([^-][^*]+[^-])\s*\*\//;
   const slashSubSectionRegex = /\/\/+\s*$/; // Lines with just slashes like ////////////////////////////
-  const cssVarRegex = /^\s*--([a-zA-Z0-9_-]+)\s*:\s*(.+?)\s*;/;
+  const cssVarRegex = /^\s*--([a-zA-Z0-9_-]+)\s*:\s*(.*?)\s*;/;
   const scssVarRegex = /^\s*\$([a-zA-Z0-9_-]+)\s*:\s*([^;!]+)/;
   
   for (let i = 0; i < lines.length; i++) {
