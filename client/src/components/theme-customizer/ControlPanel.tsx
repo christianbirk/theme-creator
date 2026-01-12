@@ -29,10 +29,19 @@ type NavigationMode = 'standard' | 'burger';
 // Subsections that belong exclusively to Burger Navigation mode
 const BURGER_ONLY_SUBSECTIONS = ['burger-navigation'];
 
+// Subsections that are always visible regardless of navigation mode
+// These are NOT part of the Standard/Burger division
+const ALWAYS_VISIBLE_NAV_SUBSECTIONS = ['breadcrumb-navigation', 'left-navigation', 'search'];
+
 // Helper to check if a subsection should be shown based on navigation mode
 // Standard mode shows all navigation subsections EXCEPT burger-only ones
 // Burger mode shows ONLY burger-only subsections
+// Always-visible subsections are shown in both modes
 const isNavSubsectionVisible = (subSectionId: string, mode: NavigationMode): boolean => {
+  // Always show these subsections regardless of mode
+  if (ALWAYS_VISIBLE_NAV_SUBSECTIONS.includes(subSectionId)) {
+    return true;
+  }
   if (mode === 'burger') {
     return BURGER_ONLY_SUBSECTIONS.includes(subSectionId);
   }
