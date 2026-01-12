@@ -17,6 +17,7 @@ import { LinkStyleSelect } from './LinkStyleSelect';
 import { SelectInput } from './SelectInput';
 import { FamilyReferenceSelect } from './FamilyReferenceSelect';
 import { WeightReferenceSelect } from './WeightReferenceSelect';
+import { BorderInput } from './BorderInput';
 
 // Subsections that are only visible in expert mode
 const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors'];
@@ -64,6 +65,12 @@ const WEIGHT_REFERENCE_VARIABLES = [
   '--link-arrow-text-font-weight',
   '--icon-font-weight',
   '--label-font-weight',
+];
+
+// Variables that should use border input (width, style, color)
+const BORDER_VARIABLES = [
+  '--nav-main-border-top',
+  '--nav-main-border-bottom',
 ];
 
 interface ControlPanelProps {
@@ -377,6 +384,19 @@ export function ControlPanel({
           onChange={(value) => onVariableChange(variable.name, value)}
           label={displayName}
           baseWeightOptions={baseFontWeightOptions}
+        />
+      );
+    }
+    
+    if (BORDER_VARIABLES.includes(variable.name)) {
+      return (
+        <BorderInput
+          key={variable.name}
+          value={variable.value}
+          defaultValue={variable.defaultValue}
+          onChange={(value) => onVariableChange(variable.name, value)}
+          label={displayName}
+          colorOptions={baseColorOptions}
         />
       );
     }
