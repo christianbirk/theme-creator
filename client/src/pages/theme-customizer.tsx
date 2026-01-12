@@ -211,7 +211,6 @@ export default function ThemeCustomizer() {
           </div>
 
           <ActionBar
-            variables={variables}
             onExport={handleExport}
           />
         </div>
