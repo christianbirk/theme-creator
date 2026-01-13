@@ -146,44 +146,138 @@ export function mergeMappedVariables(
 }
 
 /**
- * Convert SCSS variable references ($var-name) to CSS variable references (var(--var-name))
- * Uses the mapping CSV to find the correct CSS variable name
+ * Resolve an SCSS variable to its final literal value by following reference chains
+ * Uses memoization and cycle detection to avoid infinite loops
  */
-export function convertScssVariablesToCss(content: string, mappings?: ScssVariableMapping[]): string {
+function resolveToLiteral(
+  varName: string,
+  scssVariables: ParsedScssVariables,
+  visited: Set<string> = new Set(),
+  cache: Map<string, string | null> = new Map()
+): string | null {
+  // Check cache first
+  if (cache.has(varName)) {
+    return cache.get(varName)!;
+  }
+  
+  // Cycle detection
+  if (visited.has(varName)) {
+    return null;
+  }
+  
+  const value = scssVariables[varName];
+  if (!value) {
+    cache.set(varName, null);
+    return null;
+  }
+  
+  visited.add(varName);
+  
+  // If value is a simple literal (no $ references), return it
+  if (!value.includes('$')) {
+    cache.set(varName, value);
+    return value;
+  }
+  
+  // If value is just another variable reference, resolve it recursively
+  if (value.match(/^\$[a-zA-Z0-9_-]+$/)) {
+    const resolved = resolveToLiteral(value, scssVariables, visited, cache);
+    cache.set(varName, resolved);
+    return resolved;
+  }
+  
+  // If value contains function calls like map-get(), darken(), etc., we can't resolve it
+  if (value.includes('(') && !value.match(/^#[a-fA-F0-9]+$/) && !value.match(/^rgba?\(/i) && !value.match(/^hsla?\(/i)) {
+    // Check if it's a simple color function we can keep
+    if (!value.match(/^(rgb|rgba|hsl|hsla)\s*\(/i)) {
+      cache.set(varName, null);
+      return null;
+    }
+  }
+  
+  // Try to resolve embedded variable references in the value
+  let resolvedValue = value;
+  const varRefs = value.match(/\$[a-zA-Z0-9_-]+/g) || [];
+  
+  for (const ref of varRefs) {
+    const refValue = resolveToLiteral(ref, scssVariables, new Set(visited), cache);
+    if (refValue === null) {
+      // Can't resolve this reference, return null for the whole value
+      cache.set(varName, null);
+      return null;
+    }
+    resolvedValue = resolvedValue.replace(ref, refValue);
+  }
+  
+  cache.set(varName, resolvedValue);
+  return resolvedValue;
+}
+
+/**
+ * Convert SCSS variable references ($var-name) to CSS variable references or literal values
+ * 
+ * Three-tier resolution:
+ * 1. If SCSS variable has a mapping in CSV → use var(--css-var-name)
+ * 2. If no mapping but value exists in scssVariables → use resolved literal value
+ * 3. If neither → leave SCSS variable as-is
+ */
+export function convertScssVariablesToCss(
+  content: string, 
+  mappings?: ScssVariableMapping[],
+  scssVariables?: ParsedScssVariables
+): string {
   const variableMappings = mappings || parseMappingCsv();
+  const allScssVars = scssVariables || {};
   
   // Create a map from SCSS variable name to CSS variable name
   const scssToCs: Map<string, string> = new Map();
   for (const mapping of variableMappings) {
-    // $scss-var -> --css-var
     scssToCs.set(mapping.scssVariable, mapping.cssVariable);
   }
   
-  // Replace all SCSS variable references with CSS variable references
-  // Match $variable-name patterns but not inside variable definitions ($var: value)
-  let result = content;
+  // Pre-resolve all SCSS variables to literals for tier 2 fallback
+  const resolvedLiterals: Map<string, string> = new Map();
+  const cache = new Map<string, string | null>();
   
-  // First handle interpolation syntax: #{$variable}
-  result = result.replace(/#{(\$[a-zA-Z0-9_-]+)}/g, (match, scssVar) => {
+  for (const varName of Object.keys(allScssVars)) {
+    const literal = resolveToLiteral(varName, allScssVars, new Set(), cache);
+    if (literal !== null) {
+      resolvedLiterals.set(varName, literal);
+    }
+  }
+  
+  // Replace function for both interpolation and regular variable references
+  const replaceVar = (scssVar: string): string => {
+    // Tier 1: Check if there's a CSS variable mapping
     const cssVar = scssToCs.get(scssVar);
     if (cssVar) {
       return `var(${cssVar})`;
     }
-    // If no mapping found, convert directly: $var-name -> var(--var-name)
-    const directCssVar = '--' + scssVar.slice(1);
-    return `var(${directCssVar})`;
+    
+    // Tier 2: Check if we have a resolved literal value
+    const literal = resolvedLiterals.get(scssVar);
+    if (literal !== undefined) {
+      return literal;
+    }
+    
+    // Tier 3: Leave as-is
+    return scssVar;
+  };
+  
+  let result = content;
+  
+  // First handle interpolation syntax: #{$variable}
+  result = result.replace(/#{(\$[a-zA-Z0-9_-]+)}/g, (match, scssVar) => {
+    const replacement = replaceVar(scssVar);
+    // If it's a CSS var(), keep the var() syntax
+    // If it's a literal or unchanged, just return the value (no #{})
+    return replacement;
   });
   
   // Then handle regular variable references: $variable (not at start of line with colon after)
   // This regex avoids matching variable definitions like "$var: value"
   result = result.replace(/(?<!^\s*)(\$[a-zA-Z0-9_-]+)(?!\s*:)/gm, (match, scssVar) => {
-    const cssVar = scssToCs.get(scssVar);
-    if (cssVar) {
-      return `var(${cssVar})`;
-    }
-    // If no mapping found, convert directly: $var-name -> var(--var-name)
-    const directCssVar = '--' + scssVar.slice(1);
-    return `var(${directCssVar})`;
+    return replaceVar(scssVar);
   });
   
   return result;

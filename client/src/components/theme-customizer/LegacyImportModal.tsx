@@ -176,8 +176,11 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         // Look for files in css/custom/ folder
         if (lowerRelativePath.startsWith('css/custom/') && lowerRelativePath.endsWith('.scss')) {
           const content = await zipEntry.async('string');
-          // Convert SCSS variables to CSS variables
-          const convertedContent = convertScssVariablesToCss(content, mappings);
+          // Convert SCSS variables using 3-tier resolution:
+          // 1. Mapped variables -> var(--css-var)
+          // 2. Unmapped but defined in zip -> literal value
+          // 3. Unknown -> leave as-is
+          const convertedContent = convertScssVariablesToCss(content, mappings, scssVariables);
           
           // Extract filename from path
           const pathParts = relativePath.split('/');
