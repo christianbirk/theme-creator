@@ -70,7 +70,7 @@ const TEXT_TRANSFORM_VARIABLES = [
 ];
 
 // Variables that should use alignment select (left/center)
-const ALIGNMENT_VARIABLES = ['--nav-main-align'];
+const ALIGNMENT_VARIABLES = ['--nav-main-align', '--nav-burger-dropdown-link-align'];
 
 // Variables that should use family reference select (base/heading)
 const FAMILY_REFERENCE_VARIABLES = ['--pre-heading-family', '--lead-font-family'];
