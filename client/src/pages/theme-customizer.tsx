@@ -6,6 +6,7 @@ import { ControlPanel } from '@/components/theme-customizer/ControlPanel';
 import { PreviewPane } from '@/components/theme-customizer/PreviewPane';
 import { ActionBar } from '@/components/theme-customizer/ActionBar';
 import { ExportModal } from '@/components/theme-customizer/ExportModal';
+import { CssClassesEditor } from '@/components/theme-customizer/CssClassesEditor';
 import { defaultCategories, CSSVariable, VariableCategory } from '@/components/theme-customizer/types';
 import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api';
 import { useToast } from '@/hooks/use-toast';
@@ -217,12 +218,8 @@ export default function ThemeCustomizer() {
       )}
 
       {activeTab === 'css-classes' && (
-        <div className="flex-1 min-h-0 flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <Tag className="h-16 w-16 mx-auto mb-4 opacity-40" />
-            <h2 className="text-lg font-medium mb-2">CSS Classes</h2>
-            <p className="text-sm">CSS class configuration will be available here.</p>
-          </div>
+        <div className="flex-1 min-h-0">
+          <CssClassesEditor />
         </div>
       )}
 

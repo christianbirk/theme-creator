@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,8 +7,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { Plus, Trash2, Edit2, Download, ChevronRight, GripVertical, FolderPlus } from 'lucide-react';
 import type { CssClass, CssClassGroup, CssClassesData } from '@shared/schema';
+
+interface StylesXmlResponse {
+  success: boolean;
+  data: CssClassesData;
+  groupCount: number;
+  classCount: number;
+}
+
+interface ExportXmlResponse {
+  success: boolean;
+  xml: string;
+  lineCount: number;
+}
 
 interface CssClassesEditorProps {
   onExportXml?: (xml: string) => void;
@@ -16,7 +31,6 @@ interface CssClassesEditorProps {
 export function CssClassesEditor({ onExportXml }: CssClassesEditorProps) {
   const { toast } = useToast();
   const [data, setData] = useState<CssClassesData>({ groups: [] });
-  const [isLoading, setIsLoading] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -25,74 +39,53 @@ export function CssClassesEditor({ onExportXml }: CssClassesEditorProps) {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<{ index: number; group: CssClassGroup } | null>(null);
 
+  const { isLoading, error } = useQuery<StylesXmlResponse>({
+    queryKey: ['/api/styles-xml'],
+    staleTime: Infinity,
+  });
+
   useEffect(() => {
-    loadStylesXml();
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/styles-xml');
+        const result: StylesXmlResponse = await response.json();
+        if (result.success) {
+          setData(result.data);
+          setExpandedGroups(result.data.groups.map((_: CssClassGroup, i: number) => `group-${i}`));
+        }
+      } catch (err) {
+        console.error('Load styles error:', err);
+      }
+    };
+    fetchData();
   }, []);
 
-  const loadStylesXml = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/styles-xml');
-      const result = await response.json();
+  const exportMutation = useMutation({
+    mutationFn: async (exportData: CssClassesData): Promise<ExportXmlResponse> => {
+      const response = await apiRequest('POST', '/api/export-styles-xml', { data: exportData });
+      return response.json();
+    },
+    onSuccess: (result) => {
+      const blob = new Blob([result.xml], { type: 'application/xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'styles.xml';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       
-      if (result.success) {
-        setData(result.data);
-        setExpandedGroups(result.data.groups.map((_: CssClassGroup, i: number) => `group-${i}`));
-      } else {
-        toast({
-          title: 'Failed to load styles',
-          description: result.error || 'Unknown error',
-          variant: 'destructive',
-        });
-      }
-    } catch (err) {
-      console.error('Load styles error:', err);
       toast({
-        title: 'Failed to load styles',
-        description: 'Could not fetch the styles.xml file.',
-        variant: 'destructive',
-      });
-    }
-    setIsLoading(false);
-  };
-
-  const handleExport = useCallback(async () => {
-    try {
-      const response = await fetch('/api/export-styles-xml', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data }),
+        title: 'Export successful',
+        description: 'styles.xml has been downloaded.',
       });
       
-      const result = await response.json();
-      
-      if (result.success) {
-        const blob = new Blob([result.xml], { type: 'application/xml' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'styles.xml';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        toast({
-          title: 'Export successful',
-          description: 'styles.xml has been downloaded.',
-        });
-        
-        if (onExportXml) {
-          onExportXml(result.xml);
-        }
-      } else {
-        toast({
-          title: 'Export failed',
-          description: result.error || 'Unknown error',
-          variant: 'destructive',
-        });
+      if (onExportXml) {
+        onExportXml(result.xml);
       }
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error('Export error:', err);
       toast({
         title: 'Export failed',
@@ -100,7 +93,11 @@ export function CssClassesEditor({ onExportXml }: CssClassesEditorProps) {
         variant: 'destructive',
       });
     }
-  }, [data, toast, onExportXml]);
+  });
+
+  const handleExport = useCallback(() => {
+    exportMutation.mutate(data);
+  }, [data, exportMutation]);
 
   const handleAddClass = (groupIndex: number) => {
     setEditingClass({
