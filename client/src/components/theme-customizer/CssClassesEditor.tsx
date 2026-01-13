@@ -27,9 +27,10 @@ interface ExportXmlResponse {
 interface CssClassesEditorProps {
   onExportXml?: (xml: string) => void;
   onDataChange?: (data: CssClassesData) => void;
+  importedData?: CssClassesData | null;
 }
 
-export function CssClassesEditor({ onExportXml, onDataChange }: CssClassesEditorProps) {
+export function CssClassesEditor({ onExportXml, onDataChange, importedData }: CssClassesEditorProps) {
   const { toast } = useToast();
   const [data, setData] = useState<CssClassesData>({ groups: [] });
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
@@ -52,7 +53,6 @@ export function CssClassesEditor({ onExportXml, onDataChange }: CssClassesEditor
         const result: StylesXmlResponse = await response.json();
         if (result.success) {
           setData(result.data);
-          // Default to all groups collapsed
           setExpandedGroups([]);
         }
       } catch (err) {
@@ -61,6 +61,13 @@ export function CssClassesEditor({ onExportXml, onDataChange }: CssClassesEditor
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (importedData && importedData.groups.length > 0) {
+      setData(importedData);
+      setExpandedGroups([]);
+    }
+  }, [importedData]);
 
   // Notify parent of data changes
   useEffect(() => {

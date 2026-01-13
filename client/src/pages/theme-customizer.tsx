@@ -11,8 +11,10 @@ import { defaultCategories, CSSVariable, VariableCategory } from '@/components/t
 import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Settings2, Tag, Code } from 'lucide-react';
+import { Settings2, Tag, Code, Upload } from 'lucide-react';
 import { CustomCssManager, ScssFile, DEFAULT_FILE } from '@/components/theme-customizer/CustomCssManager';
+import { LegacyImportModal, PreservedFolders } from '@/components/theme-customizer/LegacyImportModal';
+import { mergeMappedVariables } from '@/lib/legacy-import';
 import type { CssClassesData } from '@shared/schema';
 import JSZip from 'jszip';
 
@@ -35,6 +37,11 @@ export default function ThemeCustomizer() {
   
   // Custom SCSS files for appending to theme.css
   const [scssFiles, setScssFiles] = useState<ScssFile[]>([DEFAULT_FILE]);
+  
+  // Legacy import state
+  const [legacyImportModalOpen, setLegacyImportModalOpen] = useState(false);
+  const [preservedFolders, setPreservedFolders] = useState<PreservedFolders | null>(null);
+  const [importedCssClassesData, setImportedCssClassesData] = useState<CssClassesData | null>(null);
 
   const handleVariableChange = useCallback((name: string, value: string) => {
     setVariables(prev => prev.map(v => 
@@ -154,6 +161,40 @@ export default function ThemeCustomizer() {
     handleLoadSample(false);
   }, []);
 
+  const handleLegacyImportComplete = useCallback(async (result: {
+    mappedVariables: { name: string; value: string }[];
+    stylesXml: string | null;
+    preservedFolders: PreservedFolders;
+  }) => {
+    // Apply mapped variables to existing state
+    setVariables(prev => {
+      const mappedMap = new Map(result.mappedVariables.map(v => [v.name, v.value]));
+      return prev.map(variable => {
+        const mappedValue = mappedMap.get(variable.name);
+        if (mappedValue !== undefined) {
+          return { ...variable, value: mappedValue };
+        }
+        return variable;
+      });
+    });
+
+    // Store preserved folders for export
+    setPreservedFolders(result.preservedFolders);
+
+    // Parse and import styles.xml
+    if (result.stylesXml) {
+      try {
+        const response = await apiRequest('POST', '/api/parse-styles-xml', { content: result.stylesXml });
+        const parsed = await response.json();
+        if (parsed.success) {
+          setImportedCssClassesData(parsed.data);
+        }
+      } catch (err) {
+        console.error('Failed to parse styles.xml:', err);
+      }
+    }
+  }, []);
+
   const handleExport = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -211,6 +252,19 @@ export default function ThemeCustomizer() {
           }
         }
         
+        // Add preserved folders from legacy import
+        if (preservedFolders) {
+          preservedFolders.charts.forEach((data, path) => {
+            themeFolder.file(path, data);
+          });
+          preservedFolders.fonts.forEach((data, path) => {
+            themeFolder.file(path, data);
+          });
+          preservedFolders.release.forEach((data, path) => {
+            themeFolder.file(path, data);
+          });
+        }
+        
         // Generate and download the zip
         const content = await zip.generateAsync({ type: 'blob' });
         const url = URL.createObjectURL(content);
@@ -236,7 +290,7 @@ export default function ThemeCustomizer() {
       });
     }
     setIsLoading(false);
-  }, [variables, baseScss, toast, cssClassesData, scssFiles]);
+  }, [variables, baseScss, toast, cssClassesData, scssFiles, preservedFolders]);
 
   const [activeTab, setActiveTab] = useState('design');
 
@@ -271,6 +325,15 @@ export default function ThemeCustomizer() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setLegacyImportModalOpen(true)}
+          data-testid="button-legacy-import"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Import Legacy Theme
+        </Button>
       </header>
 
       <div className="flex-1 min-h-0 flex flex-col">
@@ -299,7 +362,7 @@ export default function ThemeCustomizer() {
 
         {activeTab === 'css-classes' && (
           <div className="flex-1 min-h-0">
-            <CssClassesEditor onDataChange={setCssClassesData} />
+            <CssClassesEditor onDataChange={setCssClassesData} importedData={importedCssClassesData} />
           </div>
         )}
 
@@ -316,6 +379,12 @@ export default function ThemeCustomizer() {
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
         variables={variables}
+      />
+
+      <LegacyImportModal
+        open={legacyImportModalOpen}
+        onOpenChange={setLegacyImportModalOpen}
+        onImportComplete={handleLegacyImportComplete}
       />
     </div>
   );
