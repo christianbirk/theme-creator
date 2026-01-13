@@ -29,19 +29,16 @@ type NavigationMode = 'standard' | 'burger';
 // Subsections that belong exclusively to Burger Navigation mode
 const BURGER_ONLY_SUBSECTIONS = ['burger-navigation'];
 
-// Subsections that are always visible regardless of navigation mode
-// These are NOT part of the Standard/Burger division
-const ALWAYS_VISIBLE_NAV_SUBSECTIONS = ['breadcrumb-navigation', 'left-navigation', 'search'];
+// Subsections that go to Secondary Navigations (breadcrumb, left-navigation)
+const SECONDARY_NAV_SUBSECTIONS = ['breadcrumb-navigation', 'left-navigation'];
+
+// Subsections that get their own parent category
+const SEARCH_SUBSECTIONS = ['search'];
 
 // Helper to check if a subsection should be shown based on navigation mode
 // Standard mode shows all navigation subsections EXCEPT burger-only ones
 // Burger mode shows ONLY burger-only subsections
-// Always-visible subsections are shown in both modes
 const isNavSubsectionVisible = (subSectionId: string, mode: NavigationMode): boolean => {
-  // Always show these subsections regardless of mode
-  if (ALWAYS_VISIBLE_NAV_SUBSECTIONS.includes(subSectionId)) {
-    return true;
-  }
   if (mode === 'burger') {
     return BURGER_ONLY_SUBSECTIONS.includes(subSectionId);
   }
@@ -236,11 +233,14 @@ export function ControlPanel({
       }
 
       // Filter navigation subsections based on selected navigation mode
-      // Also split navigation into "main-navigation" and "secondary-navigations"
+      // Also split navigation into "main-navigation", "secondary-navigations", and "search"
       let effectiveMainSection = mainSection;
       if (mainSection === 'navigation') {
-        if (ALWAYS_VISIBLE_NAV_SUBSECTIONS.includes(subSection)) {
-          // Move breadcrumb, left-navigation, search to secondary-navigations
+        if (SEARCH_SUBSECTIONS.includes(subSection)) {
+          // Move search to its own parent category
+          effectiveMainSection = 'search';
+        } else if (SECONDARY_NAV_SUBSECTIONS.includes(subSection)) {
+          // Move breadcrumb, left-navigation to secondary-navigations
           effectiveMainSection = 'secondary-navigations';
         } else {
           // Keep other nav subsections in main-navigation
