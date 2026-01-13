@@ -169,13 +169,32 @@ export default function ThemeCustomizer() {
     // Apply mapped variables to existing state
     setVariables(prev => {
       const mappedMap = new Map(result.mappedVariables.map(v => [v.name, v.value]));
-      return prev.map(variable => {
+      const existingNames = new Set(prev.map(v => v.name));
+      
+      // Update existing variables
+      const updated = prev.map(variable => {
         const mappedValue = mappedMap.get(variable.name);
         if (mappedValue !== undefined) {
           return { ...variable, value: mappedValue };
         }
         return variable;
       });
+      
+      // Add any new variables that weren't in the existing list
+      const newVariables = result.mappedVariables
+        .filter(mv => !existingNames.has(mv.name))
+        .map(mv => ({
+          name: mv.name,
+          value: mv.value,
+          defaultValue: mv.value,
+          type: mv.name.includes('color') ? 'color' as const : 'string' as const,
+          category: 'other',
+          mainSection: 'other',
+          subSection: 'imported',
+          description: 'Imported from legacy theme'
+        }));
+      
+      return [...updated, ...newVariables];
     });
 
     // Store preserved folders for export
@@ -188,12 +207,27 @@ export default function ThemeCustomizer() {
         const parsed = await response.json();
         if (parsed.success) {
           setImportedCssClassesData(parsed.data);
+          toast({
+            title: 'CSS classes imported',
+            description: `Imported ${parsed.groupCount} groups with ${parsed.classCount} classes from styles.xml`,
+          });
+        } else {
+          toast({
+            title: 'Failed to import CSS classes',
+            description: parsed.error || 'Could not parse styles.xml',
+            variant: 'destructive',
+          });
         }
       } catch (err) {
         console.error('Failed to parse styles.xml:', err);
+        toast({
+          title: 'Failed to import CSS classes',
+          description: 'Could not parse styles.xml file',
+          variant: 'destructive',
+        });
       }
     }
-  }, []);
+  }, [toast]);
 
   const handleExport = useCallback(async () => {
     setIsLoading(true);
@@ -252,17 +286,17 @@ export default function ThemeCustomizer() {
           }
         }
         
-        // Add preserved folders from legacy import
+        // Add preserved folders from legacy import with proper directory structure
         if (preservedFolders) {
-          preservedFolders.charts.forEach((data, path) => {
-            themeFolder.file(path, data);
-          });
-          preservedFolders.fonts.forEach((data, path) => {
-            themeFolder.file(path, data);
-          });
-          preservedFolders.release.forEach((data, path) => {
-            themeFolder.file(path, data);
-          });
+          const addFolderContents = (folderMap: Map<string, Uint8Array>) => {
+            folderMap.forEach((data, filePath) => {
+              // filePath is like "charts/subfolder/file.png" - create proper path
+              themeFolder.file(filePath, data);
+            });
+          };
+          addFolderContents(preservedFolders.charts);
+          addFolderContents(preservedFolders.fonts);
+          addFolderContents(preservedFolders.release);
         }
         
         // Generate and download the zip
