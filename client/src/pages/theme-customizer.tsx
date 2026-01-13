@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Settings2, Tag } from 'lucide-react';
 import type { CssClassesData } from '@shared/schema';
+import JSZip from 'jszip';
 
 export default function ThemeCustomizer() {
   const { toast } = useToast();
@@ -155,28 +156,44 @@ export default function ThemeCustomizer() {
       // Compile CSS theme
       const css = await compileTheme(variables, baseScss);
       setCompiledCss(css);
-      setExportModalOpen(true);
       
-      // Also export styles.xml if we have CSS classes data
-      if (cssClassesData.groups.length > 0) {
-        try {
-          const response = await apiRequest('POST', '/api/export-styles-xml', { data: cssClassesData });
-          const result = await response.json();
-          
-          if (result.success) {
-            const blob = new Blob([result.xml], { type: 'application/xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'styles.xml';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+      // Create zip file with theme.css and styles.xml
+      const zip = new JSZip();
+      const themeFolder = zip.folder('theme');
+      
+      if (themeFolder) {
+        // Add theme.css
+        themeFolder.file('theme.css', css);
+        
+        // Add styles.xml if we have CSS classes data
+        if (cssClassesData.groups.length > 0) {
+          try {
+            const response = await apiRequest('POST', '/api/export-styles-xml', { data: cssClassesData });
+            const result = await response.json();
+            
+            if (result.success) {
+              themeFolder.file('styles.xml', result.xml);
+            }
+          } catch (xmlErr) {
+            console.error('XML export error:', xmlErr);
           }
-        } catch (xmlErr) {
-          console.error('XML export error:', xmlErr);
         }
+        
+        // Generate and download the zip
+        const content = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'theme.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast({
+          title: 'Export successful',
+          description: 'Theme folder has been downloaded as theme.zip',
+        });
       }
     } catch (err) {
       console.error('Compile error:', err);
