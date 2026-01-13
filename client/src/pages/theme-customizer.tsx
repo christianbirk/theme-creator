@@ -11,9 +11,10 @@ import { defaultCategories, CSSVariable, VariableCategory } from '@/components/t
 import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Settings2, Tag, Code, Upload } from 'lucide-react';
+import { Settings2, Tag, Code, Upload, FileType } from 'lucide-react';
 import { CustomCssManager, ScssFile, DEFAULT_FILE } from '@/components/theme-customizer/CustomCssManager';
-import { LegacyImportModal, PreservedFolders, CustomScssFile } from '@/components/theme-customizer/LegacyImportModal';
+import { CustomFontsManager, FontFile } from '@/components/theme-customizer/CustomFontsManager';
+import { LegacyImportModal, PreservedFolders, CustomScssFile, ImportedFontFile } from '@/components/theme-customizer/LegacyImportModal';
 import { mergeMappedVariables } from '@/lib/legacy-import';
 import type { CssClassesData } from '@shared/schema';
 import JSZip from 'jszip';
@@ -37,6 +38,9 @@ export default function ThemeCustomizer() {
   
   // Custom SCSS files for appending to theme.css
   const [scssFiles, setScssFiles] = useState<ScssFile[]>([DEFAULT_FILE]);
+  
+  // Custom font files
+  const [customFonts, setCustomFonts] = useState<FontFile[]>([]);
   
   // Legacy import state
   const [legacyImportModalOpen, setLegacyImportModalOpen] = useState(false);
@@ -166,6 +170,7 @@ export default function ThemeCustomizer() {
     stylesXml: string | null;
     preservedFolders: PreservedFolders;
     customScssFiles: CustomScssFile[];
+    fontFiles: ImportedFontFile[];
   }) => {
     // Apply mapped variables to existing state
     setVariables(prev => {
@@ -249,6 +254,30 @@ export default function ThemeCustomizer() {
         description: `Imported ${result.customScssFiles.length} custom SCSS file(s) with converted variables`,
       });
     }
+
+    // Import font files to Custom Fonts tab
+    if (result.fontFiles.length > 0) {
+      // Convert ImportedFontFile to FontFile format
+      const importedFonts: FontFile[] = result.fontFiles.map(f => ({
+        id: f.id,
+        name: f.name,
+        data: f.data,
+        type: f.type,
+        size: f.size
+      }));
+      
+      setCustomFonts(prev => {
+        // Avoid duplicates based on filename
+        const existingNames = new Set(prev.map(f => f.name.toLowerCase()));
+        const newFonts = importedFonts.filter(f => !existingNames.has(f.name.toLowerCase()));
+        return [...prev, ...newFonts];
+      });
+      
+      toast({
+        title: 'Font files imported',
+        description: `Imported ${result.fontFiles.length} font file(s) to Custom Fonts`,
+      });
+    }
   }, [toast]);
 
   const handleExport = useCallback(async () => {
@@ -321,6 +350,16 @@ export default function ThemeCustomizer() {
           addFolderContents(preservedFolders.release);
         }
         
+        // Add custom fonts from Custom Fonts tab
+        if (customFonts.length > 0) {
+          const fontsFolder = themeFolder.folder('fonts');
+          if (fontsFolder) {
+            for (const font of customFonts) {
+              fontsFolder.file(font.name, font.data);
+            }
+          }
+        }
+        
         // Generate and download the zip
         const content = await zip.generateAsync({ type: 'blob' });
         const url = URL.createObjectURL(content);
@@ -346,7 +385,7 @@ export default function ThemeCustomizer() {
       });
     }
     setIsLoading(false);
-  }, [variables, baseScss, toast, cssClassesData, scssFiles, preservedFolders]);
+  }, [variables, baseScss, toast, cssClassesData, scssFiles, preservedFolders, customFonts]);
 
   const [activeTab, setActiveTab] = useState('design');
 
@@ -378,6 +417,19 @@ export default function ThemeCustomizer() {
             >
               <Code className="h-4 w-4" />
               Custom CSS
+            </TabsTrigger>
+            <TabsTrigger 
+              value="custom-fonts" 
+              className="gap-2 px-4 py-2"
+              data-testid="tab-custom-fonts"
+            >
+              <FileType className="h-4 w-4" />
+              Custom Fonts
+              {customFonts.length > 0 && (
+                <span className="ml-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                  {customFonts.length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -425,6 +477,12 @@ export default function ThemeCustomizer() {
         {activeTab === 'custom-css' && (
           <div className="flex-1 min-h-0">
             <CustomCssManager files={scssFiles} onFilesChange={setScssFiles} />
+          </div>
+        )}
+
+        {activeTab === 'custom-fonts' && (
+          <div className="flex-1 min-h-0">
+            <CustomFontsManager fonts={customFonts} onFontsChange={setCustomFonts} />
           </div>
         )}
 

@@ -20,6 +20,14 @@ export interface CustomScssFile {
   content: string;
 }
 
+export interface ImportedFontFile {
+  id: string;
+  name: string;
+  data: Uint8Array;
+  type: string;
+  size: number;
+}
+
 interface ImportResult {
   mappedVariables: { name: string; value: string }[];
   unmappedScssCount: number;
@@ -27,6 +35,7 @@ interface ImportResult {
   preservedFolders: PreservedFolders;
   scssFilesProcessed: number;
   customScssFiles: CustomScssFile[];
+  fontFiles: ImportedFontFile[];
 }
 
 interface LegacyImportModalProps {
@@ -203,6 +212,11 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         release: new Map()
       };
       
+      // Supported font extensions for Custom Fonts tab
+      const SUPPORTED_FONT_EXTENSIONS = ['ttf', 'woff', 'woff2', 'eot'];
+      const fontFiles: ImportedFontFile[] = [];
+      let fontFileId = 1;
+      
       for (const [path, zipEntry] of Object.entries(zip.files)) {
         if (zipEntry.dir) continue;
         
@@ -211,13 +225,26 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         
         if (lowerPath.startsWith('charts/')) {
           const data = await zipEntry.async('uint8array');
-          // Normalize path to lowercase for consistency
           const normalizedPath = 'charts/' + relativePath.slice(relativePath.indexOf('/') + 1);
           preservedFolders.charts.set(normalizedPath, data);
         } else if (lowerPath.startsWith('fonts/')) {
           const data = await zipEntry.async('uint8array');
           const normalizedPath = 'fonts/' + relativePath.slice(relativePath.indexOf('/') + 1);
           preservedFolders.fonts.set(normalizedPath, data);
+          
+          // Extract supported font files for Custom Fonts tab
+          const filename = relativePath.split('/').pop() || '';
+          const ext = filename.split('.').pop()?.toLowerCase() || '';
+          
+          if (SUPPORTED_FONT_EXTENSIONS.includes(ext)) {
+            fontFiles.push({
+              id: `imported-font-${fontFileId++}`,
+              name: filename,
+              data: data,
+              type: `font/${ext}`,
+              size: data.length
+            });
+          }
         } else if (lowerPath.startsWith('release/')) {
           const data = await zipEntry.async('uint8array');
           const normalizedPath = 'release/' + relativePath.slice(relativePath.indexOf('/') + 1);
@@ -234,7 +261,8 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         stylesXml,
         preservedFolders,
         scssFilesProcessed,
-        customScssFiles
+        customScssFiles,
+        fontFiles
       };
       
       setImportResult(result);
