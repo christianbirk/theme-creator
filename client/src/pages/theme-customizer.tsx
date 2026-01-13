@@ -11,7 +11,8 @@ import { defaultCategories, CSSVariable, VariableCategory } from '@/components/t
 import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Settings2, Tag } from 'lucide-react';
+import { Settings2, Tag, Code } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import type { CssClassesData } from '@shared/schema';
 import JSZip from 'jszip';
 
@@ -31,6 +32,9 @@ export default function ThemeCustomizer() {
   
   // CSS classes data for combined export
   const [cssClassesData, setCssClassesData] = useState<CssClassesData>({ groups: [] });
+  
+  // Custom CSS for appending to theme.css
+  const [customCss, setCustomCss] = useState('');
 
   const handleVariableChange = useCallback((name: string, value: string) => {
     setVariables(prev => prev.map(v => 
@@ -162,8 +166,11 @@ export default function ThemeCustomizer() {
       const themeFolder = zip.folder('theme');
       
       if (themeFolder) {
-        // Add theme.css
-        themeFolder.file('theme.css', css);
+        // Add theme.css with custom CSS appended
+        const fullCss = customCss.trim() 
+          ? `${css}\n\n/* Custom CSS */\n${customCss}`
+          : css;
+        themeFolder.file('theme.css', fullCss);
         
         // Add styles.xml if we have CSS classes data
         if (cssClassesData.groups.length > 0) {
@@ -204,7 +211,7 @@ export default function ThemeCustomizer() {
       });
     }
     setIsLoading(false);
-  }, [variables, baseScss, toast, cssClassesData]);
+  }, [variables, baseScss, toast, cssClassesData, customCss]);
 
   const [activeTab, setActiveTab] = useState('design');
 
@@ -228,6 +235,14 @@ export default function ThemeCustomizer() {
             >
               <Tag className="h-4 w-4" />
               CSS classes
+            </TabsTrigger>
+            <TabsTrigger 
+              value="custom-css" 
+              className="gap-2 px-4 py-2"
+              data-testid="tab-custom-css"
+            >
+              <Code className="h-4 w-4" />
+              Custom CSS
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -260,6 +275,30 @@ export default function ThemeCustomizer() {
         {activeTab === 'css-classes' && (
           <div className="flex-1 min-h-0">
             <CssClassesEditor onDataChange={setCssClassesData} />
+          </div>
+        )}
+
+        {activeTab === 'custom-css' && (
+          <div className="flex-1 min-h-0 flex flex-col p-4">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold">Custom CSS</h2>
+              <p className="text-sm text-muted-foreground">
+                Add custom CSS that will be appended to the end of theme.css when exporting.
+              </p>
+            </div>
+            <div className="flex-1 min-h-0">
+              <Textarea
+                value={customCss}
+                onChange={(e) => setCustomCss(e.target.value)}
+                placeholder="/* Add your custom CSS here */
+
+.my-custom-class {
+  color: red;
+}"
+                className="h-full w-full font-mono text-sm resize-none"
+                data-testid="textarea-custom-css"
+              />
+            </div>
           </div>
         )}
 

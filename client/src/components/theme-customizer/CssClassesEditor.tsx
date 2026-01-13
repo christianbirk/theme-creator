@@ -308,24 +308,22 @@ export function CssClassesEditor({ onExportXml, onDataChange }: CssClassesEditor
                   )}
                 </div>
                 <div className="flex items-center gap-1 mr-2" onClick={e => e.stopPropagation()}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
+                  <div
+                    role="button"
+                    className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-accent cursor-pointer"
                     onClick={(e) => { e.stopPropagation(); handleEditGroup(groupIndex); }}
                     data-testid={`button-edit-group-${groupIndex}`}
                   >
                     <Edit2 className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
+                  </div>
+                  <div
+                    role="button"
+                    className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-accent text-destructive cursor-pointer"
                     onClick={(e) => { e.stopPropagation(); handleDeleteGroup(groupIndex); }}
                     data-testid={`button-delete-group-${groupIndex}`}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  </div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
