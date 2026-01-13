@@ -12,7 +12,7 @@ import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Settings2, Tag, Code } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
+import { SimpleCodeEditor } from '@/components/theme-customizer/SimpleCodeEditor';
 import type { CssClassesData } from '@shared/schema';
 import JSZip from 'jszip';
 
@@ -297,16 +297,11 @@ export default function ThemeCustomizer() {
               </p>
             </div>
             <div className="flex-1 min-h-0">
-              <Textarea
+              <SimpleCodeEditor
                 value={customCss}
-                onChange={(e) => setCustomCss(e.target.value)}
-                placeholder="/* Add your custom CSS here */
-
-.my-custom-class {
-  color: red;
-}"
-                className="h-full w-full font-mono text-sm resize-none"
-                data-testid="textarea-custom-css"
+                onChange={setCustomCss}
+                placeholder="/* Add your custom CSS here */"
+                className="h-full"
               />
             </div>
           </div>
