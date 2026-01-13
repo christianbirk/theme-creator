@@ -640,32 +640,113 @@ export function ControlPanel({
               <AccordionContent className="pb-0">
                 {/* Navigation mode toggle for navigation section */}
                 {section.id === 'navigation' && (
-                  <div className="px-4 py-3 border-b bg-muted/30">
-                    <Label className="text-xs text-muted-foreground mb-2 block">Navigation Type</Label>
-                    <Tabs 
-                      value={navigationMode} 
-                      onValueChange={(v) => setNavigationMode(v as NavigationMode)}
+                  <>
+                    <div className="px-4 py-3 border-b bg-muted/30">
+                      <Label className="text-xs text-muted-foreground mb-2 block">Navigation Type</Label>
+                      <Tabs 
+                        value={navigationMode} 
+                        onValueChange={(v) => setNavigationMode(v as NavigationMode)}
+                        className="w-full"
+                      >
+                        <TabsList className="w-full grid grid-cols-2">
+                          <TabsTrigger 
+                            value="standard" 
+                            className="text-xs"
+                            data-testid="tab-nav-standard"
+                          >
+                            Standard
+                          </TabsTrigger>
+                          <TabsTrigger 
+                            value="burger" 
+                            className="text-xs"
+                            data-testid="tab-nav-burger"
+                          >
+                            Burger
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                    {/* Mode-dependent subsections */}
+                    <Accordion 
+                      type="multiple" 
+                      value={expandedSubSections}
+                      onValueChange={setExpandedSubSections}
                       className="w-full"
                     >
-                      <TabsList className="w-full grid grid-cols-2">
-                        <TabsTrigger 
-                          value="standard" 
-                          className="text-xs"
-                          data-testid="tab-nav-standard"
+                      {section.subSections
+                        .filter(sub => !ALWAYS_VISIBLE_NAV_SUBSECTIONS.includes(sub.id))
+                        .map(subSection => (
+                        <AccordionItem 
+                          key={`${section.id}-${subSection.id}`} 
+                          value={`${section.id}-${subSection.id}`}
+                          className="border-b-0 border-t"
                         >
-                          Standard
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="burger" 
-                          className="text-xs"
-                          data-testid="tab-nav-burger"
+                          <AccordionTrigger 
+                            className="group px-6 py-2 hover:no-underline text-sm"
+                            data-testid={`accordion-subsection-${section.id}-${subSection.id}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                              <span>{subSection.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({subSection.variables.length})
+                              </span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-6 pb-2">
+                            <div className="space-y-1 pl-5">
+                              {subSection.variables.map(renderVariableInput)}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                    {/* Always-visible subsections (not part of Standard/Burger division) */}
+                    {section.subSections.filter(sub => ALWAYS_VISIBLE_NAV_SUBSECTIONS.includes(sub.id)).length > 0 && (
+                      <>
+                        <div className="px-4 py-2 border-t bg-muted/20">
+                          <Label className="text-xs text-muted-foreground">Other Navigation</Label>
+                        </div>
+                        <Accordion 
+                          type="multiple" 
+                          value={expandedSubSections}
+                          onValueChange={setExpandedSubSections}
+                          className="w-full"
                         >
-                          Burger
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
+                          {section.subSections
+                            .filter(sub => ALWAYS_VISIBLE_NAV_SUBSECTIONS.includes(sub.id))
+                            .map(subSection => (
+                            <AccordionItem 
+                              key={`${section.id}-${subSection.id}`} 
+                              value={`${section.id}-${subSection.id}`}
+                              className="border-b-0 border-t"
+                            >
+                              <AccordionTrigger 
+                                className="group px-6 py-2 hover:no-underline text-sm"
+                                data-testid={`accordion-subsection-${section.id}-${subSection.id}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                                  <span>{subSection.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    ({subSection.variables.length})
+                                  </span>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-6 pb-2">
+                                <div className="space-y-1 pl-5">
+                                  {subSection.variables.map(renderVariableInput)}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      </>
+                    )}
+                  </>
                 )}
+                {/* Non-navigation sections */}
+                {section.id !== 'navigation' && (
                 <Accordion 
                   type="multiple" 
                   value={expandedSubSections}
@@ -698,6 +779,7 @@ export function ControlPanel({
                     </AccordionItem>
                   ))}
                 </Accordion>
+                )}
               </AccordionContent>
             </AccordionItem>
           ))}
