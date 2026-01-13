@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Settings2, Tag, Code, Upload } from 'lucide-react';
 import { CustomCssManager, ScssFile, DEFAULT_FILE } from '@/components/theme-customizer/CustomCssManager';
-import { LegacyImportModal, PreservedFolders } from '@/components/theme-customizer/LegacyImportModal';
+import { LegacyImportModal, PreservedFolders, CustomScssFile } from '@/components/theme-customizer/LegacyImportModal';
 import { mergeMappedVariables } from '@/lib/legacy-import';
 import type { CssClassesData } from '@shared/schema';
 import JSZip from 'jszip';
@@ -165,6 +165,7 @@ export default function ThemeCustomizer() {
     mappedVariables: { name: string; value: string }[];
     stylesXml: string | null;
     preservedFolders: PreservedFolders;
+    customScssFiles: CustomScssFile[];
   }) => {
     // Apply mapped variables to existing state
     setVariables(prev => {
@@ -226,6 +227,27 @@ export default function ThemeCustomizer() {
           variant: 'destructive',
         });
       }
+    }
+
+    // Import custom SCSS files
+    if (result.customScssFiles.length > 0) {
+      // Convert to ScssFile format and merge with existing files
+      const importedFiles: ScssFile[] = result.customScssFiles.map((f, index) => ({
+        id: `imported-${Date.now()}-${index}`,
+        name: f.name,
+        content: f.content
+      }));
+      
+      setScssFiles(prev => {
+        // Filter out the default empty file if it exists and has no content
+        const filteredPrev = prev.filter(f => f.id !== 'default' || f.content.trim());
+        return [...filteredPrev, ...importedFiles];
+      });
+      
+      toast({
+        title: 'Custom CSS files imported',
+        description: `Imported ${result.customScssFiles.length} custom SCSS file(s) with converted variables`,
+      });
     }
   }, [toast]);
 

@@ -144,3 +144,47 @@ export function mergeMappedVariables(
     return variable;
   });
 }
+
+/**
+ * Convert SCSS variable references ($var-name) to CSS variable references (var(--var-name))
+ * Uses the mapping CSV to find the correct CSS variable name
+ */
+export function convertScssVariablesToCss(content: string, mappings?: ScssVariableMapping[]): string {
+  const variableMappings = mappings || parseMappingCsv();
+  
+  // Create a map from SCSS variable name to CSS variable name
+  const scssToCs: Map<string, string> = new Map();
+  for (const mapping of variableMappings) {
+    // $scss-var -> --css-var
+    scssToCs.set(mapping.scssVariable, mapping.cssVariable);
+  }
+  
+  // Replace all SCSS variable references with CSS variable references
+  // Match $variable-name patterns but not inside variable definitions ($var: value)
+  let result = content;
+  
+  // First handle interpolation syntax: #{$variable}
+  result = result.replace(/#{(\$[a-zA-Z0-9_-]+)}/g, (match, scssVar) => {
+    const cssVar = scssToCs.get(scssVar);
+    if (cssVar) {
+      return `var(${cssVar})`;
+    }
+    // If no mapping found, convert directly: $var-name -> var(--var-name)
+    const directCssVar = '--' + scssVar.slice(1);
+    return `var(${directCssVar})`;
+  });
+  
+  // Then handle regular variable references: $variable (not at start of line with colon after)
+  // This regex avoids matching variable definitions like "$var: value"
+  result = result.replace(/(?<!^\s*)(\$[a-zA-Z0-9_-]+)(?!\s*:)/gm, (match, scssVar) => {
+    const cssVar = scssToCs.get(scssVar);
+    if (cssVar) {
+      return `var(${cssVar})`;
+    }
+    // If no mapping found, convert directly: $var-name -> var(--var-name)
+    const directCssVar = '--' + scssVar.slice(1);
+    return `var(${directCssVar})`;
+  });
+  
+  return result;
+}

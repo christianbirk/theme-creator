@@ -6,12 +6,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Upload, FileArchive, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
-import { parseMappingCsv, parseScssFile, applyMapping, ParsedScssVariables } from '@/lib/legacy-import';
+import { parseMappingCsv, parseScssFile, applyMapping, ParsedScssVariables, convertScssVariablesToCss } from '@/lib/legacy-import';
 
 export interface PreservedFolders {
   charts: Map<string, Uint8Array>;
   fonts: Map<string, Uint8Array>;
   release: Map<string, Uint8Array>;
+}
+
+export interface CustomScssFile {
+  id: string;
+  name: string;
+  content: string;
 }
 
 interface ImportResult {
@@ -20,6 +26,7 @@ interface ImportResult {
   stylesXml: string | null;
   preservedFolders: PreservedFolders;
   scssFilesProcessed: number;
+  customScssFiles: CustomScssFile[];
 }
 
 interface LegacyImportModalProps {
@@ -83,9 +90,6 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         }
       }
       
-      console.log('Detected root prefix:', rootPrefix);
-      console.log('Sample entries:', relevantEntries.slice(0, 10));
-      
       setStatusMessage('Validating structure...');
       setProgress(20);
       
@@ -99,8 +103,6 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         const relativePath = rootPrefix ? e.replace(rootPrefix, '') : e;
         return relativePath.toLowerCase().startsWith('css/');
       });
-      
-      console.log('hasStyles:', hasStyles, 'hasCss:', hasCss);
       
       const errors: string[] = [];
       if (!hasStyles) {
@@ -159,6 +161,36 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         stylesXml = await stylesEntry[1].async('string');
       }
       
+      setStatusMessage('Extracting custom SCSS files...');
+      setProgress(85);
+      
+      const customScssFiles: CustomScssFile[] = [];
+      let customFileId = 1;
+      
+      for (const [path, zipEntry] of Object.entries(zip.files)) {
+        if (zipEntry.dir) continue;
+        
+        const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
+        const lowerRelativePath = relativePath.toLowerCase();
+        
+        // Look for files in css/custom/ folder
+        if (lowerRelativePath.startsWith('css/custom/') && lowerRelativePath.endsWith('.scss')) {
+          const content = await zipEntry.async('string');
+          // Convert SCSS variables to CSS variables
+          const convertedContent = convertScssVariablesToCss(content, mappings);
+          
+          // Extract filename from path
+          const pathParts = relativePath.split('/');
+          const filename = pathParts[pathParts.length - 1];
+          
+          customScssFiles.push({
+            id: `imported-${customFileId++}`,
+            name: filename,
+            content: convertedContent
+          });
+        }
+      }
+      
       setStatusMessage('Preserving additional folders...');
       setProgress(90);
       
@@ -198,7 +230,8 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         unmappedScssCount,
         stylesXml,
         preservedFolders,
-        scssFilesProcessed
+        scssFilesProcessed,
+        customScssFiles
       };
       
       setImportResult(result);
@@ -331,6 +364,10 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">styles.xml found:</span>
                     <span className="font-medium">{importResult.stylesXml ? 'Yes' : 'No'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Custom CSS files:</span>
+                    <span className="font-medium">{importResult.customScssFiles.length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Preserved files:</span>
