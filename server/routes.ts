@@ -468,6 +468,28 @@ export async function registerRoutes(
         return res.status(400).json({ error: 'Only HTTP and HTTPS URLs are allowed' });
       }
 
+      // SSRF Protection: Block private/internal IP ranges and localhost
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const blockedPatterns = [
+        /^localhost$/i,
+        /^127\.\d+\.\d+\.\d+$/,          // 127.x.x.x
+        /^10\.\d+\.\d+\.\d+$/,           // 10.x.x.x
+        /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/, // 172.16.x.x - 172.31.x.x
+        /^192\.168\.\d+\.\d+$/,          // 192.168.x.x
+        /^0\.0\.0\.0$/,
+        /^::1$/,                          // IPv6 localhost
+        /^\[::1\]$/,
+        /^fc00:/i,                        // IPv6 private
+        /^fe80:/i,                        // IPv6 link-local
+        /^169\.254\.\d+\.\d+$/,          // Link-local
+        /\.local$/i,                      // .local domains
+        /\.internal$/i,
+      ];
+      
+      if (blockedPatterns.some(pattern => pattern.test(hostname))) {
+        return res.status(403).json({ error: 'Access to internal/private addresses is not allowed' });
+      }
+
       // Fetch the HTML
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -475,10 +497,12 @@ export async function registerRoutes(
       try {
         const response = await fetch(url, {
           headers: {
-            'User-Agent': 'Theme-Customizer-Preview/1.0',
-            'Accept': 'text/html,application/xhtml+xml,*/*',
+            'User-Agent': 'Mozilla/5.0 (compatible; Theme-Customizer-Preview/1.0)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
           },
           signal: controller.signal,
+          redirect: 'follow',
         });
 
         clearTimeout(timeoutId);
@@ -494,17 +518,103 @@ export async function registerRoutes(
           return res.status(400).json({ error: 'URL does not return HTML content' });
         }
 
-        const html = await response.text();
+        let html = await response.text();
 
         // Limit response size (5MB)
         if (html.length > 5 * 1024 * 1024) {
           return res.status(400).json({ error: 'Response too large (max 5MB)' });
         }
 
+        // Get the base URL for rewriting relative URLs
+        const baseUrl = parsedUrl.origin;
+        const basePath = parsedUrl.pathname.replace(/\/[^\/]*$/, '/') || '/';
+
+        // HTML Sanitization: Remove potentially dangerous elements
+        // Remove <script> tags and their content
+        html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        
+        // Remove inline event handlers (onclick, onload, onerror, etc.)
+        html = html.replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '');
+        html = html.replace(/\s+on\w+\s*=\s*[^\s>]*/gi, '');
+        
+        // Remove javascript: URLs in href/src attributes
+        html = html.replace(/(href|src)\s*=\s*["']javascript:[^"']*["']/gi, '$1=""');
+        
+        // Remove <iframe> tags (could load external content)
+        html = html.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+        html = html.replace(/<iframe\b[^>]*\/>/gi, '');
+        
+        // Remove <object>, <embed>, <applet> tags
+        html = html.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '');
+        html = html.replace(/<embed\b[^>]*\/?>/gi, '');
+        html = html.replace(/<applet\b[^<]*(?:(?!<\/applet>)<[^<]*)*<\/applet>/gi, '');
+        
+        // Remove <form> action attributes to prevent form submission
+        html = html.replace(/<form\b([^>]*)>/gi, (match, attrs) => {
+          attrs = attrs.replace(/action\s*=\s*["'][^"']*["']/gi, 'action="#"');
+          attrs = attrs.replace(/action\s*=\s*[^\s>]*/gi, 'action="#"');
+          return `<form${attrs}>`;
+        });
+        
+        // Remove meta refresh/redirect
+        html = html.replace(/<meta\s+[^>]*http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi, '');
+
+        // URL Rewriting: Convert relative URLs to absolute
+        const rewriteUrl = (originalUrl: string): string => {
+          if (!originalUrl || originalUrl.startsWith('data:') || originalUrl.startsWith('#')) {
+            return originalUrl;
+          }
+          if (originalUrl.startsWith('//')) {
+            return `https:${originalUrl}`;
+          }
+          if (originalUrl.startsWith('http://') || originalUrl.startsWith('https://')) {
+            return originalUrl;
+          }
+          if (originalUrl.startsWith('/')) {
+            return `${baseUrl}${originalUrl}`;
+          }
+          return `${baseUrl}${basePath}${originalUrl}`;
+        };
+
+        // Rewrite src attributes (images, scripts are removed but stylesheets, etc.)
+        html = html.replace(/(src\s*=\s*["'])([^"']+)(["'])/gi, (match, prefix, url, suffix) => {
+          return `${prefix}${rewriteUrl(url)}${suffix}`;
+        });
+
+        // Rewrite href attributes (links, stylesheets)
+        html = html.replace(/(href\s*=\s*["'])([^"']+)(["'])/gi, (match, prefix, url, suffix) => {
+          return `${prefix}${rewriteUrl(url)}${suffix}`;
+        });
+
+        // Rewrite srcset attributes (responsive images)
+        html = html.replace(/(srcset\s*=\s*["'])([^"']+)(["'])/gi, (match, prefix, srcset, suffix) => {
+          const rewritten = srcset.split(',').map((entry: string) => {
+            const parts = entry.trim().split(/\s+/);
+            if (parts[0]) {
+              parts[0] = rewriteUrl(parts[0]);
+            }
+            return parts.join(' ');
+          }).join(', ');
+          return `${prefix}${rewritten}${suffix}`;
+        });
+
+        // Rewrite url() in style attributes
+        html = html.replace(/(style\s*=\s*["'][^"']*url\s*\(\s*["']?)([^"')]+)(["']?\s*\)[^"']*["'])/gi, 
+          (match, prefix, url, suffix) => {
+            return `${prefix}${rewriteUrl(url)}${suffix}`;
+          }
+        );
+
+        // Add <base> tag to handle any remaining relative URLs
+        if (!html.includes('<base')) {
+          html = html.replace(/(<head[^>]*>)/i, `$1\n<base href="${baseUrl}${basePath}" target="_self">`);
+        }
+
         res.json({
           success: true,
           html,
           url: parsedUrl.origin + parsedUrl.pathname,
+          baseUrl,
         });
       } catch (fetchErr: any) {
         clearTimeout(timeoutId);

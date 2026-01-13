@@ -1,8 +1,9 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Monitor, Tablet, Smartphone, Loader2, ExternalLink } from 'lucide-react';
+import { Monitor, Tablet, Smartphone, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
 import { CSSVariable } from './types';
+import { useToast } from '@/hooks/use-toast';
 
 interface PreviewPaneProps {
   variables: CSSVariable[];
@@ -67,11 +68,14 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [templateUrl, setTemplateUrl] = useState(DEFAULT_TEMPLATE_URL);
   const [urlInput, setUrlInput] = useState(DEFAULT_TEMPLATE_URL);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { toast } = useToast();
 
   // Load template HTML
   const loadTemplate = useCallback(async (url: string) => {
     setIsLoading(true);
+    setFetchError(null);
     try {
       const response = await fetch('/api/fetch-preview', {
         method: 'POST',
@@ -82,13 +86,32 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       if (response.ok && data.html) {
         setTemplateHtml(data.html);
         setTemplateUrl(url);
+        setFetchError(null);
+        toast({
+          title: 'Preview loaded',
+          description: `Successfully loaded ${new URL(url).hostname}`,
+        });
+      } else {
+        const errorMsg = data.error || `Failed to load (${response.status})`;
+        setFetchError(errorMsg);
+        toast({
+          title: 'Failed to load preview',
+          description: errorMsg,
+          variant: 'destructive',
+        });
       }
     } catch (err) {
-      console.warn('Could not load template:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Network error';
+      setFetchError(errorMsg);
+      toast({
+        title: 'Failed to load preview',
+        description: errorMsg,
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   // Load template on mount
   useEffect(() => {
@@ -739,15 +762,25 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
           </Button>
         </div>
 
-        <Input
-          type="url"
-          value={urlInput}
-          onChange={(e) => setUrlInput(e.target.value)}
-          onKeyDown={handleUrlKeyDown}
-          placeholder="Enter template URL..."
-          className="flex-1 h-8 text-sm"
-          data-testid="preview-url-input"
-        />
+        <div className="flex-1 relative">
+          <Input
+            type="url"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={handleUrlKeyDown}
+            placeholder="Enter any website URL to preview..."
+            className={`w-full h-8 text-sm pr-8 ${fetchError ? 'border-destructive' : ''}`}
+            data-testid="preview-url-input"
+          />
+          {fetchError && (
+            <div 
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-destructive"
+              title={fetchError}
+            >
+              <AlertCircle className="h-4 w-4" />
+            </div>
+          )}
+        </div>
         <Button
           variant="outline"
           size="sm"
