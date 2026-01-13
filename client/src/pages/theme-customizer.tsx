@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,9 @@ import { CssClassesEditor } from '@/components/theme-customizer/CssClassesEditor
 import { defaultCategories, CSSVariable, VariableCategory } from '@/components/theme-customizer/types';
 import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { Settings2, Tag } from 'lucide-react';
+import type { CssClassesData } from '@shared/schema';
 
 export default function ThemeCustomizer() {
   const { toast } = useToast();
@@ -25,6 +27,9 @@ export default function ThemeCustomizer() {
   );
 
   const [categories, setCategories] = useState<VariableCategory[]>(defaultCategories);
+  
+  // CSS classes data for combined export
+  const [cssClassesData, setCssClassesData] = useState<CssClassesData>({ groups: [] });
 
   const handleVariableChange = useCallback((name: string, value: string) => {
     setVariables(prev => prev.map(v => 
@@ -147,9 +152,32 @@ export default function ThemeCustomizer() {
   const handleExport = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Compile CSS theme
       const css = await compileTheme(variables, baseScss);
       setCompiledCss(css);
       setExportModalOpen(true);
+      
+      // Also export styles.xml if we have CSS classes data
+      if (cssClassesData.groups.length > 0) {
+        try {
+          const response = await apiRequest('POST', '/api/export-styles-xml', { data: cssClassesData });
+          const result = await response.json();
+          
+          if (result.success) {
+            const blob = new Blob([result.xml], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'styles.xml';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }
+        } catch (xmlErr) {
+          console.error('XML export error:', xmlErr);
+        }
+      }
     } catch (err) {
       console.error('Compile error:', err);
       toast({
@@ -159,7 +187,7 @@ export default function ThemeCustomizer() {
       });
     }
     setIsLoading(false);
-  }, [variables, baseScss, toast]);
+  }, [variables, baseScss, toast, cssClassesData]);
 
   const [activeTab, setActiveTab] = useState('design');
 
@@ -188,8 +216,8 @@ export default function ThemeCustomizer() {
         </Tabs>
       </header>
 
-      {activeTab === 'design' && (
-        <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0 flex flex-col">
+        {activeTab === 'design' && (
           <div className="flex-1 min-h-0">
             <ResizablePanelGroup direction="horizontal" className="h-full">
               <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
@@ -210,18 +238,16 @@ export default function ThemeCustomizer() {
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>
+        )}
 
-          <ActionBar
-            onExport={handleExport}
-          />
-        </div>
-      )}
+        {activeTab === 'css-classes' && (
+          <div className="flex-1 min-h-0">
+            <CssClassesEditor onDataChange={setCssClassesData} />
+          </div>
+        )}
 
-      {activeTab === 'css-classes' && (
-        <div className="flex-1 min-h-0">
-          <CssClassesEditor />
-        </div>
-      )}
+        <ActionBar onExport={handleExport} />
+      </div>
 
       <ExportModal
         open={exportModalOpen}

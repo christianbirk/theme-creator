@@ -26,9 +26,10 @@ interface ExportXmlResponse {
 
 interface CssClassesEditorProps {
   onExportXml?: (xml: string) => void;
+  onDataChange?: (data: CssClassesData) => void;
 }
 
-export function CssClassesEditor({ onExportXml }: CssClassesEditorProps) {
+export function CssClassesEditor({ onExportXml, onDataChange }: CssClassesEditorProps) {
   const { toast } = useToast();
   const [data, setData] = useState<CssClassesData>({ groups: [] });
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
@@ -51,7 +52,8 @@ export function CssClassesEditor({ onExportXml }: CssClassesEditorProps) {
         const result: StylesXmlResponse = await response.json();
         if (result.success) {
           setData(result.data);
-          setExpandedGroups(result.data.groups.map((_: CssClassGroup, i: number) => `group-${i}`));
+          // Default to all groups collapsed
+          setExpandedGroups([]);
         }
       } catch (err) {
         console.error('Load styles error:', err);
@@ -59,6 +61,13 @@ export function CssClassesEditor({ onExportXml }: CssClassesEditorProps) {
     };
     fetchData();
   }, []);
+
+  // Notify parent of data changes
+  useEffect(() => {
+    if (onDataChange && data.groups.length > 0) {
+      onDataChange(data);
+    }
+  }, [data, onDataChange]);
 
   const exportMutation = useMutation({
     mutationFn: async (exportData: CssClassesData): Promise<ExportXmlResponse> => {
