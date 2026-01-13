@@ -64,31 +64,43 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       
       let rootPrefix = '';
       const entries = Object.keys(zip.files);
-      const firstEntry = entries.find(e => !e.endsWith('/'));
+      // Filter out __MACOSX and .DS_Store entries for detection
+      const relevantEntries = entries.filter(e => 
+        !e.startsWith('__MACOSX') && !e.includes('.DS_Store')
+      );
+      const firstEntry = relevantEntries.find(e => !e.endsWith('/'));
       if (firstEntry && firstEntry.includes('/')) {
         const parts = firstEntry.split('/');
         if (parts.length > 1) {
           const potentialRoot = parts[0] + '/';
-          const allUnderRoot = entries.every(e => e.startsWith(potentialRoot) || e === parts[0]);
+          // Check if all relevant entries are under the potential root
+          const allUnderRoot = relevantEntries.every(e => 
+            e.startsWith(potentialRoot) || e === parts[0] || e === potentialRoot
+          );
           if (allUnderRoot) {
             rootPrefix = potentialRoot;
           }
         }
       }
       
+      console.log('Detected root prefix:', rootPrefix);
+      console.log('Sample entries:', relevantEntries.slice(0, 10));
+      
       setStatusMessage('Validating structure...');
       setProgress(20);
       
       // Case-insensitive check for styles.xml
-      const hasStyles = Object.keys(zip.files).some(e => {
+      const hasStyles = relevantEntries.some(e => {
         const relativePath = rootPrefix ? e.replace(rootPrefix, '') : e;
         return relativePath.toLowerCase() === 'styles.xml';
       });
       // Case-insensitive check for css folder
-      const hasCss = entries.some(e => {
+      const hasCss = relevantEntries.some(e => {
         const relativePath = rootPrefix ? e.replace(rootPrefix, '') : e;
         return relativePath.toLowerCase().startsWith('css/');
       });
+      
+      console.log('hasStyles:', hasStyles, 'hasCss:', hasCss);
       
       const errors: string[] = [];
       if (!hasStyles) {
