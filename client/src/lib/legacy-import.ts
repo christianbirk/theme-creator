@@ -84,20 +84,48 @@ function resolveVariableReference(value: string, allVariables: ParsedScssVariabl
   return value;
 }
 
+/**
+ * Convert SCSS variable references in a value to CSS variable references
+ * Used for values that couldn't be resolved to literals
+ */
+function convertValueScssVarsToCss(value: string, scssToCssMap: Map<string, string>): string {
+  // Match all SCSS variable references in the value
+  return value.replace(/\$[a-zA-Z0-9_-]+/g, (scssVar) => {
+    const cssVar = scssToCssMap.get(scssVar);
+    if (cssVar) {
+      return `var(${cssVar})`;
+    }
+    // No mapping found, leave as-is
+    return scssVar;
+  });
+}
+
 export function applyMapping(
   scssVariables: ParsedScssVariables,
   mappings: ScssVariableMapping[]
 ): { name: string; value: string }[] {
   const result: { name: string; value: string }[] = [];
   
+  // Build a map from SCSS variable names to CSS variable names for reference conversion
+  const scssToCssMap: Map<string, string> = new Map();
+  for (const mapping of mappings) {
+    scssToCssMap.set(mapping.scssVariable, mapping.cssVariable);
+  }
+  
   for (const mapping of mappings) {
     let rawValue = scssVariables[mapping.scssVariable];
     
     if (!rawValue) continue;
     
+    // Try to resolve to a literal value first
     rawValue = resolveVariableReference(rawValue, scssVariables);
     
     let finalValue = rawValue;
+    
+    // If the value still contains SCSS variable references, convert them to CSS variables
+    if (finalValue.includes('$')) {
+      finalValue = convertValueScssVarsToCss(finalValue, scssToCssMap);
+    }
     
     if (mapping.note.toLowerCase().includes('take only hex value')) {
       finalValue = extractHexValue(rawValue);
