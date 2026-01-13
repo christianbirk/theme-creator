@@ -182,8 +182,11 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
         const lowerRelativePath = relativePath.toLowerCase();
         
-        // Look for files in css/custom/ folder
-        if (lowerRelativePath.startsWith('css/custom/') && lowerRelativePath.endsWith('.scss')) {
+        // Look for files in css/custom/ or css/fonts/ folders
+        const isCustomScss = lowerRelativePath.startsWith('css/custom/') && lowerRelativePath.endsWith('.scss');
+        const isFontsScss = lowerRelativePath.startsWith('css/fonts/') && lowerRelativePath.endsWith('.scss');
+        
+        if (isCustomScss || isFontsScss) {
           const content = await zipEntry.async('string');
           // Convert SCSS variables using 3-tier resolution:
           // 1. Mapped variables -> var(--css-var)
