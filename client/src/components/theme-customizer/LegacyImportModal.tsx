@@ -401,6 +401,10 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
                     <span className="font-medium">{importResult.customScssFiles.length}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-muted-foreground">Font files:</span>
+                    <span className="font-medium">{importResult.fontFiles.length}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Preserved files:</span>
                     <span className="font-medium">
                       {importResult.preservedFolders.charts.size + 
@@ -414,8 +418,9 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
 
             <p className="text-sm text-muted-foreground">
               This will update the theme variables with values from your legacy theme. 
-              The styles.xml will be loaded into the CSS classes tab. 
-              Charts, fonts, and release folders will be included in the export.
+              The styles.xml will be loaded into the CSS classes tab.
+              Font files will be added to the Custom Fonts tab. 
+              Charts and release folders will be included in the export.
             </p>
           </div>
         )}
