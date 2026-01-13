@@ -107,9 +107,13 @@ export function applyMapping(
   const result: { name: string; value: string }[] = [];
   
   // Build a map from SCSS variable names to CSS variable names for reference conversion
+  // Use the FIRST match found (most direct/generic mapping) rather than the last
+  // e.g., $color-a should map to --color-brand-a, not --label-color-bg-dark
   const scssToCssMap: Map<string, string> = new Map();
   for (const mapping of mappings) {
-    scssToCssMap.set(mapping.scssVariable, mapping.cssVariable);
+    if (!scssToCssMap.has(mapping.scssVariable)) {
+      scssToCssMap.set(mapping.scssVariable, mapping.cssVariable);
+    }
   }
   
   for (const mapping of mappings) {
@@ -258,9 +262,12 @@ export function convertScssVariablesToCss(
   const allScssVars = scssVariables || {};
   
   // Create a map from SCSS variable name to CSS variable name
+  // Use the FIRST match found (most direct/generic mapping) rather than the last
   const scssToCs: Map<string, string> = new Map();
   for (const mapping of variableMappings) {
-    scssToCs.set(mapping.scssVariable, mapping.cssVariable);
+    if (!scssToCs.has(mapping.scssVariable)) {
+      scssToCs.set(mapping.scssVariable, mapping.cssVariable);
+    }
   }
   
   // Pre-resolve all SCSS variables to literals for tier 2 fallback
