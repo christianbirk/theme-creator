@@ -12,7 +12,7 @@ import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Settings2, Tag, Code } from 'lucide-react';
-import { SimpleCodeEditor } from '@/components/theme-customizer/SimpleCodeEditor';
+import { CustomCssManager, ScssFile, DEFAULT_FILE } from '@/components/theme-customizer/CustomCssManager';
 import type { CssClassesData } from '@shared/schema';
 import JSZip from 'jszip';
 
@@ -33,8 +33,8 @@ export default function ThemeCustomizer() {
   // CSS classes data for combined export
   const [cssClassesData, setCssClassesData] = useState<CssClassesData>({ groups: [] });
   
-  // Custom CSS for appending to theme.css
-  const [customCss, setCustomCss] = useState('');
+  // Custom SCSS files for appending to theme.css
+  const [scssFiles, setScssFiles] = useState<ScssFile[]>([DEFAULT_FILE]);
 
   const handleVariableChange = useCallback((name: string, value: string) => {
     setVariables(prev => prev.map(v => 
@@ -176,11 +176,26 @@ export default function ThemeCustomizer() {
 
         let fullCss = `${importVariables}\n\n${css}\n\n${importStyles}`;
         
-        if (customCss.trim()) {
-          fullCss += `\n\n/* Custom CSS */\n${customCss}`;
+        // Append all custom SCSS files
+        const nonEmptyFiles = scssFiles.filter(f => f.content.trim());
+        if (nonEmptyFiles.length > 0) {
+          fullCss += '\n\n/* Custom SCSS Files */';
+          for (const file of nonEmptyFiles) {
+            fullCss += `\n\n/* ${file.name} */\n${file.content}`;
+          }
         }
         
         themeFolder.file('theme.css', fullCss);
+        
+        // Also add individual SCSS files to a custom folder for reference
+        if (nonEmptyFiles.length > 0) {
+          const customFolder = themeFolder.folder('custom');
+          if (customFolder) {
+            for (const file of nonEmptyFiles) {
+              customFolder.file(file.name, file.content);
+            }
+          }
+        }
         
         // Add styles.xml if we have CSS classes data
         if (cssClassesData.groups.length > 0) {
@@ -221,7 +236,7 @@ export default function ThemeCustomizer() {
       });
     }
     setIsLoading(false);
-  }, [variables, baseScss, toast, cssClassesData, customCss]);
+  }, [variables, baseScss, toast, cssClassesData, scssFiles]);
 
   const [activeTab, setActiveTab] = useState('design');
 
@@ -289,21 +304,8 @@ export default function ThemeCustomizer() {
         )}
 
         {activeTab === 'custom-css' && (
-          <div className="flex-1 min-h-0 flex flex-col p-4">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">Custom CSS</h2>
-              <p className="text-sm text-muted-foreground">
-                Add custom CSS that will be appended to the end of theme.css when exporting.
-              </p>
-            </div>
-            <div className="flex-1 min-h-0">
-              <SimpleCodeEditor
-                value={customCss}
-                onChange={setCustomCss}
-                placeholder="/* Add your custom CSS here */"
-                className="h-full"
-              />
-            </div>
+          <div className="flex-1 min-h-0">
+            <CustomCssManager files={scssFiles} onFilesChange={setScssFiles} />
           </div>
         )}
 
