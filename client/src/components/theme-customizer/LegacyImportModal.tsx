@@ -79,8 +79,16 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       setStatusMessage('Validating structure...');
       setProgress(20);
       
-      const hasStyles = zip.file(rootPrefix + 'styles.xml') !== null;
-      const hasCss = entries.some(e => e.startsWith(rootPrefix + 'css/'));
+      // Case-insensitive check for styles.xml
+      const hasStyles = Object.keys(zip.files).some(e => {
+        const relativePath = rootPrefix ? e.replace(rootPrefix, '') : e;
+        return relativePath.toLowerCase() === 'styles.xml';
+      });
+      // Case-insensitive check for css folder
+      const hasCss = entries.some(e => {
+        const relativePath = rootPrefix ? e.replace(rootPrefix, '') : e;
+        return relativePath.toLowerCase().startsWith('css/');
+      });
       
       const errors: string[] = [];
       if (!hasStyles) {
@@ -106,8 +114,9 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         if (zipEntry.dir) continue;
         
         const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
+        const lowerRelativePath = relativePath.toLowerCase();
         
-        if (relativePath.startsWith('css/variables/') && relativePath.endsWith('.scss')) {
+        if (lowerRelativePath.startsWith('css/variables/') && lowerRelativePath.endsWith('.scss')) {
           const content = await zipEntry.async('string');
           const parsed = parseScssFile(content);
           Object.assign(scssVariables, parsed);
@@ -129,9 +138,13 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       setProgress(80);
       
       let stylesXml: string | null = null;
-      const stylesFile = zip.file(rootPrefix + 'styles.xml');
-      if (stylesFile) {
-        stylesXml = await stylesFile.async('string');
+      // Find styles.xml case-insensitively
+      const stylesEntry = Object.entries(zip.files).find(([path]) => {
+        const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
+        return relativePath.toLowerCase() === 'styles.xml';
+      });
+      if (stylesEntry) {
+        stylesXml = await stylesEntry[1].async('string');
       }
       
       setStatusMessage('Preserving additional folders...');
@@ -147,16 +160,21 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         if (zipEntry.dir) continue;
         
         const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
+        const lowerPath = relativePath.toLowerCase();
         
-        if (relativePath.startsWith('charts/')) {
+        if (lowerPath.startsWith('charts/')) {
           const data = await zipEntry.async('uint8array');
-          preservedFolders.charts.set(relativePath, data);
-        } else if (relativePath.startsWith('fonts/')) {
+          // Normalize path to lowercase for consistency
+          const normalizedPath = 'charts/' + relativePath.slice(relativePath.indexOf('/') + 1);
+          preservedFolders.charts.set(normalizedPath, data);
+        } else if (lowerPath.startsWith('fonts/')) {
           const data = await zipEntry.async('uint8array');
-          preservedFolders.fonts.set(relativePath, data);
-        } else if (relativePath.startsWith('release/')) {
+          const normalizedPath = 'fonts/' + relativePath.slice(relativePath.indexOf('/') + 1);
+          preservedFolders.fonts.set(normalizedPath, data);
+        } else if (lowerPath.startsWith('release/')) {
           const data = await zipEntry.async('uint8array');
-          preservedFolders.release.set(relativePath, data);
+          const normalizedPath = 'release/' + relativePath.slice(relativePath.indexOf('/') + 1);
+          preservedFolders.release.set(normalizedPath, data);
         }
       }
       
