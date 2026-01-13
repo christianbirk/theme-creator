@@ -166,10 +166,20 @@ export default function ThemeCustomizer() {
       const themeFolder = zip.folder('theme');
       
       if (themeFolder) {
-        // Add theme.css with custom CSS appended
-        const fullCss = customCss.trim() 
-          ? `${css}\n\n/* Custom CSS */\n${customCss}`
-          : css;
+        // Build the complete theme file with imports and custom CSS
+        const importVariables = `// Importing Fundamentals Variables
+@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';`;
+
+        const importStyles = `// Importing Fundamentals Styles
+@import '../../../../../GoBasic/baseStylesV6/css/imports.scss';
+@import '../../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';`;
+
+        let fullCss = `${importVariables}\n\n${css}\n\n${importStyles}`;
+        
+        if (customCss.trim()) {
+          fullCss += `\n\n/* Custom CSS */\n${customCss}`;
+        }
+        
         themeFolder.file('theme.css', fullCss);
         
         // Add styles.xml if we have CSS classes data
