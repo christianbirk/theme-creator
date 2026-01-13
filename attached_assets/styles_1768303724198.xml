@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<style>
+  <classes>
+    <group name="Design options">
+      <class name="Hero with a text box" allow="HeroModule">text-in-box</class>
+      <class name="Hero with text box placed at the bottom" allow="HeroModule">text-in-box-bottom-aligned</class>
+      <class name="Hero with overlapping text box" allow="HeroModule">text-in-box-overlapping</class>
+      <class name="Hero with overlay" allow="HeroModule">overlay</class>
+      <class name="Split Box: image and text side by side" allow="HeroModule">split-box</class>
+      <class name="Hero with text as labels with 90% opacity" allow="HeroModule">label-look</class>
+      <class name="Create a 1px border in the vertical center of the spacer" allow="SpacerModule">divider</class>
+      <class name="Make the whole module link and add an arrow at the end of the module" allow="MultiBoxModule">link-box</class>
+    </group>
+    <group name="Layouts options">
+      <class name="Text left (default)" allow="HeroModule">align-text-left</class>
+      <class name="Text right" allow="HeroModule">align-text-right</class>
+      <class name="Text center" allow="HeroModule">align-text-center</class>
+      <class name="Show as horizontal list" allow="LinkListModule">horizontal-list</class>
+      <class name="Frontpage Specific" allow="WebPage*">frontpage</class>
+      <class name="Show accordion without borders" allow="AccordionAndTabsModule">no-border</class>
+      <class name="Hide in mobile" allow="InnerGridModule,HeroModule">hide-in-mobile</class>
+      <class name="Hide in desktop" allow="InnerGridModule,HeroModule">hide-in-desktop</class>
+    </group>
+    <group name="Color options">
+      <class name="Background color primary" allow="HeroModule,MultiBoxModule,InnerGridModule,ContactModule,LinkListModule,ChapterAndSectionModule,QuoteModule,VideoModule,TextModule,FlowchartModule,AccordionAndTabsModule">bg-color-a</class>
+      <class name="Background color B" allow="HeroModule,MultiBoxModule,InnerGridModule,ContactModule,LinkListModule,ChapterAndSectionModule,QuoteModule,VideoModule,TextModule,FlowchartModule,AccordionAndTabsModule">bg-color-b</class>
+      <class name="Background color C" allow="HeroModule,MultiBoxModule,InnerGridModule,ContactModule,LinkListModule,ChapterAndSectionModule,QuoteModule,VideoModule,TextModule,FlowchartModule,AccordionAndTabsModule">bg-color-c</class>
+      <class name="Background color D" allow="HeroModule,MultiBoxModule,InnerGridModule,ContactModule,LinkListModule,ChapterAndSectionModule,QuoteModule,VideoModule,TextModule,FlowchartModule,AccordionAndTabsModule">bg-color-d</class>
+      <class name="Background color E" allow="HeroModule,MultiBoxModule,InnerGridModule,ContactModule,LinkListModule,ChapterAndSectionModule,QuoteModule,VideoModule,TextModule,FlowchartModule,AccordionAndTabsModule">bg-color-e</class>
+      <class name="Background color F" allow="HeroModule,MultiBoxModule,InnerGridModule,ContactModule,LinkListModule,ChapterAndSectionModule,QuoteModule,VideoModule,TextModule,FlowchartModule,AccordionAndTabsModule">bg-color-f</class>
+      <class name="Background color G" allow="HeroModule,MultiBoxModule,InnerGridModule,ContactModule,LinkListModule,ChapterAndSectionModule,QuoteModule,VideoModule,TextModule,FlowchartModule,AccordionAndTabsModule">bg-color-g</class>
+      <class name="Background color white" allow="HeroModule,MultiBoxModule,InnerGridModule,ContactModule">bg-color-white</class>
+      <class name="Highlight module: white background with a shadow" allow="GridModule*" deny="ChapterAndSectionModule,QuoteModule,TextModule">highlighted</class>
+      <class name="Box module: white background with a frame around it" allow="GridModule*" deny="ChapterAndSectionModule,QuoteModule,TextModule">boxed</class>
+    </group>
+    <group name="Media and icon options">
+      <class name="Left align thumbnail / icon" allow="MultiBoxModule,LinkListModule">flex-list</class>
+      <class name="Small icon" allow="MultiBoxModule,LinkListModule">small-icon</class>
+      <class name="Small thumbnail" allow="ContactModule">small-thumb</class>
+      <class name="Make Background Image fixed" allow="HeroModule">background-fixed</class>
+      <class name="Popup video (adds a play icon and open link in fancybox)" allow="HeroModule">popup-video</class>
+      <class name="Crop image from top" allow="HeroModule">crop-from-top</class>
+      <class name="Crop image from center" allow="HeroModule">crop-from-center</class>
+      <class name="Crop image from bottom" allow="HeroModule">crop-from-bottom</class>
+    </group>
+    <group name="Grid and spacing options">
+      <class name="Remove equal heights on this module" allow="GridModule*">height-auto</class>
+      <class name="Remove space at the bottom of this module" allow="GridModule*">margin-zero</class>
+      <class name="Remove space at the top of this module" allow="GridModule*">margin-zero-top</class>
+      <class name="Remove padding on this module" allow="InnerGridModule">padding-zero</class>
+      <class name="Add space at the top of this module" allow="GridModule*">margin-top</class>
+      <class name="Create a grid without spacing between modules" allow="InnerGridModule">snap-grid</class>
+      <class name="Inner grid overlap" allow="SpacerModule">bottom-overlap</class>
+      <class name="Inner grid overlap media (use this when overlapping images and videos)" allow="SpacerModule">bottom-overlap-images</class>
+      <class name="Make this Hero take up the height of the module next to it" allow="HeroModule">fill-space</class>
+    </group>
+    <group name="Typography options">
+      <class name="Show inner grid with a small headline" allow="InnerGridModule">typo-heading-small</class>
+      <class name="Show module headline as a section headline" allow="MailingListSubscriptionModule,AccordionAndTabsModule,MultiBoxModule,InnerGridModule,ContactModule,LinkListModule,DynamicListModule,FeedListModule,VideoModule,RssSubscriptionModule">module-heading</class>
+    </group>
+    <group name="Align options">
+      <class name="Vertically center text" allow="MultiBoxModule">align-center-vertical</class>
+      <class name="Center text" allow="MultiBoxModule,LinkListModule">align-center</class>
+      <class name="Left Align the Content field (eg. Wide Pages )" allow="WebPage*">left-align-content</class>
+    </group>
+    <group name="Rich text" mode="none" allowLinks="true">
+      <class name="Button">btn</class>
+      <class name="Button alternate">btn-alternate</class>
+      <class name="Button outline">btn-outline</class>
+      <class name="Button external">btn-icon-external</class>
+      <class name="Button download">btn-icon-download</class>
+      <class name="Link with an arrow">link-arrow</class>
+    </group>
+  </classes>
+</style>

@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import * as sass from 'sass';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { CssClass, CssClassGroup, CssClassesData } from "@shared/schema";
 
 interface CSSVariable {
   name: string;
@@ -271,6 +272,95 @@ function parseScssVariables(content: string): CSSVariable[] {
   return variables;
 }
 
+// Parse styles.xml content into CssClassesData
+function parseStylesXml(content: string): CssClassesData {
+  const groups: CssClassGroup[] = [];
+  
+  // Match all group elements
+  const groupRegex = /<group\s+([^>]*)>([\s\S]*?)<\/group>/g;
+  let groupMatch;
+  
+  while ((groupMatch = groupRegex.exec(content)) !== null) {
+    const attrsStr = groupMatch[1];
+    const groupContent = groupMatch[2];
+    
+    // Parse group attributes
+    const nameMatch = attrsStr.match(/name="([^"]*)"/);
+    const modeMatch = attrsStr.match(/mode="([^"]*)"/);
+    const allowLinksMatch = attrsStr.match(/allowLinks="([^"]*)"/);
+    
+    const group: CssClassGroup = {
+      name: nameMatch ? nameMatch[1] : '',
+      classes: []
+    };
+    
+    if (modeMatch) group.mode = modeMatch[1];
+    if (allowLinksMatch) group.allowLinks = allowLinksMatch[1];
+    
+    // Parse class elements within this group
+    const classRegex = /<class\s+([^>]*)>([^<]*)<\/class>/g;
+    let classMatch;
+    
+    while ((classMatch = classRegex.exec(groupContent)) !== null) {
+      const classAttrsStr = classMatch[1];
+      const className = classMatch[2].trim();
+      
+      const classNameMatch = classAttrsStr.match(/name="([^"]*)"/);
+      const allowMatch = classAttrsStr.match(/allow="([^"]*)"/);
+      const denyMatch = classAttrsStr.match(/deny="([^"]*)"/);
+      
+      const cssClass: CssClass = {
+        name: classNameMatch ? classNameMatch[1] : '',
+        className: className
+      };
+      
+      if (allowMatch) cssClass.allow = allowMatch[1];
+      if (denyMatch) cssClass.deny = denyMatch[1];
+      
+      group.classes.push(cssClass);
+    }
+    
+    groups.push(group);
+  }
+  
+  return { groups };
+}
+
+// Generate styles.xml content from CssClassesData
+function generateStylesXml(data: CssClassesData): string {
+  let xml = '<?xml version="1.0" encoding="utf-8"?>\n<style>\n  <classes>\n';
+  
+  for (const group of data.groups) {
+    let groupAttrs = `name="${escapeXml(group.name)}"`;
+    if (group.mode) groupAttrs += ` mode="${escapeXml(group.mode)}"`;
+    if (group.allowLinks) groupAttrs += ` allowLinks="${escapeXml(group.allowLinks)}"`;
+    
+    xml += `    <group ${groupAttrs}>\n`;
+    
+    for (const cls of group.classes) {
+      let classAttrs = `name="${escapeXml(cls.name)}"`;
+      if (cls.allow) classAttrs += ` allow="${escapeXml(cls.allow)}"`;
+      if (cls.deny) classAttrs += ` deny="${escapeXml(cls.deny)}"`;
+      
+      xml += `      <class ${classAttrs}>${escapeXml(cls.className)}</class>\n`;
+    }
+    
+    xml += `    </group>\n`;
+  }
+  
+  xml += '  </classes>\n</style>\n';
+  return xml;
+}
+
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 function generateCss(variables: CSSVariable[], baseScss?: string): string {
   const cssVarsBlock = variables
     .map(v => `  ${v.name}: ${v.value};`)
@@ -449,6 +539,74 @@ export async function registerRoutes(
     } catch (err) {
       console.error('Read sample SCSS error:', err);
       res.status(500).json({ error: 'Failed to read sample SCSS file' });
+    }
+  });
+
+  // Load default styles.xml from attached_assets
+  app.get('/api/styles-xml', async (req, res) => {
+    try {
+      const stylesPath = path.join(process.cwd(), 'attached_assets/styles_1768303724198.xml');
+      
+      if (fs.existsSync(stylesPath)) {
+        const content = fs.readFileSync(stylesPath, 'utf-8');
+        const data = parseStylesXml(content);
+        res.json({
+          success: true,
+          data,
+          groupCount: data.groups.length,
+          classCount: data.groups.reduce((acc, g) => acc + g.classes.length, 0)
+        });
+      } else {
+        res.status(404).json({ 
+          error: 'Styles XML file not found'
+        });
+      }
+    } catch (err) {
+      console.error('Read styles XML error:', err);
+      res.status(500).json({ error: 'Failed to read styles XML file' });
+    }
+  });
+
+  // Parse uploaded styles.xml content
+  app.post('/api/parse-styles-xml', async (req, res) => {
+    try {
+      const { content } = req.body;
+      
+      if (!content || typeof content !== 'string') {
+        return res.status(400).json({ error: 'Content is required' });
+      }
+
+      const data = parseStylesXml(content);
+      res.json({ 
+        success: true, 
+        data,
+        groupCount: data.groups.length,
+        classCount: data.groups.reduce((acc, g) => acc + g.classes.length, 0)
+      });
+    } catch (err) {
+      console.error('Parse styles XML error:', err);
+      res.status(500).json({ error: 'Failed to parse styles XML content' });
+    }
+  });
+
+  // Export styles.xml from data
+  app.post('/api/export-styles-xml', async (req, res) => {
+    try {
+      const { data } = req.body;
+      
+      if (!data || !data.groups || !Array.isArray(data.groups)) {
+        return res.status(400).json({ error: 'Valid data with groups array is required' });
+      }
+
+      const xml = generateStylesXml(data);
+      res.json({ 
+        success: true, 
+        xml,
+        lineCount: xml.split('\n').length
+      });
+    } catch (err) {
+      console.error('Export styles XML error:', err);
+      res.status(500).json({ error: 'Failed to export styles XML' });
     }
   });
 
