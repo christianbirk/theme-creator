@@ -26,6 +26,8 @@ export interface ImportedFontFile {
   data: Uint8Array;
   type: string;
   size: number;
+  blobUrl?: string;
+  originalPath?: string;
 }
 
 interface ImportResult {
@@ -184,16 +186,13 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       const fontFiles: ImportedFontFile[] = [];
       let fontFileId = 1;
       
-      // Map of font paths to their data URLs for use in SCSS conversion
-      const fontDataUrls: Map<string, string> = new Map();
+      // Map of font paths to their blob URLs for use in SCSS conversion
+      const fontBlobUrls: Map<string, string> = new Map();
       
-      // Helper to convert Uint8Array to base64 data URL
-      const arrayToDataUrl = (data: Uint8Array, mimeType: string): string => {
-        let binary = '';
-        for (let i = 0; i < data.length; i++) {
-          binary += String.fromCharCode(data[i]);
-        }
-        return `data:${mimeType};base64,${btoa(binary)}`;
+      // Helper to create blob URL from Uint8Array
+      const arrayToBlobUrl = (data: Uint8Array, mimeType: string): string => {
+        const blob = new Blob([data], { type: mimeType });
+        return URL.createObjectURL(blob);
       };
       
       // Helper to get MIME type for font extension
@@ -207,7 +206,7 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         return mimeTypes[ext] || 'application/octet-stream';
       };
       
-      // First pass: extract fonts and build data URL map
+      // First pass: extract fonts and build blob URL map
       for (const [path, zipEntry] of Object.entries(zip.files)) {
         if (zipEntry.dir) continue;
         
@@ -230,17 +229,19 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
           const ext = filename.split('.').pop()?.toLowerCase() || '';
           
           if (SUPPORTED_FONT_EXTENSIONS.includes(ext)) {
-            // Create data URL for this font
+            // Create blob URL for this font
             const mimeType = getFontMimeType(ext);
-            const dataUrl = arrayToDataUrl(data, mimeType);
-            fontDataUrls.set(fontSubPath.toLowerCase(), dataUrl);
+            const blobUrl = arrayToBlobUrl(data, mimeType);
+            fontBlobUrls.set(fontSubPath.toLowerCase(), blobUrl);
             
             fontFiles.push({
               id: `imported-font-${fontFileId++}`,
               name: filename,
               data: data,
               type: `font/${ext}`,
-              size: data.length
+              size: data.length,
+              blobUrl: blobUrl,
+              originalPath: fontSubPath
             });
           }
         } else if (lowerPath.startsWith('release/')) {
@@ -253,7 +254,7 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       setStatusMessage('Extracting custom SCSS files...');
       setProgress(88);
       
-      // Helper to convert SCSS font URLs to data URLs
+      // Helper to convert SCSS font URLs to blob URLs
       const convertFontUrls = (content: string): string => {
         // Match patterns like: url($font_route + 'path/to/font.ext')
         // and url($font-route + 'path/to/font.ext')
@@ -261,12 +262,12 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         const fontUrlPattern = /url\s*\(\s*\$font[-_]route\s*\+\s*['"]([^'"]+)['"]\s*\)/gi;
         
         return content.replace(fontUrlPattern, (match, fontPath) => {
-          // Normalize the path and look up in our data URL map
+          // Normalize the path and look up in our blob URL map
           const normalizedPath = fontPath.toLowerCase().replace(/^\/+/, '');
-          const dataUrl = fontDataUrls.get(normalizedPath);
+          const blobUrl = fontBlobUrls.get(normalizedPath);
           
-          if (dataUrl) {
-            return `url('${dataUrl}')`;
+          if (blobUrl) {
+            return `url('${blobUrl}')`;
           }
           
           // If not found, leave as-is (will be handled during export)
