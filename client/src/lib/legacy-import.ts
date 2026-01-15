@@ -163,6 +163,11 @@ export function applyMapping(
     
     if (!rawValue) continue;
     
+    // Skip variables containing "span" - these are internal/deprecated
+    if (mapping.cssVariable.toLowerCase().includes('span')) {
+      continue;
+    }
+    
     // Try to resolve to a literal value first
     rawValue = resolveVariableReference(rawValue, scssVariables);
     
