@@ -462,7 +462,7 @@ export default function ThemeCustomizer() {
               <ResizableHandle withHandle />
               
               <ResizablePanel defaultSize={65}>
-                <PreviewPane variables={variables} previewHtml={previewHtml} />
+                <PreviewPane variables={variables} previewHtml={previewHtml} customCssFiles={scssFiles} />
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>

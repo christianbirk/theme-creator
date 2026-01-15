@@ -3,11 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Monitor, Tablet, Smartphone, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
 import { CSSVariable } from './types';
+import { ScssFile } from './CustomCssManager';
 import { useToast } from '@/hooks/use-toast';
 
 interface PreviewPaneProps {
   variables: CSSVariable[];
   previewHtml: string;
+  customCssFiles?: ScssFile[];
 }
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
@@ -61,7 +63,7 @@ const loadingHtml = `
 </html>
 `;
 
-export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
+export function PreviewPane({ variables, previewHtml, customCssFiles = [] }: PreviewPaneProps) {
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [templateHtml, setTemplateHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -629,8 +631,17 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
     }).join('\n');
   }, [variableMap, isLightColor, resolveVarReferences]);
 
+  // Combine all custom CSS file contents for injection
+  const customCssFilesContent = useMemo(() => {
+    if (!customCssFiles || customCssFiles.length === 0) return '';
+    return customCssFiles.map(file => `/* ${file.name} */\n${file.content}`).join('\n\n');
+  }, [customCssFiles]);
+
   const customCssContent = useMemo(() => {
     return `
+      /* Custom CSS files (fonts, etc.) */
+      ${customCssFilesContent}
+      
       :root, html, body {
         ${cssVariablesImportant}
       }
@@ -661,7 +672,7 @@ export function PreviewPane({ variables, previewHtml }: PreviewPaneProps) {
       /* Surface overrides for bg-color-* classes */
       ${surfaceOverrides}
     `;
-  }, [cssVariablesImportant, surfaceOverrides]);
+  }, [cssVariablesImportant, surfaceOverrides, customCssFilesContent]);
 
   // Get the current HTML - template or loading
   const getCurrentHtml = useCallback(() => {
