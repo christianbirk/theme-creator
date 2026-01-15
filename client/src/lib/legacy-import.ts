@@ -141,6 +141,23 @@ export function applyMapping(
     }
   }
   
+  // First pass: collect all color variables (--color-brand-*) and their HEX values
+  // This allows us to replace hardcoded HEX values with variable references
+  const hexToColorVar: Map<string, string> = new Map();
+  for (const mapping of mappings) {
+    if (mapping.cssVariable.startsWith('--color-brand-')) {
+      let rawValue = scssVariables[mapping.scssVariable];
+      if (!rawValue) continue;
+      
+      rawValue = resolveVariableReference(rawValue, scssVariables);
+      const hexValue = extractHexValue(rawValue);
+      if (hexValue && hexValue.startsWith('#')) {
+        // Normalize to lowercase for comparison
+        hexToColorVar.set(hexValue.toLowerCase(), mapping.cssVariable);
+      }
+    }
+  }
+  
   for (const mapping of mappings) {
     let rawValue = scssVariables[mapping.scssVariable];
     
@@ -180,6 +197,20 @@ export function applyMapping(
       } else if (cleanValue === 'false') {
         // If false, leave empty (inherit from default)
         finalValue = 'inherit';
+      }
+    }
+    
+    // For non-color variables, check if the HEX value matches a color variable
+    // and use the variable reference instead of hardcoded HEX
+    if (!mapping.cssVariable.startsWith('--color-brand-')) {
+      const hexMatch = finalValue.match(/#[a-fA-F0-9]{3,8}/);
+      if (hexMatch) {
+        const normalizedHex = hexMatch[0].toLowerCase();
+        const colorVar = hexToColorVar.get(normalizedHex);
+        if (colorVar) {
+          // Replace the HEX value with a variable reference
+          finalValue = finalValue.replace(hexMatch[0], `var(${colorVar})`);
+        }
       }
     }
     
