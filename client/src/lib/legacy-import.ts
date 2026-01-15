@@ -177,11 +177,14 @@ export function applyMapping(
       finalValue = extractHexValue(rawValue);
     }
     
-    if (mapping.note.toLowerCase().includes('arrow appearance') && 
-        mapping.note.toLowerCase().includes('right') && 
-        mapping.note.toLowerCase().includes('left')) {
-      if (rawValue.toLowerCase() === 'right') {
-        finalValue = 'left';
+    // Convert arrow appearance / link style values
+    if (mapping.note.toLowerCase().includes('arrow appearance') || 
+        mapping.cssVariable.includes('link-style')) {
+      const cleanValue = rawValue.toLowerCase().replace(/^['"]|['"]$/g, '');
+      if (cleanValue === 'left' || cleanValue === 'right') {
+        finalValue = 'Left';
+      } else if (cleanValue === 'underline') {
+        finalValue = 'Underline';
       }
     }
     
