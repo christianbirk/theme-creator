@@ -170,8 +170,110 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         stylesXml = await stylesEntry[1].async('string');
       }
       
+      setStatusMessage('Extracting font files...');
+      setProgress(82);
+      
+      const preservedFolders: PreservedFolders = {
+        charts: new Map(),
+        fonts: new Map(),
+        release: new Map()
+      };
+      
+      // Supported font extensions for Custom Fonts tab
+      const SUPPORTED_FONT_EXTENSIONS = ['ttf', 'woff', 'woff2', 'eot'];
+      const fontFiles: ImportedFontFile[] = [];
+      let fontFileId = 1;
+      
+      // Map of font paths to their data URLs for use in SCSS conversion
+      const fontDataUrls: Map<string, string> = new Map();
+      
+      // Helper to convert Uint8Array to base64 data URL
+      const arrayToDataUrl = (data: Uint8Array, mimeType: string): string => {
+        let binary = '';
+        for (let i = 0; i < data.length; i++) {
+          binary += String.fromCharCode(data[i]);
+        }
+        return `data:${mimeType};base64,${btoa(binary)}`;
+      };
+      
+      // Helper to get MIME type for font extension
+      const getFontMimeType = (ext: string): string => {
+        const mimeTypes: Record<string, string> = {
+          'ttf': 'font/ttf',
+          'woff': 'font/woff',
+          'woff2': 'font/woff2',
+          'eot': 'application/vnd.ms-fontobject'
+        };
+        return mimeTypes[ext] || 'application/octet-stream';
+      };
+      
+      // First pass: extract fonts and build data URL map
+      for (const [path, zipEntry] of Object.entries(zip.files)) {
+        if (zipEntry.dir) continue;
+        
+        const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
+        const lowerPath = relativePath.toLowerCase();
+        
+        if (lowerPath.startsWith('charts/')) {
+          const data = await zipEntry.async('uint8array');
+          const normalizedPath = 'charts/' + relativePath.slice(relativePath.indexOf('/') + 1);
+          preservedFolders.charts.set(normalizedPath, data);
+        } else if (lowerPath.startsWith('fonts/')) {
+          const data = await zipEntry.async('uint8array');
+          // Get the path after 'fonts/' for matching in SCSS
+          const fontSubPath = relativePath.slice(relativePath.toLowerCase().indexOf('fonts/') + 6);
+          const normalizedPath = 'fonts/' + fontSubPath;
+          preservedFolders.fonts.set(normalizedPath, data);
+          
+          // Extract supported font files for Custom Fonts tab
+          const filename = relativePath.split('/').pop() || '';
+          const ext = filename.split('.').pop()?.toLowerCase() || '';
+          
+          if (SUPPORTED_FONT_EXTENSIONS.includes(ext)) {
+            // Create data URL for this font
+            const mimeType = getFontMimeType(ext);
+            const dataUrl = arrayToDataUrl(data, mimeType);
+            fontDataUrls.set(fontSubPath.toLowerCase(), dataUrl);
+            
+            fontFiles.push({
+              id: `imported-font-${fontFileId++}`,
+              name: filename,
+              data: data,
+              type: `font/${ext}`,
+              size: data.length
+            });
+          }
+        } else if (lowerPath.startsWith('release/')) {
+          const data = await zipEntry.async('uint8array');
+          const normalizedPath = 'release/' + relativePath.slice(relativePath.indexOf('/') + 1);
+          preservedFolders.release.set(normalizedPath, data);
+        }
+      }
+      
       setStatusMessage('Extracting custom SCSS files...');
-      setProgress(85);
+      setProgress(88);
+      
+      // Helper to convert SCSS font URLs to data URLs
+      const convertFontUrls = (content: string): string => {
+        // Match patterns like: url($font_route + 'path/to/font.ext')
+        // and url($font-route + 'path/to/font.ext')
+        // and url($font_route+'path/to/font.ext') (no spaces)
+        const fontUrlPattern = /url\s*\(\s*\$font[-_]route\s*\+\s*['"]([^'"]+)['"]\s*\)/gi;
+        
+        return content.replace(fontUrlPattern, (match, fontPath) => {
+          // Normalize the path and look up in our data URL map
+          const normalizedPath = fontPath.toLowerCase().replace(/^\/+/, '');
+          const dataUrl = fontDataUrls.get(normalizedPath);
+          
+          if (dataUrl) {
+            return `url('${dataUrl}')`;
+          }
+          
+          // If not found, leave as-is (will be handled during export)
+          console.warn(`Font not found for path: ${fontPath}`);
+          return match;
+        });
+      };
       
       const customScssFiles: CustomScssFile[] = [];
       let customFileId = 1;
@@ -187,12 +289,18 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         const isFontsScss = lowerRelativePath.startsWith('css/fonts/') && lowerRelativePath.endsWith('.scss');
         
         if (isCustomScss || isFontsScss) {
-          const content = await zipEntry.async('string');
+          let content = await zipEntry.async('string');
+          
           // Convert SCSS variables using 3-tier resolution:
           // 1. Mapped variables -> var(--css-var)
           // 2. Unmapped but defined in zip -> literal value
           // 3. Unknown -> leave as-is
-          const convertedContent = convertScssVariablesToCss(content, mappings, scssVariables);
+          content = convertScssVariablesToCss(content, mappings, scssVariables);
+          
+          // For font SCSS files, also convert font URLs to data URLs
+          if (isFontsScss) {
+            content = convertFontUrls(content);
+          }
           
           // Extract filename from path
           const pathParts = relativePath.split('/');
@@ -201,59 +309,13 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
           customScssFiles.push({
             id: `imported-${customFileId++}`,
             name: filename,
-            content: convertedContent
+            content: content
           });
         }
       }
       
-      setStatusMessage('Preserving additional folders...');
-      setProgress(90);
-      
-      const preservedFolders: PreservedFolders = {
-        charts: new Map(),
-        fonts: new Map(),
-        release: new Map()
-      };
-      
-      // Supported font extensions for Custom Fonts tab
-      const SUPPORTED_FONT_EXTENSIONS = ['ttf', 'woff', 'woff2', 'eot'];
-      const fontFiles: ImportedFontFile[] = [];
-      let fontFileId = 1;
-      
-      for (const [path, zipEntry] of Object.entries(zip.files)) {
-        if (zipEntry.dir) continue;
-        
-        const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
-        const lowerPath = relativePath.toLowerCase();
-        
-        if (lowerPath.startsWith('charts/')) {
-          const data = await zipEntry.async('uint8array');
-          const normalizedPath = 'charts/' + relativePath.slice(relativePath.indexOf('/') + 1);
-          preservedFolders.charts.set(normalizedPath, data);
-        } else if (lowerPath.startsWith('fonts/')) {
-          const data = await zipEntry.async('uint8array');
-          const normalizedPath = 'fonts/' + relativePath.slice(relativePath.indexOf('/') + 1);
-          preservedFolders.fonts.set(normalizedPath, data);
-          
-          // Extract supported font files for Custom Fonts tab
-          const filename = relativePath.split('/').pop() || '';
-          const ext = filename.split('.').pop()?.toLowerCase() || '';
-          
-          if (SUPPORTED_FONT_EXTENSIONS.includes(ext)) {
-            fontFiles.push({
-              id: `imported-font-${fontFileId++}`,
-              name: filename,
-              data: data,
-              type: `font/${ext}`,
-              size: data.length
-            });
-          }
-        } else if (lowerPath.startsWith('release/')) {
-          const data = await zipEntry.async('uint8array');
-          const normalizedPath = 'release/' + relativePath.slice(relativePath.indexOf('/') + 1);
-          preservedFolders.release.set(normalizedPath, data);
-        }
-      }
+      setStatusMessage('Finishing import...');
+      setProgress(95);
       
       setProgress(100);
       setStatusMessage('Import complete!');
