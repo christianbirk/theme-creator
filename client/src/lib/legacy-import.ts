@@ -74,8 +74,24 @@ function extractHexValue(value: string): string {
   return hexMatch ? hexMatch[0] : value;
 }
 
+// Predefined SCSS variables with fixed values
+const PREDEFINED_SCSS_VALUES: Record<string, string> = {
+  '$space-4': '4px',
+  '$space-8': '8px',
+  '$space-12': '12px',
+  '$space-16': '16px',
+  '$space-24': '24px',
+  '$space-32': '32px',
+};
+
 function resolveVariableReference(value: string, allVariables: ParsedScssVariables): string {
   if (value.startsWith('$')) {
+    // Check predefined values first
+    const predefined = PREDEFINED_SCSS_VALUES[value];
+    if (predefined) {
+      return predefined;
+    }
+    
     const refValue = allVariables[value];
     if (refValue) {
       return resolveVariableReference(refValue, allVariables);
