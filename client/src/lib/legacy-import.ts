@@ -214,6 +214,25 @@ export function applyMapping(
       }
     }
     
+    // Convert font size keywords to CSS variable references
+    const fontSizeMap: Record<string, string> = {
+      'x-small': 'var(--font-xsmall)',
+      'small': 'var(--font-small)',
+      'normal': 'var(--font-normal)',
+      'x-normal': 'var(--font-xnormal)',
+      'medium': 'var(--font-medium)',
+      'x-medium': 'var(--font-xmedium)',
+      'large': 'var(--font-large)',
+      'x-large': 'var(--font-xlarge)',
+      'xx-large': 'var(--font-xxlarge)',
+      'xxx-large': 'var(--font-xxxlarge)',
+    };
+    // Strip quotes and check for font size keyword match
+    const cleanFontSize = finalValue.toLowerCase().replace(/^['"]|['"]$/g, '');
+    if (fontSizeMap[cleanFontSize]) {
+      finalValue = fontSizeMap[cleanFontSize];
+    }
+    
     result.push({
       name: mapping.cssVariable,
       value: finalValue
