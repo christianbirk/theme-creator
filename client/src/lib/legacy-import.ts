@@ -170,12 +170,14 @@ export function applyMapping(
     
     if (mapping.note.toLowerCase().includes("if 'true' use") || 
         mapping.note.toLowerCase().includes('if true use')) {
-      if (rawValue.toLowerCase() === 'true') {
+      // Strip quotes from boolean values
+      const cleanValue = rawValue.toLowerCase().replace(/^['"]|['"]$/g, '');
+      if (cleanValue === 'true') {
         const useMatch = mapping.note.match(/use\s+(--[a-zA-Z0-9-]+)/i);
         if (useMatch) {
           finalValue = `var(${useMatch[1]})`;
         }
-      } else if (rawValue.toLowerCase() === 'false') {
+      } else if (cleanValue === 'false') {
         // If false, leave empty (inherit from default)
         finalValue = 'inherit';
       }
