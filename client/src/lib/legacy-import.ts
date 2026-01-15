@@ -217,6 +217,15 @@ export function applyMapping(
       }
     }
     
+    // Convert color keywords to CSS variable references
+    const colorKeywordMap: Record<string, string> = {
+      'white': 'var(--color-neutral-f)',
+    };
+    const cleanColorKeyword = finalValue.toLowerCase().replace(/^['"]|['"]$/g, '');
+    if (colorKeywordMap[cleanColorKeyword]) {
+      finalValue = colorKeywordMap[cleanColorKeyword];
+    }
+    
     // Convert font size keywords to CSS variable references
     const fontSizeMap: Record<string, string> = {
       'x-small': 'var(--font-xsmall)',
