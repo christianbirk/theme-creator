@@ -84,14 +84,23 @@ const PREDEFINED_SCSS_VALUES: Record<string, string> = {
   '$space-32': '32px',
 };
 
+/**
+ * Replace all predefined SCSS variables in a value with their fixed values
+ * Handles compound values like "$space-12 0" -> "12px 0"
+ */
+function replacePredefinedVariables(value: string): string {
+  return value.replace(/\$[a-zA-Z0-9_-]+/g, (scssVar) => {
+    const predefined = PREDEFINED_SCSS_VALUES[scssVar];
+    return predefined || scssVar;
+  });
+}
+
 function resolveVariableReference(value: string, allVariables: ParsedScssVariables): string {
-  if (value.startsWith('$')) {
-    // Check predefined values first
-    const predefined = PREDEFINED_SCSS_VALUES[value];
-    if (predefined) {
-      return predefined;
-    }
-    
+  // First, replace any predefined variables in the value
+  value = replacePredefinedVariables(value);
+  
+  // If the value is a single SCSS variable reference, try to resolve it
+  if (value.startsWith('$') && !value.includes(' ')) {
     const refValue = allVariables[value];
     if (refValue) {
       return resolveVariableReference(refValue, allVariables);
