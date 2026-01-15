@@ -175,6 +175,9 @@ export function applyMapping(
         if (useMatch) {
           finalValue = `var(${useMatch[1]})`;
         }
+      } else if (rawValue.toLowerCase() === 'false') {
+        // If false, leave empty (inherit from default)
+        finalValue = 'inherit';
       }
     }
     
