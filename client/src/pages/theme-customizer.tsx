@@ -49,6 +49,9 @@ export default function ThemeCustomizer() {
   const [legacyImportModalOpen, setLegacyImportModalOpen] = useState(false);
   const [preservedFolders, setPreservedFolders] = useState<PreservedFolders | null>(null);
   const [importedCssClassesData, setImportedCssClassesData] = useState<CssClassesData | null>(null);
+  
+  // Theme import file input ref
+  const themeImportInputRef = useRef<HTMLInputElement>(null);
 
   const handleVariableChange = useCallback((name: string, value: string) => {
     setVariables(prev => prev.map(v => 
@@ -86,51 +89,186 @@ export default function ThemeCustomizer() {
     });
   }, [toast, categories]);
 
-  const handleImportSCSS = useCallback(async (file: File) => {
+  const handleImportTheme = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
     setIsLoading(true);
     try {
-      const content = await file.text();
-      setBaseScss(content);
+      const arrayBuffer = await file.arrayBuffer();
+      const zip = await JSZip.loadAsync(arrayBuffer);
       
-      const parsedVariables = await parseScssContent(content);
-      
-      if (parsedVariables.length === 0) {
+      // Find theme folder
+      const themeFolder = zip.folder('theme');
+      if (!themeFolder) {
         toast({
-          title: 'No variables found',
-          description: 'The file does not contain any CSS custom properties.',
+          title: 'Invalid theme file',
+          description: 'The zip file does not contain a theme folder.',
           variant: 'destructive',
         });
         setIsLoading(false);
         return;
       }
-
-      const uniqueCategories = Array.from(new Set(parsedVariables.map(v => v.category)));
-      const newCategories: VariableCategory[] = uniqueCategories.map(catId => {
-        const existing = defaultCategories.find(c => c.id === catId);
-        return existing || {
-          id: catId,
-          name: catId.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          icon: 'Circle',
-          variables: []
-        };
-      });
-
-      setCategories(newCategories);
-      setVariables(parsedVariables);
-
+      
+      // Import theme.scss and parse variables
+      const themeScsFile = themeFolder.file('theme.scss');
+      if (themeScsFile) {
+        const content = await themeScsFile.async('string');
+        setBaseScss(content);
+        
+        const parsedVariables = await parseScssContent(content);
+        if (parsedVariables.length > 0) {
+          const uniqueCategories = Array.from(new Set(parsedVariables.map(v => v.category)));
+          const newCategories: VariableCategory[] = uniqueCategories.map(catId => {
+            const existing = defaultCategories.find(c => c.id === catId);
+            return existing || {
+              id: catId,
+              name: catId.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+              icon: 'Circle',
+              variables: []
+            };
+          });
+          setCategories(newCategories);
+          setVariables(parsedVariables);
+        }
+      }
+      
+      // Import styles.xml for CSS classes
+      const stylesXmlFile = themeFolder.file('styles.xml');
+      if (stylesXmlFile) {
+        const xmlContent = await stylesXmlFile.async('string');
+        try {
+          const response = await apiRequest('POST', '/api/import-styles-xml', { xml: xmlContent });
+          const result = await response.json();
+          if (result.success && result.data) {
+            setImportedCssClassesData(result.data);
+          }
+        } catch (xmlErr) {
+          console.error('XML import error:', xmlErr);
+        }
+      }
+      
+      // Import custom SCSS files from custom folder
+      const customFolder = themeFolder.folder('custom');
+      if (customFolder) {
+        const importedScssFiles: ScssFile[] = [];
+        let fileIndex = 0;
+        
+        customFolder.forEach(async (relativePath, file) => {
+          if (!file.dir && (relativePath.endsWith('.scss') || relativePath.endsWith('.css'))) {
+            const content = await file.async('string');
+            importedScssFiles.push({
+              id: `imported-${Date.now()}-${fileIndex++}`,
+              name: relativePath,
+              content
+            });
+          }
+        });
+        
+        // Wait a bit for async forEach to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        if (importedScssFiles.length > 0) {
+          setScssFiles(prev => [...prev.filter(f => f.content.trim()), ...importedScssFiles]);
+        }
+      }
+      
+      // Import fonts from fonts folder
+      const fontsFolder = themeFolder.folder('fonts');
+      if (fontsFolder) {
+        const importedFonts: FontFile[] = [];
+        
+        const fontPromises: Promise<void>[] = [];
+        let fontIndex = 0;
+        fontsFolder.forEach((relativePath, file) => {
+          if (!file.dir && /\.(ttf|woff2?|eot)$/i.test(relativePath)) {
+            const currentIndex = fontIndex++;
+            fontPromises.push(
+              file.async('arraybuffer').then(data => {
+                const uint8Data = new Uint8Array(data);
+                const ext = relativePath.split('.').pop()?.toLowerCase() || 'ttf';
+                const mimeTypes: Record<string, string> = {
+                  'ttf': 'font/ttf',
+                  'woff': 'font/woff',
+                  'woff2': 'font/woff2',
+                  'eot': 'application/vnd.ms-fontobject'
+                };
+                importedFonts.push({
+                  id: `imported-font-${Date.now()}-${currentIndex}`,
+                  name: relativePath,
+                  data: uint8Data,
+                  type: mimeTypes[ext] || 'font/ttf',
+                  size: uint8Data.length
+                });
+              })
+            );
+          }
+        });
+        
+        await Promise.all(fontPromises);
+        if (importedFonts.length > 0) {
+          setCustomFonts(prev => [...prev, ...importedFonts]);
+        }
+      }
+      
+      // Import preserved folders (charts, release)
+      const chartsMap = new Map<string, Uint8Array>();
+      const releaseMap = new Map<string, Uint8Array>();
+      
+      const chartsFolder = themeFolder.folder('charts');
+      if (chartsFolder) {
+        const promises: Promise<void>[] = [];
+        chartsFolder.forEach((relativePath, file) => {
+          if (!file.dir) {
+            promises.push(
+              file.async('arraybuffer').then(data => {
+                chartsMap.set(`charts/${relativePath}`, new Uint8Array(data));
+              })
+            );
+          }
+        });
+        await Promise.all(promises);
+      }
+      
+      const releaseFolder = themeFolder.folder('release');
+      if (releaseFolder) {
+        const promises: Promise<void>[] = [];
+        releaseFolder.forEach((relativePath, file) => {
+          if (!file.dir) {
+            promises.push(
+              file.async('arraybuffer').then(data => {
+                releaseMap.set(`release/${relativePath}`, new Uint8Array(data));
+              })
+            );
+          }
+        });
+        await Promise.all(promises);
+      }
+      
+      if (chartsMap.size > 0 || releaseMap.size > 0) {
+        setPreservedFolders(prev => ({
+          charts: chartsMap.size > 0 ? chartsMap : (prev?.charts || new Map()),
+          fonts: prev?.fonts || new Map(),
+          release: releaseMap.size > 0 ? releaseMap : (prev?.release || new Map()),
+        }));
+      }
+      
       toast({
-        title: 'Import successful',
-        description: `Imported ${parsedVariables.length} variables from ${file.name}.`,
+        title: 'Theme imported',
+        description: `Successfully imported theme from ${file.name}.`,
       });
     } catch (err) {
-      console.error('Import error:', err);
+      console.error('Theme import error:', err);
       toast({
         title: 'Import failed',
-        description: 'Unable to parse the file. Please check the format.',
+        description: 'Unable to import the theme file. Please check the format.',
         variant: 'destructive',
       });
     }
+    
     setIsLoading(false);
+    if (themeImportInputRef.current) {
+      themeImportInputRef.current.value = '';
+    }
   }, [toast]);
 
   const handleLoadSample = useCallback(async (showToast = true) => {
@@ -453,15 +591,34 @@ export default function ThemeCustomizer() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setLegacyImportModalOpen(true)}
-          data-testid="button-legacy-import"
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          Import Legacy Theme
-        </Button>
+        <div className="flex gap-2">
+          <input
+            ref={themeImportInputRef}
+            type="file"
+            accept=".zip"
+            onChange={handleImportTheme}
+            className="hidden"
+            data-testid="input-import-theme"
+          />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => themeImportInputRef.current?.click()}
+            data-testid="button-import-theme"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Import Theme
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setLegacyImportModalOpen(true)}
+            data-testid="button-legacy-import"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Import Legacy Theme
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 min-h-0 flex flex-col">
@@ -475,7 +632,6 @@ export default function ThemeCustomizer() {
                   onVariableChange={handleVariableChange}
                   onResetAll={handleResetVariables}
                   onResetCategory={handleResetCategory}
-                  onImportSCSS={handleImportSCSS}
                   customFonts={customFonts.map(font => ({
                     name: font.name.replace(/\.(ttf|woff|woff2|eot)$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
                     fontFamily: `'${font.name.replace(/\.(ttf|woff|woff2|eot)$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}'`,

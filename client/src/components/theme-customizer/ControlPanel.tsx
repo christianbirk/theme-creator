@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Upload, RotateCcw, ChevronRight } from 'lucide-react';
+import { Search, RotateCcw, ChevronRight } from 'lucide-react';
 import { CSSVariable, VariableCategory, formatVariableName, formatSectionName, sectionIcons } from './types';
 import { ColorPicker } from './ColorPicker';
 import { SizeInput } from './SizeInput';
@@ -103,7 +103,6 @@ interface ControlPanelProps {
   onVariableChange: (name: string, value: string) => void;
   onResetAll: () => void;
   onResetCategory: (categoryId: string) => void;
-  onImportSCSS: (file: File) => void;
   customFonts?: CustomFont[];
 }
 
@@ -121,7 +120,6 @@ export function ControlPanel({
   variables, 
   onVariableChange, 
   onResetAll, 
-  onImportSCSS,
   customFonts = [],
 }: ControlPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -290,14 +288,6 @@ export function ControlPanel({
   const modifiedCount = useMemo(() => 
     variables.filter(v => v.value !== v.defaultValue).length
   , [variables]);
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onImportSCSS(file);
-      e.target.value = '';
-    }
-  }, [onImportSCSS]);
 
   // Check if a variable is a font-size reference (not a base definition)
   const isFontSizeReference = useCallback((variable: CSSVariable) => {
@@ -582,21 +572,6 @@ export function ControlPanel({
     <div className="flex flex-col h-full border-r">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <label>
-            <input
-              type="file"
-              accept=".scss,.css"
-              onChange={handleFileChange}
-              className="hidden"
-              data-testid="input-import-scss"
-            />
-            <Button variant="outline" size="sm" asChild>
-              <span className="cursor-pointer">
-                <Upload className="h-3.5 w-3.5 mr-1.5" />
-                Import SCSS
-              </span>
-            </Button>
-          </label>
           {modifiedCount > 0 && (
             <span className="text-xs text-muted-foreground">
               {modifiedCount} modified
