@@ -434,8 +434,8 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       
       /* Alternate buttons */
       .${className} .btn-alternate {
-        background-color: ${toneVars.btnBg} !important;
-        color: ${toneVars.btnFg} !important;
+        background-color: ${toneVars.btnAltBg} !important;
+        color: ${toneVars.btnAltFg} !important;
       }
       
       /* Outline buttons */
@@ -566,8 +566,8 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       /* Boxed/Highlighted alternate buttons */
       .${className} .module.boxed .btn-alternate,
       .${className} .module.highlighted .btn-alternate {
-        background-color: ${lightSurfaceTokens.btnBg} !important;
-        color: ${lightSurfaceTokens.btnFg} !important;
+        background-color: ${lightSurfaceTokens.btnAltBg} !important;
+        color: ${lightSurfaceTokens.btnAltFg} !important;
       }
       
       /* Boxed/Highlighted outline buttons */
