@@ -269,6 +269,27 @@ function parseScssVariables(content: string): CSSVariable[] {
     }
   }
 
+  // Post-process: Rename "layout-and-spacing" to "layout"
+  for (const variable of variables) {
+    if (variable.mainSection === 'layout-and-spacing') {
+      variable.mainSection = 'layout';
+    }
+  }
+
+  // Post-process: Move "alternate-module-heading" subsection to "typography" mainSection
+  for (const variable of variables) {
+    if (variable.subSection === 'alternate-module-heading') {
+      variable.mainSection = 'typography';
+    }
+  }
+
+  // Post-process: Make "grid" subsection a parent section
+  for (const variable of variables) {
+    if (variable.subSection === 'grid') {
+      variable.mainSection = 'grid';
+    }
+  }
+
   return variables;
 }
 
