@@ -320,7 +320,7 @@ export default function ThemeCustomizer() {
           }
         }
         
-        themeFolder.file('theme.css', fullCss);
+        themeFolder.file('theme.scss', fullCss);
         
         // Also add individual SCSS files to a custom folder for reference
         if (nonEmptyFiles.length > 0) {
