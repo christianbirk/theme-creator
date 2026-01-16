@@ -503,7 +503,11 @@ export default function ThemeCustomizer() {
           </div>
         )}
 
-        <ActionBar onExport={handleExport} />
+        <ActionBar 
+          onExport={handleExport} 
+          onResetAll={handleResetAll}
+          modificationCount={variables.filter(v => v.value !== v.defaultValue).length}
+        />
       </div>
 
       <ExportModal
