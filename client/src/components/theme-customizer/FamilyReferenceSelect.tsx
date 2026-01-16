@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RotateCcw, ChevronDown } from 'lucide-react';
 import { CSSVariable } from './types';
-import { GoogleFontPicker } from './GoogleFontPicker';
+import { GoogleFontPicker, CustomFont } from './GoogleFontPicker';
 
 interface FamilyReferenceSelectProps {
   value: string;
@@ -14,6 +14,7 @@ interface FamilyReferenceSelectProps {
   label: string;
   baseFamilyOptions: CSSVariable[];
   description?: string;
+  customFonts?: CustomFont[];
 }
 
 export function FamilyReferenceSelect({ 
@@ -23,6 +24,7 @@ export function FamilyReferenceSelect({
   label,
   baseFamilyOptions,
   description,
+  customFonts = [],
 }: FamilyReferenceSelectProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const isModified = value !== defaultValue;
@@ -121,6 +123,7 @@ export function FamilyReferenceSelect({
                   onChange={handleCustomFontChange}
                   label=""
                   embedded
+                  customFonts={customFonts}
                 />
               </div>
             </TabsContent>

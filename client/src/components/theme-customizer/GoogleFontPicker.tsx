@@ -5,6 +5,11 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { RotateCcw, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+export interface CustomFont {
+  name: string;
+  fontFamily: string;
+}
+
 interface GoogleFontPickerProps {
   value: string;
   defaultValue: string;
@@ -12,6 +17,7 @@ interface GoogleFontPickerProps {
   label: string;
   description?: string;
   embedded?: boolean;
+  customFonts?: CustomFont[];
 }
 
 const POPULAR_GOOGLE_FONTS = [
@@ -82,6 +88,7 @@ export function GoogleFontPicker({
   label, 
   description,
   embedded = false,
+  customFonts = [],
 }: GoogleFontPickerProps) {
   const [open, setOpen] = useState(false);
   const isModified = value !== defaultValue;
@@ -117,6 +124,27 @@ export function GoogleFontPicker({
       <CommandInput placeholder="Search fonts..." data-testid={`font-search-${label}`} />
       <CommandList className={embedded ? "max-h-[180px]" : ""}>
         <CommandEmpty>No font found.</CommandEmpty>
+        {customFonts.length > 0 && (
+          <CommandGroup heading="Custom Fonts">
+            {customFonts.map((font) => (
+              <CommandItem
+                key={font.name}
+                value={font.name}
+                onSelect={() => handleSelect(font.fontFamily)}
+                style={{ fontFamily: font.fontFamily }}
+                data-testid={`font-option-custom-${font.name}`}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value === font.fontFamily ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {font.name}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
         <CommandGroup heading="Sans-Serif">
           {sansSerifFonts.map((font) => (
             <CommandItem

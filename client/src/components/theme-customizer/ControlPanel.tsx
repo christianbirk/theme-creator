@@ -11,7 +11,7 @@ import { CSSVariable, VariableCategory, formatVariableName, formatSectionName, s
 import { ColorPicker } from './ColorPicker';
 import { SizeInput } from './SizeInput';
 import { FontPicker } from './FontPicker';
-import { GoogleFontPicker } from './GoogleFontPicker';
+import { GoogleFontPicker, CustomFont } from './GoogleFontPicker';
 import { NumberInput } from './NumberInput';
 import { StringInput } from './StringInput';
 import { LinkStyleSelect } from './LinkStyleSelect';
@@ -104,6 +104,7 @@ interface ControlPanelProps {
   onResetAll: () => void;
   onResetCategory: (categoryId: string) => void;
   onImportSCSS: (file: File) => void;
+  customFonts?: CustomFont[];
 }
 
 interface SectionData {
@@ -120,7 +121,8 @@ export function ControlPanel({
   variables, 
   onVariableChange, 
   onResetAll, 
-  onImportSCSS 
+  onImportSCSS,
+  customFonts = [],
 }: ControlPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSections, setExpandedSections] = useState<string[]>(['colors']);
@@ -407,6 +409,7 @@ export function ControlPanel({
           onChange={(value) => onVariableChange(variable.name, value)}
           label={displayName}
           baseFamilyOptions={baseFontFamilyOptions}
+          customFonts={customFonts}
         />
       );
     }
@@ -477,6 +480,7 @@ export function ControlPanel({
               defaultValue={variable.defaultValue}
               onChange={(value) => onVariableChange(variable.name, value)}
               label={displayName}
+              customFonts={customFonts}
             />
           );
         }

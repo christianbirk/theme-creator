@@ -465,6 +465,10 @@ export default function ThemeCustomizer() {
                   onResetAll={handleResetAll}
                   onResetCategory={handleResetCategory}
                   onImportSCSS={handleImportSCSS}
+                  customFonts={customFonts.map(font => ({
+                    name: font.name.replace(/\.(ttf|woff|woff2|eot)$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                    fontFamily: `'${font.name.replace(/\.(ttf|woff|woff2|eot)$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}'`,
+                  }))}
                 />
               </ResizablePanel>
               
