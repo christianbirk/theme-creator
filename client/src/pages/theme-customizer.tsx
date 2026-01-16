@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Settings2, Tag, Code, Upload, FileType } from 'lucide-react';
 import { CustomCssManager, ScssFile, DEFAULT_FILE } from '@/components/theme-customizer/CustomCssManager';
-import { CustomFontsManager, FontFile } from '@/components/theme-customizer/CustomFontsManager';
+import { CustomFontsManager, FontFile, generateFontFaceCssForExport } from '@/components/theme-customizer/CustomFontsManager';
 import { LegacyImportModal, PreservedFolders, CustomScssFile, ImportedFontFile } from '@/components/theme-customizer/LegacyImportModal';
 import { mergeMappedVariables } from '@/lib/legacy-import';
 import type { CssClassesData } from '@shared/schema';
@@ -41,6 +41,9 @@ export default function ThemeCustomizer() {
   
   // Custom font files
   const [customFonts, setCustomFonts] = useState<FontFile[]>([]);
+  
+  // Font CSS for preview (uses blob URLs)
+  const [fontCssForPreview, setFontCssForPreview] = useState<string>('');
   
   // Legacy import state
   const [legacyImportModalOpen, setLegacyImportModalOpen] = useState(false);
@@ -302,6 +305,12 @@ export default function ThemeCustomizer() {
 
         let fullCss = `${importVariables}\n\n${css}\n\n${importStyles}`;
         
+        // Add @font-face rules for custom fonts
+        const fontFaceCss = generateFontFaceCssForExport(customFonts);
+        if (fontFaceCss) {
+          fullCss += `\n\n${fontFaceCss}`;
+        }
+        
         // Append all custom SCSS files
         const nonEmptyFiles = scssFiles.filter(f => f.content.trim());
         if (nonEmptyFiles.length > 0) {
@@ -462,7 +471,7 @@ export default function ThemeCustomizer() {
               <ResizableHandle withHandle />
               
               <ResizablePanel defaultSize={65}>
-                <PreviewPane variables={variables} previewHtml={previewHtml} customCssFiles={scssFiles} />
+                <PreviewPane variables={variables} previewHtml={previewHtml} customCssFiles={scssFiles} fontCss={fontCssForPreview} />
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>
@@ -482,7 +491,11 @@ export default function ThemeCustomizer() {
 
         {activeTab === 'custom-fonts' && (
           <div className="flex-1 min-h-0">
-            <CustomFontsManager fonts={customFonts} onFontsChange={setCustomFonts} />
+            <CustomFontsManager 
+              fonts={customFonts} 
+              onFontsChange={setCustomFonts} 
+              onFontCssChange={setFontCssForPreview}
+            />
           </div>
         )}
 

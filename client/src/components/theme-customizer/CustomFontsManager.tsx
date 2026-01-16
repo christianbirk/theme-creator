@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Upload, Trash2, FileType, AlertCircle } from 'lucide-react';
+import { Upload, Trash2, FileType, AlertCircle, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export interface FontFile {
@@ -20,11 +20,13 @@ export interface FontFile {
   data: Uint8Array;
   type: string;
   size: number;
+  blobUrl?: string; // For preview usage
 }
 
 interface CustomFontsManagerProps {
   fonts: FontFile[];
   onFontsChange: (fonts: FontFile[]) => void;
+  onFontCssChange?: (css: string) => void; // Callback to update font-face CSS
 }
 
 const SUPPORTED_EXTENSIONS = ['ttf', 'woff', 'woff2', 'eot'];
@@ -65,15 +67,130 @@ function getFontTypeLabel(filename: string): string {
   }
 }
 
-export function CustomFontsManager({ fonts, onFontsChange }: CustomFontsManagerProps) {
+function getFontFormat(filename: string): string {
+  const ext = getFileExtension(filename);
+  switch (ext) {
+    case 'ttf': return 'truetype';
+    case 'woff': return 'woff';
+    case 'woff2': return 'woff2';
+    case 'eot': return 'embedded-opentype';
+    default: return ext;
+  }
+}
+
+function extractFontFamilyName(filename: string): string {
+  // Remove extension and clean up the name
+  const nameWithoutExt = filename.replace(/\.(ttf|woff|woff2|eot)$/i, '');
+  // Convert kebab-case or snake_case to Title Case, preserving weight indicators
+  return nameWithoutExt
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/**
+ * Generate @font-face CSS for export (uses relative paths to fonts/ folder)
+ */
+export function generateFontFaceCssForExport(fonts: FontFile[]): string {
+  if (fonts.length === 0) return '';
+  
+  const rules = fonts.map(font => {
+    const fontFamily = extractFontFamilyName(font.name);
+    const format = getFontFormat(font.name);
+    
+    return `@font-face {
+  font-family: '${fontFamily}';
+  src: url('fonts/${font.name}') format('${format}');
+  font-display: swap;
+}`;
+  });
+  
+  return `/* Custom Fonts */\n${rules.join('\n\n')}`;
+}
+
+/**
+ * Generate @font-face CSS for preview (uses blob URLs)
+ */
+export function generateFontFaceCssForPreview(fonts: FontFile[]): string {
+  if (fonts.length === 0) return '';
+  
+  const rules = fonts.map(font => {
+    if (!font.blobUrl) return '';
+    
+    const fontFamily = extractFontFamilyName(font.name);
+    const format = getFontFormat(font.name);
+    
+    return `@font-face {
+  font-family: '${fontFamily}';
+  src: url('${font.blobUrl}') format('${format}');
+  font-display: swap;
+}`;
+  }).filter(Boolean);
+  
+  return rules.join('\n\n');
+}
+
+export function CustomFontsManager({ fonts, onFontsChange, onFontCssChange }: CustomFontsManagerProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [fontToDelete, setFontToDelete] = useState<string | null>(null);
+  const [copiedCss, setCopiedCss] = useState(false);
+
+  // Generate CSS for export display
+  const generatedCss = useMemo(() => {
+    return generateFontFaceCssForExport(fonts);
+  }, [fonts]);
+
+  // Create blob URLs for fonts that don't have them
+  useEffect(() => {
+    let hasChanges = false;
+    const updatedFonts = fonts.map(font => {
+      if (!font.blobUrl) {
+        const blob = new Blob([font.data], { type: font.type });
+        const blobUrl = URL.createObjectURL(blob);
+        hasChanges = true;
+        return { ...font, blobUrl };
+      }
+      return font;
+    });
+    
+    if (hasChanges) {
+      onFontsChange(updatedFonts);
+    }
+  }, [fonts, onFontsChange]);
+
+  // Notify parent of CSS changes for preview
+  useEffect(() => {
+    if (onFontCssChange) {
+      const previewCss = generateFontFaceCssForPreview(fonts);
+      onFontCssChange(previewCss);
+    }
+  }, [fonts, onFontCssChange]);
+
+  // Cleanup blob URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      fonts.forEach(font => {
+        if (font.blobUrl) {
+          URL.revokeObjectURL(font.blobUrl);
+        }
+      });
+    };
+  }, []);
 
   const handleUploadClick = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
+  
+  const handleCopyCss = useCallback(() => {
+    navigator.clipboard.writeText(generatedCss);
+    setCopiedCss(true);
+    setTimeout(() => setCopiedCss(false), 2000);
+    toast({
+      title: 'CSS copied',
+      description: '@font-face rules copied to clipboard',
+    });
+  }, [generatedCss, toast]);
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -229,12 +346,37 @@ export function CustomFontsManager({ fonts, onFontsChange }: CustomFontsManagerP
         </ScrollArea>
       )}
 
+      {fonts.length > 0 && (
+        <div className="mt-4 border rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between p-2 bg-muted/50 border-b">
+            <span className="text-sm font-medium">Generated @font-face CSS</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyCss}
+              data-testid="button-copy-font-css"
+            >
+              {copiedCss ? (
+                <Check className="h-4 w-4 mr-1" />
+              ) : (
+                <Copy className="h-4 w-4 mr-1" />
+              )}
+              {copiedCss ? 'Copied' : 'Copy'}
+            </Button>
+          </div>
+          <pre className="p-3 text-xs overflow-auto max-h-48 bg-background">
+            <code>{generatedCss}</code>
+          </pre>
+        </div>
+      )}
+
       <div className="mt-4 p-3 bg-muted/30 rounded-lg flex items-start gap-2">
         <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
         <p className="text-xs text-muted-foreground">
-          Uploaded fonts will be included in the <code className="bg-muted px-1 rounded">fonts/</code> folder 
-          when you export your theme. Use <code className="bg-muted px-1 rounded">@font-face</code> rules 
-          in Custom CSS to reference them.
+          {fonts.length > 0 
+            ? <>The @font-face CSS above will be included in your exported theme. Fonts are placed in the <code className="bg-muted px-1 rounded">fonts/</code> folder.</>
+            : <>Upload custom font files to include them in your theme export. @font-face rules will be generated automatically.</>
+          }
         </p>
       </div>
 
