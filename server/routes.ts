@@ -174,6 +174,23 @@ function parseScssVariables(content: string): CSSVariable[] {
   const variables: CSSVariable[] = [];
   const lines = content.split('\n');
   
+  // First pass: Build a map of SCSS variables for interpolation resolution
+  const scssVarMap = new Map<string, string>();
+  const scssVarRegexForMap = /^\s*\$([a-zA-Z0-9_-]+)\s*:\s*([^;!]+)/;
+  for (const line of lines) {
+    const match = line.match(scssVarRegexForMap);
+    if (match) {
+      scssVarMap.set(match[1], match[2].trim());
+    }
+  }
+  
+  // Helper function to resolve SCSS interpolation like #{$variable-name}
+  function resolveScssInterpolation(value: string): string {
+    return value.replace(/#\{\$([a-zA-Z0-9_-]+)\}/g, (_, varName) => {
+      return scssVarMap.get(varName) || `#{$${varName}}`;
+    });
+  }
+  
   let currentMainSection = 'other';
   let currentSubSection = 'general';
   
@@ -214,7 +231,11 @@ function parseScssVariables(content: string): CSSVariable[] {
     const cssMatch = line.match(cssVarRegex);
     if (cssMatch) {
       const name = `--${cssMatch[1]}`;
-      const value = cssMatch[2].trim();
+      let value = cssMatch[2].trim();
+      
+      // Resolve SCSS interpolation like #{$color-brand-a} to actual value
+      value = resolveScssInterpolation(value);
+      
       const type = detectVariableType(name, value);
       
       variables.push({
