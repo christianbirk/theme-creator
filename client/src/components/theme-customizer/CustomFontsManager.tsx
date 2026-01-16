@@ -167,16 +167,19 @@ export function CustomFontsManager({ fonts, onFontsChange, onFontCssChange }: Cu
     }
   }, [fonts, onFontCssChange]);
 
-  // Cleanup blob URLs when component unmounts
+  // Track previous fonts to clean up removed font blob URLs
+  const previousFontsRef = useRef<FontFile[]>([]);
+  
   useEffect(() => {
-    return () => {
-      fonts.forEach(font => {
-        if (font.blobUrl) {
-          URL.revokeObjectURL(font.blobUrl);
-        }
-      });
-    };
-  }, []);
+    // Find fonts that were removed and revoke their blob URLs
+    const currentIds = new Set(fonts.map(f => f.id));
+    previousFontsRef.current.forEach(prevFont => {
+      if (!currentIds.has(prevFont.id) && prevFont.blobUrl) {
+        URL.revokeObjectURL(prevFont.blobUrl);
+      }
+    });
+    previousFontsRef.current = fonts;
+  }, [fonts]);
 
   const handleUploadClick = useCallback(() => {
     fileInputRef.current?.click();
