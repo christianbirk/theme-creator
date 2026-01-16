@@ -679,39 +679,46 @@ export function ControlPanel({
                     </Tabs>
                   </div>
                 )}
-                {/* All sections use the same subsection rendering */}
-                <Accordion 
-                  type="multiple" 
-                  value={expandedSubSections}
-                  onValueChange={setExpandedSubSections}
-                  className="w-full"
-                >
-                  {section.subSections.map(subSection => (
-                    <AccordionItem 
-                      key={`${section.id}-${subSection.id}`} 
-                      value={`${section.id}-${subSection.id}`}
-                      className="border-b-0 border-t"
-                    >
-                      <AccordionTrigger 
-                        className="group px-6 py-2 hover:no-underline text-sm"
-                        data-testid={`accordion-subsection-${section.id}-${subSection.id}`}
+                {/* Check if section has single subsection with same name - render flat */}
+                {section.subSections.length === 1 && 
+                 section.subSections[0].id === section.id ? (
+                  <div className="px-6 pb-4 space-y-1">
+                    {section.subSections[0].variables.map(renderVariableInput)}
+                  </div>
+                ) : (
+                  <Accordion 
+                    type="multiple" 
+                    value={expandedSubSections}
+                    onValueChange={setExpandedSubSections}
+                    className="w-full"
+                  >
+                    {section.subSections.map(subSection => (
+                      <AccordionItem 
+                        key={`${section.id}-${subSection.id}`} 
+                        value={`${section.id}-${subSection.id}`}
+                        className="border-b-0 border-t"
                       >
-                        <div className="flex items-center gap-2">
-                          <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
-                          <span>{subSection.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({subSection.variables.length})
-                          </span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="px-6 pb-2">
-                        <div className="space-y-1 pl-5">
-                          {subSection.variables.map(renderVariableInput)}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                        <AccordionTrigger 
+                          className="group px-6 py-2 hover:no-underline text-sm"
+                          data-testid={`accordion-subsection-${section.id}-${subSection.id}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                            <span>{subSection.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({subSection.variables.length})
+                            </span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-6 pb-2">
+                          <div className="space-y-1 pl-5">
+                            {subSection.variables.map(renderVariableInput)}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                )}
               </AccordionContent>
             </AccordionItem>
           ))}
