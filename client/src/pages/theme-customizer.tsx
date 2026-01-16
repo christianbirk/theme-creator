@@ -56,11 +56,22 @@ export default function ThemeCustomizer() {
     ));
   }, []);
 
-  const handleResetAll = useCallback(() => {
+  const handleResetVariables = useCallback(() => {
     setVariables(prev => prev.map(v => ({ ...v, value: v.defaultValue })));
     toast({
       title: 'Variables reset',
       description: 'All variables have been reset to their default values.',
+    });
+  }, [toast]);
+
+  const handleResetEverything = useCallback(() => {
+    setVariables(prev => prev.map(v => ({ ...v, value: v.defaultValue })));
+    setCustomFonts([]);
+    setFontCssForPreview('');
+    setScssFiles([{ id: '1', name: 'custom-styles.scss', content: '' }]);
+    toast({
+      title: 'Everything reset',
+      description: 'All variables, custom fonts, and custom CSS have been reset.',
     });
   }, [toast]);
 
@@ -462,7 +473,7 @@ export default function ThemeCustomizer() {
                   categories={categories}
                   variables={variables}
                   onVariableChange={handleVariableChange}
-                  onResetAll={handleResetAll}
+                  onResetAll={handleResetVariables}
                   onResetCategory={handleResetCategory}
                   onImportSCSS={handleImportSCSS}
                   customFonts={customFonts.map(font => ({
@@ -505,8 +516,10 @@ export default function ThemeCustomizer() {
 
         <ActionBar 
           onExport={handleExport} 
-          onResetAll={handleResetAll}
+          onResetVariables={handleResetVariables}
+          onResetAll={handleResetEverything}
           modificationCount={variables.filter(v => v.value !== v.defaultValue).length}
+          totalVariableCount={variables.length}
         />
       </div>
 
