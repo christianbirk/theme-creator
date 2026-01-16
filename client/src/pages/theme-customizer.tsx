@@ -129,18 +129,20 @@ export default function ThemeCustomizer() {
         
         const parsedVariables = await parseScssContent(content);
         if (parsedVariables.length > 0) {
-          const uniqueCategories = Array.from(new Set(parsedVariables.map(v => v.category)));
-          const newCategories: VariableCategory[] = uniqueCategories.map(catId => {
-            const existing = defaultCategories.find(c => c.id === catId);
-            return existing || {
-              id: catId,
-              name: catId.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-              icon: 'Circle',
-              variables: []
-            };
+          // Create a map of imported variable values
+          const importedValues = new Map<string, string>();
+          parsedVariables.forEach(v => importedValues.set(v.name, v.value));
+          
+          // Update existing variables with imported values (preserves categories and structure)
+          setVariables(prev => {
+            const updated = prev.map(v => {
+              const importedValue = importedValues.get(v.name);
+              return importedValue !== undefined ? { ...v, value: importedValue } : v;
+            });
+            return updated;
           });
-          setCategories(newCategories);
-          setVariables(parsedVariables);
+          
+          // Keep existing categories (don't replace with potentially malformed ones)
         }
       }
       
