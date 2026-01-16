@@ -290,6 +290,20 @@ function parseScssVariables(content: string): CSSVariable[] {
     }
   }
 
+  // Post-process: Flatten single-child sections by matching subsection ID to mainSection ID
+  // This allows the UI to render without redundant nested accordions
+  for (const variable of variables) {
+    if (variable.subSection === 'icon-settings' && variable.mainSection === 'icons') {
+      variable.subSection = 'icons';
+    }
+    if (variable.subSection === 'label-settings' && variable.mainSection === 'labels') {
+      variable.subSection = 'labels';
+    }
+    if (variable.subSection === 'form-settings' && variable.mainSection === 'forms') {
+      variable.subSection = 'forms';
+    }
+  }
+
   return variables;
 }
 
