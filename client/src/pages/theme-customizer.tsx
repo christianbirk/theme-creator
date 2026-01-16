@@ -52,6 +52,9 @@ export default function ThemeCustomizer() {
   
   // Theme import file input ref
   const themeImportInputRef = useRef<HTMLInputElement>(null);
+  
+  // Store original default values from baseStylesV6 for reset functionality
+  const [originalDefaults, setOriginalDefaults] = useState<Map<string, string>>(new Map());
 
   const handleVariableChange = useCallback((name: string, value: string) => {
     setVariables(prev => prev.map(v => 
@@ -60,15 +63,21 @@ export default function ThemeCustomizer() {
   }, []);
 
   const handleResetVariables = useCallback(() => {
-    setVariables(prev => prev.map(v => ({ ...v, value: v.defaultValue })));
+    setVariables(prev => prev.map(v => {
+      const originalValue = originalDefaults.get(v.name);
+      return { ...v, value: originalValue !== undefined ? originalValue : v.defaultValue };
+    }));
     toast({
       title: 'Variables reset',
       description: 'All variables have been reset to their default values.',
     });
-  }, [toast]);
+  }, [toast, originalDefaults]);
 
   const handleResetEverything = useCallback(() => {
-    setVariables(prev => prev.map(v => ({ ...v, value: v.defaultValue })));
+    setVariables(prev => prev.map(v => {
+      const originalValue = originalDefaults.get(v.name);
+      return { ...v, value: originalValue !== undefined ? originalValue : v.defaultValue };
+    }));
     setCustomFonts([]);
     setFontCssForPreview('');
     setScssFiles([{ id: '1', name: 'custom-styles.scss', content: '' }]);
@@ -76,18 +85,20 @@ export default function ThemeCustomizer() {
       title: 'Everything reset',
       description: 'All variables, custom fonts, and custom CSS have been reset.',
     });
-  }, [toast]);
+  }, [toast, originalDefaults]);
 
   const handleResetCategory = useCallback((categoryId: string) => {
-    setVariables(prev => prev.map(v => 
-      v.category === categoryId ? { ...v, value: v.defaultValue } : v
-    ));
+    setVariables(prev => prev.map(v => {
+      if (v.category !== categoryId) return v;
+      const originalValue = originalDefaults.get(v.name);
+      return { ...v, value: originalValue !== undefined ? originalValue : v.defaultValue };
+    }));
     const categoryName = categories.find(c => c.id === categoryId)?.name || categoryId;
     toast({
       title: 'Category reset',
       description: `${categoryName} variables have been reset.`,
     });
-  }, [toast, categories]);
+  }, [toast, categories, originalDefaults]);
 
   const handleImportTheme = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -292,6 +303,16 @@ export default function ThemeCustomizer() {
 
       setCategories(newCategories);
       setVariables(parsedVariables);
+      
+      // Store original defaults from baseStylesV6 (only on initial load)
+      setOriginalDefaults(prev => {
+        if (prev.size === 0) {
+          const defaults = new Map<string, string>();
+          parsedVariables.forEach(v => defaults.set(v.name, v.defaultValue));
+          return defaults;
+        }
+        return prev;
+      });
 
       if (showToast) {
         toast({
