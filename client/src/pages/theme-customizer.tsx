@@ -516,10 +516,7 @@ export default function ThemeCustomizer() {
 
         <ActionBar 
           onExport={handleExport} 
-          onResetVariables={handleResetVariables}
           onResetAll={handleResetEverything}
-          modificationCount={variables.filter(v => v.value !== v.defaultValue).length}
-          totalVariableCount={variables.length}
         />
       </div>
 
