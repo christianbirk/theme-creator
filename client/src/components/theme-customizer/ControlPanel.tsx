@@ -530,7 +530,7 @@ export function ControlPanel({
           />
         );
       case 'number':
-        // Check if this is a font-weight reference
+        // Check if this is a font-weight reference (includes base font weights and derived)
         if (isFontWeightReference(variable)) {
           return (
             <NumberInput
@@ -540,7 +540,20 @@ export function ControlPanel({
               onChange={(value) => onVariableChange(variable.name, value)}
               label={displayName}
               weightOptions={baseFontWeightOptions}
-              isBaseFontWeight={isBaseFontWeight(variable)}
+              isBaseFontWeight={false}
+            />
+          );
+        }
+        // Check if this is a base font weight - show slider
+        if (isBaseFontWeight(variable)) {
+          return (
+            <NumberInput
+              key={variable.name}
+              value={variable.value}
+              defaultValue={variable.defaultValue}
+              onChange={(value) => onVariableChange(variable.name, value)}
+              label={displayName}
+              isBaseFontWeight={true}
             />
           );
         }

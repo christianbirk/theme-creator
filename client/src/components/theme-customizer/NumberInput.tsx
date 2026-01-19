@@ -8,7 +8,8 @@ import {
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { RotateCcw } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { RotateCcw, ChevronDown } from 'lucide-react';
 import { CSSVariable } from './types';
 
 interface NumberInputProps {
@@ -84,8 +85,75 @@ export function NumberInput({
       ? 'Enter a custom line height value' 
       : 'Enter a custom value';
 
-  // If base value or no reference options, show simple input
-  if (isBaseValue || !hasReferenceOptions) {
+  // Get numeric value for slider (handle var references)
+  const getNumericValue = useCallback(() => {
+    if (isVarReference) {
+      // Try to find the referenced value
+      const match = value.match(/var\(([^)]+)\)/);
+      if (match) {
+        const refVar = referenceOptions.find(v => v.name === match[1]);
+        if (refVar) {
+          const num = parseInt(refVar.value, 10);
+          if (!isNaN(num)) return num;
+        }
+      }
+      return 400; // default fallback
+    }
+    const num = parseInt(value, 10);
+    return isNaN(num) ? 400 : num;
+  }, [value, isVarReference, referenceOptions]);
+
+  const handleSliderChange = useCallback((values: number[]) => {
+    onChange(String(values[0]));
+  }, [onChange]);
+
+  // Base font weight - show slider without reference dropdown
+  if (isBaseFontWeight) {
+    return (
+      <div className="py-2">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm truncate capitalize" data-testid={`number-label-${label}`}>
+              {label}
+            </span>
+            {isModified && (
+              <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="h-7 px-2 flex items-center border rounded-md bg-background text-xs font-mono font-semibold">
+              {value}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleReset}
+              className={`h-7 w-7 ${!isModified ? 'invisible' : ''}`}
+              data-testid={`number-reset-${label}`}
+            >
+              <RotateCcw className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground w-6">100</span>
+          <Slider
+            value={[getNumericValue()]}
+            onValueChange={handleSliderChange}
+            min={100}
+            max={900}
+            step={10}
+            className="flex-1"
+            data-testid={`weight-slider-${label}`}
+          />
+          <span className="text-xs text-muted-foreground w-6">900</span>
+        </div>
+      </div>
+    );
+  }
+
+  // If base line-height or no reference options, show simple input
+  if (isBaseLineHeight || !hasReferenceOptions) {
     return (
       <div className="flex items-center gap-3 py-2">
         <div className="flex-1 min-w-0">
@@ -123,7 +191,84 @@ export function NumberInput({
     );
   }
 
-  // Show reference picker
+  // Font weight slider UI
+  if (weightOptions.length > 0) {
+    return (
+      <div className="py-2">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm truncate capitalize" data-testid={`number-label-${label}`}>
+              {label}
+            </span>
+            {isModified && (
+              <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="h-7 px-2 flex items-center gap-1 border rounded-md bg-background text-xs font-mono cursor-pointer hover:border-primary transition-colors"
+                  data-testid={`weight-reference-trigger-${label}`}
+                >
+                  {isVarReference ? (
+                    <span className="capitalize text-muted-foreground">{displayValue}</span>
+                  ) : (
+                    <span className="font-semibold">{value}</span>
+                  )}
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" align="end">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground px-2 py-1">Use base weight reference:</p>
+                  {weightOptions.map((refVar) => (
+                    <button
+                      key={refVar.name}
+                      type="button"
+                      onClick={() => handleSelectReference(refVar)}
+                      className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-left text-sm hover-elevate ${
+                        value === `var(${refVar.name})` ? 'bg-accent' : ''
+                      }`}
+                      data-testid={`reference-option-${refVar.name}`}
+                    >
+                      <span className="capitalize truncate">{formatLabel(refVar.name)}</span>
+                      <span className="text-xs text-muted-foreground font-mono">{refVar.value}</span>
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleReset}
+              className={`h-7 w-7 ${!isModified ? 'invisible' : ''}`}
+              data-testid={`number-reset-${label}`}
+            >
+              <RotateCcw className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground w-6">100</span>
+          <Slider
+            value={[getNumericValue()]}
+            onValueChange={handleSliderChange}
+            min={100}
+            max={900}
+            step={10}
+            className="flex-1"
+            data-testid={`weight-slider-${label}`}
+          />
+          <span className="text-xs text-muted-foreground w-6">900</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Line-height reference picker (unchanged)
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 min-w-0">
