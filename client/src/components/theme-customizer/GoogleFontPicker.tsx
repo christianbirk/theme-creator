@@ -120,7 +120,13 @@ export function GoogleFontPicker({
   }, [value]);
 
   const fontCommandContent = (
-    <Command className={embedded ? "border rounded-md" : ""}>
+    <Command 
+      className={embedded ? "border rounded-md" : ""}
+      filter={(value, search) => {
+        if (value.toLowerCase().includes(search.toLowerCase())) return 1;
+        return 0;
+      }}
+    >
       <CommandInput placeholder="Search fonts..." data-testid={`font-search-${label}`} />
       <CommandList className={embedded ? "max-h-[180px]" : ""}>
         <CommandEmpty>No font found.</CommandEmpty>
