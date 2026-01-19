@@ -714,6 +714,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         { id: 'button-outline', name: 'Outline Button', selectors: ['.btn-outline', '.button-outline', '.btn-bordered'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-outline-border-size', '--button-outline-color', '--button-outline-border-color'] },
         { id: 'button-primary', name: 'Primary Button', selectors: ['.btn-primary', '.button-primary'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-background-color', '--button-color'] },
         { id: 'button-secondary', name: 'Secondary Button', selectors: ['.btn-secondary', '.button-secondary'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-secondary-background-color', '--button-secondary-color'] },
+        { id: 'button-alternate', name: 'Alternate Button', selectors: ['.btn-alternate', '.button-alternate', '.btn-alt'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-alternate-background-color', '--button-alternate-color'] },
         { id: 'button-text', name: 'Text Button', selectors: ['.btn-text', '.button-text', '.btn-link'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-text-color'] },
         { id: 'button', name: 'Button (Generic)', selectors: ['button', '.btn', '.button'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-background-color', '--button-color'] },
         { id: 'link', name: 'Link', selectors: ['a'], variables: ['--link-style', '--link-color'] },
@@ -816,7 +817,41 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     }
     
     return `${cleanedHtml}${styleTag}`;
-  }, [getCurrentHtml, inspectorScript]);
+  }, [getCurrentHtml]);
+
+  // Dynamically inject/remove inspector script without reloading iframe
+  useEffect(() => {
+    if (!iframeLoaded || !iframeRef.current) return;
+    
+    try {
+      const iframeDoc = iframeRef.current.contentDocument;
+      if (!iframeDoc) return;
+      
+      // Remove existing inspector elements
+      const existingScript = iframeDoc.getElementById('inspector-script');
+      const existingStyles = iframeDoc.getElementById('inspector-styles');
+      if (existingScript) existingScript.remove();
+      if (existingStyles) existingStyles.remove();
+      
+      if (inspectorMode) {
+        // Inject inspector script
+        const scriptEl = iframeDoc.createElement('script');
+        scriptEl.id = 'inspector-script';
+        scriptEl.textContent = inspectorScript.replace(/<script id="inspector-script">|<\/script>|<style id="inspector-styles">[\s\S]*?<\/style>/g, '');
+        
+        const styleEl = iframeDoc.createElement('style');
+        styleEl.id = 'inspector-styles';
+        styleEl.textContent = '* { cursor: default !important; }';
+        
+        if (iframeDoc.body) {
+          iframeDoc.body.appendChild(scriptEl);
+          iframeDoc.body.appendChild(styleEl);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not update inspector script dynamically:', e);
+    }
+  }, [inspectorMode, iframeLoaded, inspectorScript]);
 
   // Dynamically update CSS in iframe without re-rendering
   useEffect(() => {
