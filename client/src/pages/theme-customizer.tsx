@@ -132,8 +132,11 @@ export default function ThemeCustomizer() {
         return;
       }
       
-      // Import theme.scss and parse variables
-      const themeScsFile = themeFolder.file('theme.scss');
+      // Import theme.scss and parse variables (check both root and css folder)
+      let themeScsFile = themeFolder.file('css/theme.scss');
+      if (!themeScsFile) {
+        themeScsFile = themeFolder.file('theme.scss');
+      }
       if (themeScsFile) {
         const content = await themeScsFile.async('string');
         setBaseScss(content);
@@ -500,7 +503,7 @@ export default function ThemeCustomizer() {
         
         // 2. Import statements for fundamentals variables
         const importVariables = `// Importing Fundamentals Variables
-@import '../../../../GoBasic/baseStylesV6/css/variables.scss';`;
+@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';`;
         fullCss += `${importVariables}\n\n`;
         
         // 3. CSS variable definitions
@@ -508,19 +511,23 @@ export default function ThemeCustomizer() {
         
         // 4. Import statements for fundamentals styles
         const importStyles = `// Importing Fundamentals Styles
-@import '../../../../GoBasic/baseStylesV6/css/imports.scss';
-@import '../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';`;
+@import '../../../../../GoBasic/baseStylesV6/css/imports.scss';
+@import '../../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';`;
         fullCss += importStyles;
         
         // 5. Import statements for custom SCSS files (only non-empty)
         if (nonEmptyFiles.length > 0) {
           fullCss += '\n\n// Custom SCSS Files';
           for (const file of nonEmptyFiles) {
-            fullCss += `\n@import 'custom/${file.name}';`;
+            fullCss += `\n@import '../custom/${file.name}';`;
           }
         }
         
-        themeFolder.file('theme.scss', fullCss);
+        // Create css folder and put theme.scss inside it
+        const cssFolder = themeFolder.folder('css');
+        if (cssFolder) {
+          cssFolder.file('theme.scss', fullCss);
+        }
         
         // Add individual SCSS files to custom folder (only non-empty)
         if (nonEmptyFiles.length > 0) {

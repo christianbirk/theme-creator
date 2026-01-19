@@ -74,7 +74,7 @@ export function ExportModal({ open, onOpenChange, variables }: ExportModalProps)
  */
 
 // Importing Fundamentals Variables
-@import '../../../../GoBasic/baseStylesV6/css/variables.scss';
+@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';
 
 /* --- Color by SCSS --- */
 ${scssVarsBlock}
@@ -84,8 +84,8 @@ ${cssVarsBlock}
 }
 
 // Importing Fundamentals Styles
-@import '../../../../GoBasic/baseStylesV6/css/imports.scss';
-@import '../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';
+@import '../../../../../GoBasic/baseStylesV6/css/imports.scss';
+@import '../../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';
 `;
 
     return css;
