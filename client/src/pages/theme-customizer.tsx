@@ -485,7 +485,7 @@ export default function ThemeCustomizer() {
         
         // 2. Import statements for fundamentals variables
         const importVariables = `// Importing Fundamentals Variables
-@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';`;
+@import '../../../../GoBasic/baseStylesV6/css/variables.scss';`;
         fullCss += `${importVariables}\n\n`;
         
         // 3. CSS variable definitions
@@ -493,8 +493,8 @@ export default function ThemeCustomizer() {
         
         // 4. Import statements for fundamentals styles
         const importStyles = `// Importing Fundamentals Styles
-@import '../../../../../GoBasic/baseStylesV6/css/imports.scss';
-@import '../../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';`;
+@import '../../../../GoBasic/baseStylesV6/css/imports.scss';
+@import '../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';`;
         fullCss += importStyles;
         
         // 5. Import statements for custom SCSS files (only non-empty)
