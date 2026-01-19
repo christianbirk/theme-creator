@@ -2,6 +2,9 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ControlPanel } from '@/components/theme-customizer/ControlPanel';
 import { PreviewPane, SelectedElement } from '@/components/theme-customizer/PreviewPane';
 import { ActionBar } from '@/components/theme-customizer/ActionBar';
@@ -53,6 +56,10 @@ export default function ThemeCustomizer() {
   const [legacyImportModalOpen, setLegacyImportModalOpen] = useState(false);
   const [preservedFolders, setPreservedFolders] = useState<PreservedFolders | null>(null);
   const [importedCssClassesData, setImportedCssClassesData] = useState<CssClassesData | null>(null);
+  
+  // Export name dialog state
+  const [exportNameDialogOpen, setExportNameDialogOpen] = useState(false);
+  const [exportThemeName, setExportThemeName] = useState('theme');
   
   // Theme import file input ref
   const themeImportInputRef = useRef<HTMLInputElement>(null);
@@ -459,16 +466,24 @@ export default function ThemeCustomizer() {
     }
   }, [toast]);
 
+  const handleOpenExportDialog = useCallback(() => {
+    setExportNameDialogOpen(true);
+  }, []);
+
   const handleExport = useCallback(async () => {
+    setExportNameDialogOpen(false);
     setIsLoading(true);
     try {
       // Compile CSS theme
       const css = await compileTheme(variables, baseScss);
       setCompiledCss(css);
       
+      // Sanitize theme name for filenames
+      const safeName = exportThemeName.replace(/[^a-zA-Z0-9-_]/g, '') || 'theme';
+      
       // Create zip file with theme.css and styles.xml
       const zip = new JSZip();
-      const themeFolder = zip.folder('theme');
+      const themeFolder = zip.folder(safeName);
       
       if (themeFolder) {
         // Filter out empty custom SCSS files
@@ -559,7 +574,7 @@ export default function ThemeCustomizer() {
         const url = URL.createObjectURL(content);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'theme.zip';
+        a.download = `${safeName}.zip`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -567,7 +582,7 @@ export default function ThemeCustomizer() {
         
         toast({
           title: 'Export successful',
-          description: 'Theme folder has been downloaded as theme.zip',
+          description: `Theme "${safeName}" has been downloaded as ${safeName}.zip`,
         });
       }
     } catch (err) {
@@ -579,7 +594,7 @@ export default function ThemeCustomizer() {
       });
     }
     setIsLoading(false);
-  }, [variables, baseScss, toast, cssClassesData, scssFiles, preservedFolders, customFonts]);
+  }, [variables, baseScss, toast, cssClassesData, scssFiles, preservedFolders, customFonts, exportThemeName]);
 
   const [activeTab, setActiveTab] = useState('design');
 
@@ -723,7 +738,7 @@ export default function ThemeCustomizer() {
         )}
 
         <ActionBar 
-          onExport={handleExport} 
+          onExport={handleOpenExportDialog} 
           onResetAll={handleResetEverything}
         />
       </div>
@@ -739,6 +754,50 @@ export default function ThemeCustomizer() {
         onOpenChange={setLegacyImportModalOpen}
         onImportComplete={handleLegacyImportComplete}
       />
+
+      <Dialog open={exportNameDialogOpen} onOpenChange={setExportNameDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export Theme</DialogTitle>
+            <DialogDescription>
+              Enter a name for your theme. This will be used for the zip file and folder.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="theme-name">Theme Name</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="theme-name"
+                  value={exportThemeName}
+                  onChange={(e) => setExportThemeName(e.target.value.replace(/[^a-zA-Z0-9-_\s]/g, ''))}
+                  placeholder="theme"
+                  className="flex-1"
+                  data-testid="input-export-theme-name"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && exportThemeName.trim()) {
+                      handleExport();
+                    }
+                  }}
+                />
+                <span className="text-sm text-muted-foreground">.zip</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportNameDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleExport} 
+              disabled={!exportThemeName.trim() || isLoading}
+              data-testid="button-confirm-export"
+            >
+              {isLoading ? 'Exporting...' : 'Export'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
