@@ -120,8 +120,37 @@ export default function ThemeCustomizer() {
       const arrayBuffer = await file.arrayBuffer();
       const zip = await JSZip.loadAsync(arrayBuffer);
       
-      // Find theme folder
-      const themeFolder = zip.folder('theme');
+      // Find theme folder - could be named "theme" or a custom name
+      // JSZip.folder() always returns a reference, so check if files exist in it
+      const allPaths = Object.keys(zip.files);
+      
+      // Find unique top-level folder names
+      const topLevelFolders = new Set<string>();
+      allPaths.forEach(path => {
+        const parts = path.split('/');
+        if (parts.length > 1 && parts[0]) {
+          topLevelFolders.add(parts[0]);
+        }
+      });
+      
+      // Check if "theme" folder exists, otherwise use the first folder found
+      let themeFolderName = 'theme';
+      if (!topLevelFolders.has('theme')) {
+        const folderNames = Array.from(topLevelFolders);
+        if (folderNames.length > 0) {
+          themeFolderName = folderNames[0];
+        } else {
+          toast({
+            title: 'Invalid theme file',
+            description: 'The zip file does not contain a theme folder.',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      const themeFolder = zip.folder(themeFolderName);
       if (!themeFolder) {
         toast({
           title: 'Invalid theme file',
