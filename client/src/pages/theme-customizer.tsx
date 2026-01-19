@@ -3,7 +3,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ControlPanel } from '@/components/theme-customizer/ControlPanel';
-import { PreviewPane } from '@/components/theme-customizer/PreviewPane';
+import { PreviewPane, SelectedElement } from '@/components/theme-customizer/PreviewPane';
 import { ActionBar } from '@/components/theme-customizer/ActionBar';
 import { ExportModal } from '@/components/theme-customizer/ExportModal';
 import { CssClassesEditor } from '@/components/theme-customizer/CssClassesEditor';
@@ -44,6 +44,10 @@ export default function ThemeCustomizer() {
   
   // Font CSS for preview (uses blob URLs)
   const [fontCssForPreview, setFontCssForPreview] = useState<string>('');
+  
+  // Element inspector state
+  const [inspectorMode, setInspectorMode] = useState(false);
+  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
   
   // Legacy import state
   const [legacyImportModalOpen, setLegacyImportModalOpen] = useState(false);
@@ -668,13 +672,29 @@ export default function ThemeCustomizer() {
                     name: font.name.replace(/\.(ttf|woff|woff2|eot)$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
                     fontFamily: `'${font.name.replace(/\.(ttf|woff|woff2|eot)$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}'`,
                   }))}
+                  inspectorMode={inspectorMode}
+                  onInspectorModeChange={setInspectorMode}
+                  selectedElement={selectedElement}
+                  onClearSelectedElement={() => setSelectedElement(null)}
                 />
               </ResizablePanel>
               
               <ResizableHandle withHandle />
               
               <ResizablePanel defaultSize={65}>
-                <PreviewPane variables={variables} previewHtml={previewHtml} customCssFiles={scssFiles} fontCss={fontCssForPreview} />
+                <PreviewPane 
+                  variables={variables} 
+                  previewHtml={previewHtml} 
+                  customCssFiles={scssFiles} 
+                  fontCss={fontCssForPreview}
+                  inspectorMode={inspectorMode}
+                  onElementSelect={(element) => {
+                    setSelectedElement(element);
+                    if (element) {
+                      setInspectorMode(false);
+                    }
+                  }}
+                />
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>

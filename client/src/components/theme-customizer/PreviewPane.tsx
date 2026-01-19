@@ -6,11 +6,19 @@ import { CSSVariable } from './types';
 import { ScssFile } from './CustomCssManager';
 import { useToast } from '@/hooks/use-toast';
 
+export interface SelectedElement {
+  id: string;
+  name: string;
+  variables: string[];
+}
+
 interface PreviewPaneProps {
   variables: CSSVariable[];
   previewHtml: string;
   customCssFiles?: ScssFile[];
   fontCss?: string;
+  onElementSelect?: (element: SelectedElement | null) => void;
+  inspectorMode?: boolean;
 }
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
@@ -64,7 +72,7 @@ const loadingHtml = `
 </html>
 `;
 
-export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontCss = '' }: PreviewPaneProps) {
+export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontCss = '', onElementSelect, inspectorMode = false }: PreviewPaneProps) {
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [templateHtml, setTemplateHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -686,12 +694,100 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     return loadingHtml;
   }, [templateHtml]);
 
+  // Inspector script for detecting element clicks
+  const inspectorScript = useMemo(() => {
+    if (!inspectorMode) return '';
+    
+    return `
+    <script id="inspector-script">
+    (function() {
+      const elementMappings = [
+        { id: 'h1', name: 'Heading 1 (H1)', selectors: ['h1', '.h1'], variables: ['--font-heading-family', '--font-heading-weight', '--font-heading-color', '--font-heading-hyphens', '--h1-font-family', '--h1-font-weight', '--h1-text-transform', '--font-xlarge', '--font-xlarge-line-height'] },
+        { id: 'h2', name: 'Heading 2 (H2)', selectors: ['h2', '.h2'], variables: ['--font-heading-family', '--font-heading-weight', '--font-heading-color', '--font-heading-hyphens', '--h2-font-family', '--h2-font-weight', '--h2-text-transform', '--font-large', '--font-large-line-height'] },
+        { id: 'h3', name: 'Heading 3 (H3)', selectors: ['h3', '.h3'], variables: ['--font-heading-family', '--font-heading-weight', '--font-heading-color', '--font-heading-hyphens', '--h3-font-family', '--h3-font-weight', '--h3-text-transform', '--font-xmedium', '--font-xmedium-line-height'] },
+        { id: 'h4', name: 'Heading 4 (H4)', selectors: ['h4', '.h4'], variables: ['--font-heading-family', '--font-heading-weight', '--font-heading-color', '--font-heading-hyphens', '--h4-font-family', '--h4-font-weight', '--h4-text-transform', '--font-medium', '--font-medium-line-height'] },
+        { id: 'h5', name: 'Heading 5 (H5)', selectors: ['h5', '.h5'], variables: ['--font-heading-family', '--font-heading-weight', '--font-heading-color', '--font-heading-hyphens', '--h5-font-family', '--h5-font-weight', '--h5-text-transform', '--font-xnormal', '--font-xnormal-line-height'] },
+        { id: 'h6', name: 'Heading 6 (H6)', selectors: ['h6', '.h6'], variables: ['--font-heading-family', '--font-heading-weight', '--font-heading-color', '--font-heading-hyphens', '--h6-font-family', '--h6-font-weight', '--h6-text-transform', '--font-normal', '--font-normal-line-height'] },
+        { id: 'paragraph', name: 'Body Text', selectors: ['p', '.body-text', '.text', '.rich-text'], variables: ['--font-base-family', '--font-base-weight', '--font-base-color', '--font-normal', '--font-normal-line-height'] },
+        { id: 'lead', name: 'Lead Text', selectors: ['.lead', '.intro'], variables: ['--lead-font-family', '--lead-font-weight', '--lead-font-size', '--lead-font-line-height', '--lead-color'] },
+        { id: 'pre-heading', name: 'Pre-heading', selectors: ['.pre-heading', '.eyebrow', '.overline'], variables: ['--pre-heading-family', '--pre-heading-weight', '--pre-heading-text-transform', '--pre-heading-font-size', '--pre-heading-color'] },
+        { id: 'link', name: 'Link', selectors: ['a'], variables: ['--link-style', '--link-color'] },
+        { id: 'button', name: 'Button', selectors: ['button', '.btn', '.button'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-background-color', '--button-color', '--button-outline-border-size', '--button-outline-color', '--button-outline-border-color'] },
+        { id: 'nav-main', name: 'Main Navigation', selectors: ['nav', '.nav-main', '.main-nav', '.navigation'], variables: ['--nav-main-align', '--nav-main-background-color', '--nav-main-active-state-height', '--nav-main-active-state-color', '--nav-main-font-family', '--nav-main-link-gap', '--nav-main-link-padding', '--nav-main-link-font-size', '--nav-main-link-font-weight', '--nav-main-link-text-transform', '--nav-main-link-color'] },
+        { id: 'header', name: 'Header', selectors: ['header', '.header', '.site-header'], variables: ['--header-container-padding', '--header-background-color'] },
+        { id: 'footer', name: 'Footer', selectors: ['footer', '.footer', '.site-footer'], variables: ['--footer-background-color', '--footer-heading-font-size', '--footer-heading-text-transform', '--footer-heading-font-family', '--footer-heading-font-weight'] },
+        { id: 'label', name: 'Label / Badge', selectors: ['.label', '.badge', '.tag', '.chip'], variables: ['--label-border-radius', '--label-text-transform', '--label-font-family', '--label-font-weight', '--label-padding', '--label-background', '--label-color', '--label-border-color'] },
+        { id: 'icon', name: 'Icon', selectors: ['.icon', 'i', 'svg'], variables: ['--icon-default-font-family', '--icon-default-font-size', '--icon-font-weight', '--icon-small-font-size', '--icon-background-size', '--icon-background-border-radius', '--icon-background-color', '--icon-color'] },
+        { id: 'form', name: 'Form Field', selectors: ['input', 'textarea', 'select', '.form-control', '.input'], variables: ['--form-field-height', '--universal-border-radius'] },
+        { id: 'hero', name: 'Hero Section', selectors: ['.hero', '.banner', '.jumbotron'], variables: ['--hero-ratio-full-width', '--hero-ratio-desktop', '--hero-ratio-mobile', '--hero-h1-font-size', '--hero-h1-line-height', '--hero-h2-font-size', '--hero-h2-line-height'] },
+        { id: 'card', name: 'Card / Box', selectors: ['.card', '.box', '.module', '.boxed', '.highlighted'], variables: ['--universal-border-radius', '--boxed-border-width', '--boxed-border-color', '--highlighted-box-shadow', '--grid-box-padding', '--grid-box-padding-mobile'] },
+      ];
+      
+      function findMapping(element) {
+        const tagName = element.tagName.toLowerCase();
+        const classList = Array.from(element.classList);
+        
+        for (const mapping of elementMappings) {
+          for (const selector of mapping.selectors) {
+            if (selector === tagName) return mapping;
+            if (selector.startsWith('.') && classList.some(c => c === selector.slice(1))) return mapping;
+            if (classList.some(c => c.includes(selector.replace('.', '')))) return mapping;
+          }
+        }
+        return null;
+      }
+      
+      let hoveredElement = null;
+      
+      document.addEventListener('mouseover', function(e) {
+        const target = e.target;
+        if (hoveredElement) {
+          hoveredElement.style.outline = '';
+          hoveredElement.style.outlineOffset = '';
+        }
+        const mapping = findMapping(target);
+        if (mapping) {
+          target.style.outline = '2px solid #3b82f6';
+          target.style.outlineOffset = '2px';
+          target.style.cursor = 'pointer';
+          hoveredElement = target;
+        }
+      }, true);
+      
+      document.addEventListener('mouseout', function(e) {
+        if (hoveredElement) {
+          hoveredElement.style.outline = '';
+          hoveredElement.style.outlineOffset = '';
+          hoveredElement.style.cursor = '';
+          hoveredElement = null;
+        }
+      }, true);
+      
+      document.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const target = e.target;
+        const mapping = findMapping(target);
+        if (mapping) {
+          window.parent.postMessage({ type: 'element-selected', element: mapping }, '*');
+        }
+      }, true);
+    })();
+    </script>
+    <style id="inspector-styles">
+      * { cursor: default !important; }
+    </style>
+    `;
+  }, [inspectorMode]);
+
   // Base HTML for initial iframe load - only changes when template loads, NOT when variables change
   const iframeSrcDoc = useMemo(() => {
     const baseHtml = getCurrentHtml();
-    const styleTag = `<style id="custom-variables"></style>`;
+    const styleTag = `<style id="custom-variables"></style>${inspectorScript}`;
     
     let cleanedHtml = baseHtml.replace(/<style id="custom-variables">[\s\S]*?<\/style>/g, '');
+    cleanedHtml = cleanedHtml.replace(/<script id="inspector-script">[\s\S]*?<\/script>/g, '');
+    cleanedHtml = cleanedHtml.replace(/<style id="inspector-styles">[\s\S]*?<\/style>/g, '');
     
     if (cleanedHtml.includes('</body>')) {
       return cleanedHtml.replace('</body>', `${styleTag}</body>`);
@@ -738,6 +834,20 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   const handleIframeLoad = useCallback(() => {
     setIframeLoaded(true);
   }, []);
+
+  // Listen for messages from the iframe (element inspector)
+  useEffect(() => {
+    if (!inspectorMode || !onElementSelect) return;
+    
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'element-selected' && event.data.element) {
+        onElementSelect(event.data.element);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [inspectorMode, onElementSelect]);
 
   // Reset iframe loaded state when template changes
   useEffect(() => {

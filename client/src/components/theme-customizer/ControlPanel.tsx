@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, RotateCcw, ChevronRight } from 'lucide-react';
+import { Search, RotateCcw, ChevronRight, MousePointer2, ArrowLeft } from 'lucide-react';
 import { CSSVariable, VariableCategory, formatVariableName, formatSectionName, sectionIcons } from './types';
 import { ColorPicker } from './ColorPicker';
 import { SizeInput } from './SizeInput';
@@ -97,6 +97,12 @@ const BORDER_VARIABLES = [
   '--nav-main-border-bottom',
 ];
 
+interface SelectedElement {
+  id: string;
+  name: string;
+  variables: string[];
+}
+
 interface ControlPanelProps {
   categories: VariableCategory[];
   variables: CSSVariable[];
@@ -104,6 +110,10 @@ interface ControlPanelProps {
   onResetAll: () => void;
   onResetCategory: (categoryId: string) => void;
   customFonts?: CustomFont[];
+  inspectorMode?: boolean;
+  onInspectorModeChange?: (enabled: boolean) => void;
+  selectedElement?: SelectedElement | null;
+  onClearSelectedElement?: () => void;
 }
 
 interface SectionData {
@@ -121,6 +131,10 @@ export function ControlPanel({
   onVariableChange, 
   onResetAll, 
   customFonts = [],
+  inspectorMode = false,
+  onInspectorModeChange,
+  selectedElement,
+  onClearSelectedElement,
 }: ControlPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSections, setExpandedSections] = useState<string[]>(['colors']);
@@ -217,8 +231,18 @@ export function ControlPanel({
   const sections = useMemo(() => {
     const query = searchQuery.toLowerCase();
     const sectionMap = new Map<string, Map<string, CSSVariable[]>>();
+    
+    // Create set of selected element variables for quick lookup
+    const selectedVarSet = selectedElement 
+      ? new Set(selectedElement.variables) 
+      : null;
 
     variables.forEach(v => {
+      // If element is selected, only show its variables
+      if (selectedVarSet && !selectedVarSet.has(v.name)) {
+        return;
+      }
+      
       const mainSection = v.mainSection || 'other';
       const subSection = v.subSection || 'general';
 
@@ -283,7 +307,7 @@ export function ControlPanel({
     });
 
     return result;
-  }, [variables, searchQuery, expertMode, navigationMode]);
+  }, [variables, searchQuery, expertMode, navigationMode, selectedElement]);
 
   const modifiedCount = useMemo(() => 
     variables.filter(v => v.value !== v.defaultValue).length
@@ -602,8 +626,46 @@ export function ControlPanel({
               Expert mode
             </Label>
           </div>
+          {onInspectorModeChange && (
+            <Button
+              variant={inspectorMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => onInspectorModeChange(!inspectorMode)}
+              data-testid="button-inspector-mode"
+              className="h-8"
+            >
+              <MousePointer2 className="h-4 w-4 mr-1" />
+              Inspect
+            </Button>
+          )}
         </div>
       </div>
+
+      {selectedElement && (
+        <div className="p-4 border-b bg-blue-50 dark:bg-blue-950">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClearSelectedElement}
+                className="h-8 px-2"
+                data-testid="button-back-from-element"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <span className="font-medium text-sm">{selectedElement.name}</span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {selectedElement.variables.length} variables
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Click on elements in the preview to see their related variables. 
+            Click the back arrow to return to all variables.
+          </p>
+        </div>
+      )}
 
       <ScrollArea className="flex-1">
         <Accordion 
