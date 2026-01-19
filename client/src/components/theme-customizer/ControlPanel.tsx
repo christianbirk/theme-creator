@@ -668,98 +668,108 @@ export function ControlPanel({
       )}
 
       <ScrollArea className="flex-1">
-        <Accordion 
-          type="multiple" 
-          value={expandedSections}
-          onValueChange={setExpandedSections}
-          className="w-full"
-        >
-          {sections.map(section => (
-            <AccordionItem key={section.id} value={section.id} className="border-b">
-              <AccordionTrigger 
-                className="px-4 py-3 hover:no-underline"
-                data-testid={`accordion-section-${section.id}`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{section.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({section.subSections.reduce((acc, sub) => acc + sub.variables.length, 0)})
-                  </span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="pb-0">
-                {/* Navigation mode toggle for main-navigation section */}
-                {section.id === 'main-navigation' && (
-                  <div className="px-4 py-3 border-b bg-muted/30">
-                    <Label className="text-xs text-muted-foreground mb-2 block">Navigation Type</Label>
-                    <Tabs 
-                      value={navigationMode} 
-                      onValueChange={(v) => setNavigationMode(v as NavigationMode)}
+        {selectedElement ? (
+          <div className="p-4 space-y-1">
+            {sections.flatMap(section => 
+              section.subSections.flatMap(subSection => 
+                subSection.variables.map(renderVariableInput)
+              )
+            )}
+          </div>
+        ) : (
+          <Accordion 
+            type="multiple" 
+            value={expandedSections}
+            onValueChange={setExpandedSections}
+            className="w-full"
+          >
+            {sections.map(section => (
+              <AccordionItem key={section.id} value={section.id} className="border-b">
+                <AccordionTrigger 
+                  className="px-4 py-3 hover:no-underline"
+                  data-testid={`accordion-section-${section.id}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{section.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({section.subSections.reduce((acc, sub) => acc + sub.variables.length, 0)})
+                    </span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-0">
+                  {/* Navigation mode toggle for main-navigation section */}
+                  {section.id === 'main-navigation' && (
+                    <div className="px-4 py-3 border-b bg-muted/30">
+                      <Label className="text-xs text-muted-foreground mb-2 block">Navigation Type</Label>
+                      <Tabs 
+                        value={navigationMode} 
+                        onValueChange={(v) => setNavigationMode(v as NavigationMode)}
+                        className="w-full"
+                      >
+                        <TabsList className="w-full grid grid-cols-2">
+                          <TabsTrigger 
+                            value="standard" 
+                            className="text-xs"
+                            data-testid="tab-nav-standard"
+                          >
+                            Standard
+                          </TabsTrigger>
+                          <TabsTrigger 
+                            value="burger" 
+                            className="text-xs"
+                            data-testid="tab-nav-burger"
+                          >
+                            Burger
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                  )}
+                  {/* Check if section has single subsection with same name - render flat */}
+                  {section.subSections.length === 1 && 
+                   section.subSections[0].id === section.id ? (
+                    <div className="px-6 pb-4 space-y-1">
+                      {section.subSections[0].variables.map(renderVariableInput)}
+                    </div>
+                  ) : (
+                    <Accordion 
+                      type="multiple" 
+                      value={expandedSubSections}
+                      onValueChange={setExpandedSubSections}
                       className="w-full"
                     >
-                      <TabsList className="w-full grid grid-cols-2">
-                        <TabsTrigger 
-                          value="standard" 
-                          className="text-xs"
-                          data-testid="tab-nav-standard"
+                      {section.subSections.map(subSection => (
+                        <AccordionItem 
+                          key={`${section.id}-${subSection.id}`} 
+                          value={`${section.id}-${subSection.id}`}
+                          className="border-b-0 border-t"
                         >
-                          Standard
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="burger" 
-                          className="text-xs"
-                          data-testid="tab-nav-burger"
-                        >
-                          Burger
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                )}
-                {/* Check if section has single subsection with same name - render flat */}
-                {section.subSections.length === 1 && 
-                 section.subSections[0].id === section.id ? (
-                  <div className="px-6 pb-4 space-y-1">
-                    {section.subSections[0].variables.map(renderVariableInput)}
-                  </div>
-                ) : (
-                  <Accordion 
-                    type="multiple" 
-                    value={expandedSubSections}
-                    onValueChange={setExpandedSubSections}
-                    className="w-full"
-                  >
-                    {section.subSections.map(subSection => (
-                      <AccordionItem 
-                        key={`${section.id}-${subSection.id}`} 
-                        value={`${section.id}-${subSection.id}`}
-                        className="border-b-0 border-t"
-                      >
-                        <AccordionTrigger 
-                          className="group px-6 py-2 hover:no-underline text-sm"
-                          data-testid={`accordion-subsection-${section.id}-${subSection.id}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
-                            <span>{subSection.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({subSection.variables.length})
-                            </span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-2">
-                          <div className="space-y-1 pl-5">
-                            {subSection.variables.map(renderVariableInput)}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+                          <AccordionTrigger 
+                            className="group px-6 py-2 hover:no-underline text-sm"
+                            data-testid={`accordion-subsection-${section.id}-${subSection.id}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                              <span>{subSection.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({subSection.variables.length})
+                              </span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-6 pb-2">
+                            <div className="space-y-1 pl-5">
+                              {subSection.variables.map(renderVariableInput)}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        )}
 
         {sections.length === 0 && searchQuery && (
           <div className="p-8 text-center text-muted-foreground">
