@@ -12,7 +12,7 @@ import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Settings2, Tag, Code, Upload, FileType } from 'lucide-react';
-import { CustomCssManager, ScssFile, DEFAULT_FILE } from '@/components/theme-customizer/CustomCssManager';
+import { CustomCssManager, ScssFile } from '@/components/theme-customizer/CustomCssManager';
 import { CustomFontsManager, FontFile, generateFontFaceCssForExport } from '@/components/theme-customizer/CustomFontsManager';
 import { LegacyImportModal, PreservedFolders, CustomScssFile, ImportedFontFile } from '@/components/theme-customizer/LegacyImportModal';
 import { mergeMappedVariables } from '@/lib/legacy-import';
@@ -37,7 +37,7 @@ export default function ThemeCustomizer() {
   const [cssClassesData, setCssClassesData] = useState<CssClassesData>({ groups: [] });
   
   // Custom SCSS files for appending to theme.css
-  const [scssFiles, setScssFiles] = useState<ScssFile[]>([DEFAULT_FILE]);
+  const [scssFiles, setScssFiles] = useState<ScssFile[]>([]);
   
   // Custom font files
   const [customFonts, setCustomFonts] = useState<FontFile[]>([]);
@@ -80,7 +80,7 @@ export default function ThemeCustomizer() {
     }));
     setCustomFonts([]);
     setFontCssForPreview('');
-    setScssFiles([{ id: '1', name: 'custom-styles.scss', content: '' }]);
+    setScssFiles([]);
     toast({
       title: 'Everything reset',
       description: 'All variables, custom fonts, and custom CSS have been reset.',
