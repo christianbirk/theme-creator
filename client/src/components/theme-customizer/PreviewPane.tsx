@@ -798,7 +798,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     }
     
     return `${cleanedHtml}${styleTag}`;
-  }, [getCurrentHtml]);
+  }, [getCurrentHtml, inspectorScript]);
 
   // Dynamically update CSS in iframe without re-rendering
   useEffect(() => {
