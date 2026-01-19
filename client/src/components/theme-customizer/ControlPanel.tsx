@@ -55,7 +55,7 @@ const EXPERT_ONLY_VARIABLES = [
 
 // Variables that should use text-transform select (none/uppercase)
 const TEXT_TRANSFORM_VARIABLES = [
-  '--btn-universal-text-transform',
+  '--button-universal-text-transform',
   '--label-text-transform',
   '--h1-text-transform', '--h2-text-transform', '--h3-text-transform',
   '--h4-text-transform', '--h5-text-transform', '--h6-text-transform',
