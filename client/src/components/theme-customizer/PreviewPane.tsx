@@ -711,8 +711,8 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         { id: 'paragraph', name: 'Body Text', selectors: ['p', '.body-text', '.text', '.rich-text'], variables: ['--font-base-family', '--font-base-weight', '--font-base-color', '--font-normal', '--font-normal-line-height'] },
         { id: 'lead', name: 'Lead Text', selectors: ['.lead', '.intro'], variables: ['--lead-font-family', '--lead-font-weight', '--lead-font-size', '--lead-font-line-height', '--lead-color'] },
         { id: 'pre-heading', name: 'Pre-heading', selectors: ['.pre-heading', '.eyebrow', '.overline'], variables: ['--pre-heading-family', '--pre-heading-weight', '--pre-heading-text-transform', '--pre-heading-font-size', '--pre-heading-color'] },
-        { id: 'link', name: 'Link', selectors: ['a'], variables: ['--link-style', '--link-color'] },
         { id: 'button', name: 'Button', selectors: ['button', '.btn', '.button'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-background-color', '--button-color', '--button-outline-border-size', '--button-outline-color', '--button-outline-border-color'] },
+        { id: 'link', name: 'Link', selectors: ['a'], variables: ['--link-style', '--link-color'] },
         { id: 'nav-main', name: 'Main Navigation', selectors: ['nav', '.nav-main', '.main-nav', '.navigation'], variables: ['--nav-main-align', '--nav-main-background-color', '--nav-main-active-state-height', '--nav-main-active-state-color', '--nav-main-font-family', '--nav-main-link-gap', '--nav-main-link-padding', '--nav-main-link-font-size', '--nav-main-link-font-weight', '--nav-main-link-text-transform', '--nav-main-link-color'] },
         { id: 'header', name: 'Header', selectors: ['header', '.header', '.site-header'], variables: ['--header-container-padding', '--header-background-color'] },
         { id: 'footer', name: 'Footer', selectors: ['footer', '.footer', '.site-footer'], variables: ['--footer-background-color', '--footer-heading-font-size', '--footer-heading-text-transform', '--footer-heading-font-family', '--footer-heading-font-weight'] },
@@ -727,13 +727,27 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         const tagName = element.tagName.toLowerCase();
         const classList = Array.from(element.classList);
         
+        // First pass: check class-based matches (more specific)
         for (const mapping of elementMappings) {
           for (const selector of mapping.selectors) {
-            if (selector === tagName) return mapping;
-            if (selector.startsWith('.') && classList.some(c => c === selector.slice(1))) return mapping;
-            if (classList.some(c => c.includes(selector.replace('.', '')))) return mapping;
+            if (selector.startsWith('.')) {
+              const className = selector.slice(1);
+              if (classList.some(c => c === className || c.includes(className))) {
+                return mapping;
+              }
+            }
           }
         }
+        
+        // Second pass: check tag-based matches (more generic)
+        for (const mapping of elementMappings) {
+          for (const selector of mapping.selectors) {
+            if (!selector.startsWith('.') && selector === tagName) {
+              return mapping;
+            }
+          }
+        }
+        
         return null;
       }
       
