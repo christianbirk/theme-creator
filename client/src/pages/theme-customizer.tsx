@@ -627,18 +627,16 @@ export default function ThemeCustomizer() {
           }
         }
         
-        // Add styles.xml if we have CSS classes data
-        if (cssClassesData.groups.length > 0) {
-          try {
-            const response = await apiRequest('POST', '/api/export-styles-xml', { data: cssClassesData });
-            const result = await response.json();
-            
-            if (result.success) {
-              themeFolder.file('styles.xml', result.xml);
-            }
-          } catch (xmlErr) {
-            console.error('XML export error:', xmlErr);
+        // Always add styles.xml (even if empty)
+        try {
+          const response = await apiRequest('POST', '/api/export-styles-xml', { data: cssClassesData });
+          const result = await response.json();
+          
+          if (result.success) {
+            themeFolder.file('styles.xml', result.xml);
           }
+        } catch (xmlErr) {
+          console.error('XML export error:', xmlErr);
         }
         
         // Add preserved folders from legacy import with proper directory structure
