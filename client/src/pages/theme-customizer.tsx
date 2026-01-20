@@ -521,6 +521,18 @@ export default function ThemeCustomizer() {
         // Filter out empty custom SCSS files
         const nonEmptyFiles = scssFiles.filter(f => f.content.trim());
         
+        // Generate SCSS variables from the variables array
+        const generateScssVariables = (vars: CSSVariable[]) => {
+          return vars
+            .filter(v => v.value !== v.defaultValue || v.value) // Include modified or non-empty values
+            .map(v => {
+              // Convert --variable-name to $variable-name
+              const scssVarName = v.name.replace(/^--/, '$');
+              return `${scssVarName}: ${v.value};`;
+            })
+            .join('\n');
+        };
+        
         // Build the complete theme file
         let fullCss = '';
         
@@ -531,12 +543,15 @@ export default function ThemeCustomizer() {
         }
         
         // 2. Import statements for fundamentals variables
-        const importVariables = `// Importing Fundamentals Variables
-@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';`;
+        const importVariables = `// variables
+@import '../../../../../GoBasic/baseStyles/css/variables.scss';`;
         fullCss += `${importVariables}\n\n`;
         
-        // 3. CSS variable definitions
-        fullCss += `${css}\n\n`;
+        // 3. SCSS variable definitions (using $ syntax)
+        const scssVars = generateScssVariables(variables);
+        if (scssVars) {
+          fullCss += `${scssVars}\n\n`;
+        }
         
         // 4. Import statements for fundamentals styles
         const importStyles = `// Importing Fundamentals Styles
