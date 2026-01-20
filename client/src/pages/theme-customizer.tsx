@@ -521,16 +521,54 @@ export default function ThemeCustomizer() {
         // Filter out empty custom SCSS files
         const nonEmptyFiles = scssFiles.filter(f => f.content.trim());
         
-        // Generate SCSS variables from the variables array
-        const generateScssVariables = (vars: CSSVariable[]) => {
-          return vars
-            .filter(v => v.value !== v.defaultValue || v.value) // Include modified or non-empty values
-            .map(v => {
-              // Convert --variable-name to $variable-name
-              const scssVarName = v.name.replace(/^--/, '$');
-              return `${scssVarName}: ${v.value};`;
-            })
-            .join('\n');
+        // Variables that need SCSS variable definitions first, then CSS custom properties referencing them
+        const scssVarMapping: { [cssVar: string]: string } = {
+          '--color-brand-a': '$color-brand-a',
+          '--color-brand-b': '$color-brand-b',
+          '--color-brand-c': '$color-brand-c',
+          '--color-brand-d': '$color-brand-d',
+          '--color-brand-e': '$color-brand-e',
+          '--color-brand-f': '$color-brand-f',
+          '--color-brand-g': '$color-brand-g',
+          '--grid-container-max-width': '$grid-max-width',
+        };
+        
+        // Generate SCSS variable definitions for special variables
+        const generateScssVariableDefinitions = (vars: CSSVariable[]) => {
+          const lines: string[] = [];
+          for (const v of vars) {
+            if (scssVarMapping[v.name] && v.value) {
+              const scssVarName = scssVarMapping[v.name];
+              lines.push(`${scssVarName}: ${v.value};`);
+            }
+          }
+          return lines.join('\n');
+        };
+        
+        // Generate CSS custom properties, with special ones referencing SCSS variables
+        const generateCssCustomProperties = (vars: CSSVariable[]) => {
+          const lines: string[] = [];
+          let currentSection = '';
+          
+          for (const v of vars) {
+            if (!v.value && !v.defaultValue) continue;
+            
+            // Add section comment for Identity Colors
+            if (v.name === '--color-brand-a' && currentSection !== 'identity') {
+              lines.push('\t/* Identity Colors */');
+              currentSection = 'identity';
+            }
+            
+            // Check if this variable should reference an SCSS variable
+            if (scssVarMapping[v.name]) {
+              const scssVarName = scssVarMapping[v.name];
+              lines.push(`\t${v.name}: #{${scssVarName}};`);
+            } else {
+              // Regular CSS custom property
+              lines.push(`\t${v.name}: ${v.value || v.defaultValue};`);
+            }
+          }
+          return lines.join('\n');
         };
         
         // Build the complete theme file
@@ -547,13 +585,19 @@ export default function ThemeCustomizer() {
 @import '../../../../../GoBasic/baseStyles/css/variables.scss';`;
         fullCss += `${importVariables}\n\n`;
         
-        // 3. SCSS variable definitions (using $ syntax)
-        const scssVars = generateScssVariables(variables);
-        if (scssVars) {
-          fullCss += `${scssVars}\n\n`;
+        // 3. SCSS variable definitions (for colors and grid)
+        const scssVarDefs = generateScssVariableDefinitions(variables);
+        if (scssVarDefs) {
+          fullCss += `${scssVarDefs}\n\n`;
         }
         
-        // 4. Import statements for fundamentals styles
+        // 4. CSS custom properties in :root block
+        const cssProps = generateCssCustomProperties(variables);
+        if (cssProps) {
+          fullCss += `:root {\n${cssProps}\n}\n\n`;
+        }
+        
+        // 5. Import statements for fundamentals styles
         const importStyles = `// Importing Fundamentals Styles
 @import '../../../../../GoBasic/baseStylesV6/css/imports.scss';
 @import '../../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';`;
