@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
 import { RotateCcw, ChevronDown } from 'lucide-react';
 import { CSSVariable } from './types';
 
@@ -25,9 +25,24 @@ export function WeightReferenceSelect({
   description,
 }: WeightReferenceSelectProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [customValue, setCustomValue] = useState('');
   const isModified = value !== defaultValue;
   const isVarReference = value.startsWith('var(');
+  
+  // Get current numeric weight for slider
+  const getCurrentWeight = useCallback(() => {
+    if (isVarReference) return 400;
+    const num = parseInt(value, 10);
+    return isNaN(num) ? 400 : Math.max(100, Math.min(900, num));
+  }, [value, isVarReference]);
+  
+  const [sliderValue, setSliderValue] = useState(getCurrentWeight());
+  
+  // Sync slider when popover opens
+  useEffect(() => {
+    if (pickerOpen) {
+      setSliderValue(getCurrentWeight());
+    }
+  }, [pickerOpen, getCurrentWeight]);
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -51,15 +66,13 @@ export function WeightReferenceSelect({
     setPickerOpen(false);
   }, [onChange]);
 
-  const handleCustomWeightChange = useCallback(() => {
-    if (customValue) {
-      onChange(customValue);
-      setPickerOpen(false);
-      setCustomValue('');
-    }
-  }, [customValue, onChange]);
-
-  const commonWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+  const handleSliderChange = useCallback((newValue: number[]) => {
+    setSliderValue(newValue[0]);
+  }, []);
+  
+  const handleSliderCommit = useCallback((newValue: number[]) => {
+    onChange(String(newValue[0]));
+  }, [onChange]);
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -117,47 +130,28 @@ export function WeightReferenceSelect({
               </ScrollArea>
             </TabsContent>
             <TabsContent value="custom" className="mt-2">
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground">
-                  Choose a custom weight value:
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {commonWeights.map((weight) => (
-                    <button
-                      key={weight}
-                      type="button"
-                      onClick={() => {
-                        onChange(String(weight));
-                        setPickerOpen(false);
-                      }}
-                      className={`px-2 py-1 rounded text-xs hover-elevate ${
-                        value === String(weight) ? 'bg-accent' : 'bg-muted'
-                      }`}
-                      data-testid={`weight-preset-${weight}`}
-                    >
-                      {weight}
-                    </button>
-                  ))}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Font Weight:</span>
+                  <span className="text-sm font-medium tabular-nums" data-testid={`weight-slider-value-${label}`}>
+                    {sliderValue}
+                  </span>
                 </div>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="1000"
-                    placeholder="Custom..."
-                    value={customValue}
-                    onChange={(e) => setCustomValue(e.target.value)}
-                    className="h-8 text-sm"
-                    data-testid={`weight-custom-input-${label}`}
-                  />
-                  <Button 
-                    size="sm" 
-                    onClick={handleCustomWeightChange}
-                    disabled={!customValue}
-                    data-testid={`weight-custom-apply-${label}`}
-                  >
-                    Apply
-                  </Button>
+                <Slider
+                  value={[sliderValue]}
+                  min={100}
+                  max={900}
+                  step={10}
+                  onValueChange={handleSliderChange}
+                  onValueCommit={handleSliderCommit}
+                  className="w-full"
+                  data-testid={`weight-slider-${label}`}
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>100</span>
+                  <span>400</span>
+                  <span>700</span>
+                  <span>900</span>
                 </div>
               </div>
             </TabsContent>
