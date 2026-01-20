@@ -582,7 +582,7 @@ export default function ThemeCustomizer() {
         
         // 2. Import statements for fundamentals variables
         const importVariables = `// variables
-@import '../../../../../GoBasic/baseStyles/css/variables.scss';`;
+@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';`;
         fullCss += `${importVariables}\n\n`;
         
         // 3. SCSS variable definitions (for colors and grid)
