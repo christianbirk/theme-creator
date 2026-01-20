@@ -99,7 +99,7 @@ export function generateFontFaceCssForExport(fonts: FontFile[]): string {
     
     return `@font-face {
   font-family: '${fontFamily}';
-  src: url('fonts/${font.name}') format('${format}');
+  src: url('../fonts/${font.name}') format('${format}');
   font-display: swap;
 }`;
   });
