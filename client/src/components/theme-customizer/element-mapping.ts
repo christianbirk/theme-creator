@@ -342,9 +342,21 @@ export const elementMappings: ElementMapping[] = [
     ]
   },
   {
+    id: 'nav-service',
+    name: 'Service Navigation',
+    selectors: ['.service-navigation', '.nav-service', '.service-nav', '.service-links'],
+    variables: [
+      '--service-color',
+      '--service-font-weight',
+      '--service-font-family',
+      '--service-font-size',
+      '--service-text-transform',
+    ]
+  },
+  {
     id: 'colors-brand',
     name: 'Brand Colors',
-    selectors: ['[class*="brand"]', '[class*="primary"]', '[class*="bg-color"]'],
+    selectors: ['[class*="brand"]', '[class*="primary"]', '[class*="bg-color"]', '.bg-color-a', '.bg-color-b', '.bg-color-c', '.bg-color-d', '.bg-color-e', '.bg-color-f', '.bg-color-g'],
     variables: [
       '--color-brand-a',
       '--color-brand-b',
