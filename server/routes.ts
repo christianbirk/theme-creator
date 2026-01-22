@@ -654,12 +654,25 @@ export async function registerRoutes(
           return `${prefix}${rewritten}${suffix}`;
         });
 
-        // Rewrite url() in style attributes
-        html = html.replace(/(style\s*=\s*["'][^"']*url\s*\(\s*["']?)([^"')]+)(["']?\s*\)[^"']*["'])/gi, 
-          (match, prefix, url, suffix) => {
-            return `${prefix}${rewriteUrl(url)}${suffix}`;
-          }
-        );
+        // Rewrite url() in style attributes (handles multiple url() calls)
+        html = html.replace(/(style\s*=\s*["'])([^"']*)(["'])/gi, (match, prefix, styleContent, suffix) => {
+          const rewrittenStyle = styleContent.replace(/url\s*\(\s*["']?([^"')]+)["']?\s*\)/gi, 
+            (urlMatch: string, url: string) => {
+              return `url('${rewriteUrl(url)}')`;
+            }
+          );
+          return `${prefix}${rewrittenStyle}${suffix}`;
+        });
+        
+        // Rewrite url() in inline <style> blocks
+        html = html.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, (match, openTag, cssContent, closeTag) => {
+          const rewrittenCss = cssContent.replace(/url\s*\(\s*["']?([^"')]+)["']?\s*\)/gi,
+            (urlMatch: string, url: string) => {
+              return `url('${rewriteUrl(url)}')`;
+            }
+          );
+          return `${openTag}${rewrittenCss}${closeTag}`;
+        });
 
         // Add <base> tag to handle any remaining relative URLs
         if (!html.includes('<base')) {
