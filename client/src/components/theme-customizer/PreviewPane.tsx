@@ -29,7 +29,7 @@ const deviceWidths: Record<DeviceMode, string> = {
   mobile: '375px',
 };
 
-const DEFAULT_TEMPLATE_URL = 'https://dominik.gopublic.dk/theme-creator-template';
+const DEFAULT_TEMPLATE_URL = 'https://dominik.gopublic.dk/';
 
 const loadingHtml = `
 <!DOCTYPE html>
