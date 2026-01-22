@@ -671,14 +671,24 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         color: var(--pre-heading-color) !important;
       }
       
-      /* Navigation border overrides */
+      /* Navigation border overrides - exclude service navigation */
       .nav-main,
       nav.nav-main,
       .navigation-main,
-      header nav,
-      .header-navigation {
+      .header-navigation,
+      .main-navigation,
+      header nav:not(.service-navigation):not(.service-nav):not(.nav-service) {
         border-top: var(--nav-main-border-top) !important;
         border-bottom: var(--nav-main-border-bottom) !important;
+      }
+      
+      /* Ensure service navigation doesn't inherit main nav borders */
+      .service-navigation,
+      .service-nav,
+      .nav-service,
+      .service-links {
+        border-top: none !important;
+        border-bottom: none !important;
       }
       
       /* Surface overrides for bg-color-* classes */
@@ -718,7 +728,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         { id: 'button-text', name: 'Text Button', selectors: ['.btn-text', '.button-text', '.btn-link'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-text-color'] },
         { id: 'button', name: 'Button (Generic)', selectors: ['button', '.btn', '.button'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-background-color', '--button-color'] },
         { id: 'link', name: 'Link', selectors: ['a'], variables: ['--link-style', '--link-color'] },
-        { id: 'nav-main', name: 'Main Navigation', selectors: ['nav', '.nav-main', '.main-nav', '.navigation', 'header nav'], variables: ['--nav-main-align', '--nav-main-background-color', '--nav-main-container-background-color', '--nav-main-container-padding-inline', '--nav-main-border-top', '--nav-main-border-bottom', '--nav-main-active-state-height', '--nav-main-active-state-color', '--nav-main-font-family', '--nav-main-link-gap', '--nav-main-link-padding', '--nav-main-link-font-size', '--nav-main-link-font-weight', '--nav-main-link-text-transform', '--nav-main-link-color'] },
+        { id: 'nav-main', name: 'Main Navigation', selectors: ['.nav-main', '.main-nav', '.navigation-main', '.main-navigation', '.header-navigation'], variables: ['--nav-main-align', '--nav-main-background-color', '--nav-main-container-background-color', '--nav-main-container-padding-inline', '--nav-main-border-top', '--nav-main-border-bottom', '--nav-main-active-state-height', '--nav-main-active-state-color', '--nav-main-font-family', '--nav-main-link-gap', '--nav-main-link-padding', '--nav-main-link-font-size', '--nav-main-link-font-weight', '--nav-main-link-text-transform', '--nav-main-link-color'] },
         { id: 'header', name: 'Header', selectors: ['header', '.header', '.site-header'], variables: ['--header-container-padding', '--header-background-color'] },
         { id: 'footer', name: 'Footer', selectors: ['footer', '.footer', '.site-footer'], variables: ['--footer-background-color', '--footer-heading-font-size', '--footer-heading-text-transform', '--footer-heading-font-family', '--footer-heading-font-weight'] },
         { id: 'label', name: 'Label / Badge', selectors: ['.label', '.badge', '.tag', '.chip'], variables: ['--label-border-radius', '--label-text-transform', '--label-font-family', '--label-font-weight', '--label-padding', '--label-background', '--label-color', '--label-border-color'] },

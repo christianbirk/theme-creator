@@ -178,7 +178,7 @@ export const elementMappings: ElementMapping[] = [
   {
     id: 'nav-main',
     name: 'Main Navigation',
-    selectors: ['nav', '.nav-main', '.main-nav', '.navigation', 'header nav'],
+    selectors: ['.nav-main', '.main-nav', '.navigation-main', '.main-navigation', '.header-navigation'],
     variables: [
       '--nav-main-align',
       '--nav-main-background-color',
