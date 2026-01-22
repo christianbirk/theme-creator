@@ -654,9 +654,10 @@ export async function registerRoutes(
           return `${prefix}${rewritten}${suffix}`;
         });
 
-        // Rewrite url() in style attributes (handles multiple url() calls)
+        // Rewrite url() in style attributes (handles multiple url() calls and HTML-encoded quotes)
         html = html.replace(/(style\s*=\s*["'])([^"']*)(["'])/gi, (match, prefix, styleContent, suffix) => {
-          const rewrittenStyle = styleContent.replace(/url\s*\(\s*["']?([^"')]+)["']?\s*\)/gi, 
+          // Handle both regular quotes and HTML-encoded quotes (&#x27; &#39; &apos; for single, &#x22; &quot; for double)
+          const rewrittenStyle = styleContent.replace(/url\s*\(\s*(?:["']|&#x27;|&#39;|&apos;|&#x22;|&quot;)?([^"')&#]+)(?:["']|&#x27;|&#39;|&apos;|&#x22;|&quot;)?\s*\)/gi, 
             (urlMatch: string, url: string) => {
               return `url('${rewriteUrl(url)}')`;
             }
