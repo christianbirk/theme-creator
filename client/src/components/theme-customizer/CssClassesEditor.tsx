@@ -69,9 +69,9 @@ export function CssClassesEditor({ onExportXml, onDataChange, importedData }: Cs
     }
   }, [importedData]);
 
-  // Notify parent of data changes
+  // Notify parent of data changes - always sync, even if empty
   useEffect(() => {
-    if (onDataChange && data.groups.length > 0) {
+    if (onDataChange) {
       onDataChange(data);
     }
   }, [data, onDataChange]);
