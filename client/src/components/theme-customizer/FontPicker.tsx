@@ -1,5 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,8 +8,22 @@ import {
 } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { RotateCcw } from 'lucide-react';
-import { fontOptions, CSSVariable } from './types';
+import { RotateCcw, Search, Loader2 } from 'lucide-react';
+import { googleFonts, CSSVariable } from './types';
+
+// Track loaded fonts to avoid duplicate loading
+const loadedFonts = new Set<string>();
+
+// Load a Google Font dynamically
+function loadGoogleFont(fontName: string): void {
+  if (loadedFonts.has(fontName)) return;
+  loadedFonts.add(fontName);
+  
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName.replace(/ /g, '+'))}:wght@400;700&display=swap`;
+  document.head.appendChild(link);
+}
 
 interface FontPickerProps {
   value: string;
@@ -32,8 +45,16 @@ export function FontPicker({
   isBaseFontFamily = false,
 }: FontPickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const isModified = value !== defaultValue;
   const isVarReference = value.startsWith('var(');
+
+  // Load font for preview when value changes
+  useEffect(() => {
+    if (value && !isVarReference && googleFonts.includes(value)) {
+      loadGoogleFont(value);
+    }
+  }, [value, isVarReference]);
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -49,6 +70,13 @@ export function FontPicker({
     setPickerOpen(false);
   }, [onChange]);
 
+  const handleSelectGoogleFont = useCallback((font: string) => {
+    loadGoogleFont(font);
+    onChange(font);
+    setPickerOpen(false);
+    setSearchQuery('');
+  }, [onChange]);
+
   const displayValue = useMemo(() => {
     if (isVarReference) {
       const match = value.match(/var\(([^)]+)\)/);
@@ -57,7 +85,28 @@ export function FontPicker({
     return value;
   }, [value, isVarReference]);
 
-  // If base font family or no reference options, show standard font selector
+  // Filter fonts based on search query
+  const filteredFonts = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return googleFonts.slice(0, 50); // Show first 50 by default
+    }
+    const query = searchQuery.toLowerCase();
+    return googleFonts.filter(font => 
+      font.toLowerCase().includes(query)
+    ).slice(0, 100); // Limit results
+  }, [searchQuery]);
+
+  // Load visible fonts for preview
+  useEffect(() => {
+    if (pickerOpen) {
+      // Load first few fonts for preview
+      filteredFonts.slice(0, 10).forEach(font => {
+        loadGoogleFont(font);
+      });
+    }
+  }, [pickerOpen, filteredFonts]);
+
+  // If base font family or no reference options, show searchable font selector
   if (isBaseFontFamily || baseFontOptions.length === 0) {
     return (
       <div className="flex items-center gap-3 py-2">
@@ -75,18 +124,63 @@ export function FontPicker({
           )}
         </div>
 
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="w-1/2 h-8" data-testid={`font-select-${label}`}>
-            <SelectValue placeholder="Select font" />
-          </SelectTrigger>
-          <SelectContent>
-            {fontOptions.map((font) => (
-              <SelectItem key={font} value={font} style={{ fontFamily: font }}>
-                {font}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={pickerOpen} onOpenChange={(open) => { setPickerOpen(open); if (!open) setSearchQuery(''); }}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="w-1/2 h-8 px-3 flex items-center border rounded-md bg-background text-sm truncate cursor-pointer hover:border-primary transition-colors text-left"
+              style={{ fontFamily: value || 'inherit' }}
+              data-testid={`font-trigger-${label}`}
+            >
+              {value || 'Select font...'}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-3" align="start">
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search Google Fonts..."
+                  className="pl-8 h-8"
+                  data-testid={`font-search-${label}`}
+                  autoFocus
+                />
+              </div>
+              <ScrollArea className="h-[250px]">
+                <div className="space-y-0.5">
+                  {filteredFonts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No fonts found matching "{searchQuery}"
+                    </p>
+                  ) : (
+                    filteredFonts.map((font) => (
+                      <button
+                        key={font}
+                        type="button"
+                        onClick={() => handleSelectGoogleFont(font)}
+                        onMouseEnter={() => loadGoogleFont(font)}
+                        className={`w-full px-2 py-1.5 rounded-md text-left hover-elevate ${
+                          value === font ? 'bg-accent' : ''
+                        }`}
+                        style={{ fontFamily: font }}
+                        data-testid={`font-option-${font}`}
+                      >
+                        <span className="text-sm">{font}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+              {!searchQuery && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Search to find more fonts from 300+ Google Fonts
+                </p>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
 
         <Button
           variant="ghost"
