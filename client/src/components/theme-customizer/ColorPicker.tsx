@@ -227,13 +227,20 @@ export function ColorPicker({
         </PopoverContent>
       </Popover>
 
-      <div className="w-60 h-8 px-3 flex items-center border rounded-md bg-background text-xs font-mono truncate">
-        {isVarReference ? (
-          <span className="capitalize text-muted-foreground">{displayValue}</span>
-        ) : (
-          <span>{value}</span>
-        )}
-      </div>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onPaste={(e) => {
+          const pastedText = e.clipboardData.getData('text').trim();
+          if (pastedText) {
+            e.preventDefault();
+            onChange(pastedText);
+          }
+        }}
+        className="w-60 h-8 font-mono text-xs"
+        placeholder="#000000"
+        data-testid={`color-value-input-${label}`}
+      />
 
       {contrastInfo && (contrastInfo.level === 'fail' || contrastInfo.level === 'aa-large') && (
         <Tooltip>
