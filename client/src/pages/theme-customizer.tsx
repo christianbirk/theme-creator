@@ -383,6 +383,22 @@ export default function ThemeCustomizer() {
     handleLoadSample(false);
   }, []);
 
+  // Load CSS classes data on mount (so it's available for export even if tab is not visited)
+  useEffect(() => {
+    const loadCssClasses = async () => {
+      try {
+        const response = await fetch('/api/styles-xml');
+        const result = await response.json();
+        if (result.success && result.data) {
+          setCssClassesData(result.data);
+        }
+      } catch (err) {
+        console.error('Failed to load CSS classes:', err);
+      }
+    };
+    loadCssClasses();
+  }, []);
+
   const handleLegacyImportComplete = useCallback(async (result: {
     mappedVariables: { name: string; value: string }[];
     stylesXml: string | null;
