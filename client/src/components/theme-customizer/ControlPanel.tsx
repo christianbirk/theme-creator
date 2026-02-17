@@ -137,7 +137,7 @@ export function ControlPanel({
   onClearSelectedElement,
 }: ControlPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedSections, setExpandedSections] = useState<string[]>(['colors']);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [expandedSubSections, setExpandedSubSections] = useState<string[]>([]);
   const [expertMode, setExpertMode] = useState(() => {
     const stored = localStorage.getItem('theme-customizer-expert-mode');
@@ -699,7 +699,7 @@ export function ControlPanel({
             {sections.map(section => (
               <AccordionItem key={section.id} value={section.id} className="border-b">
                 <AccordionTrigger 
-                  className="px-4 py-3 hover:no-underline"
+                  className="px-4 py-3 hover:no-underline data-[state=open]:bg-[#F7F7F7] dark:data-[state=open]:bg-muted/50"
                   data-testid={`accordion-section-${section.id}`}
                 >
                   <div className="flex items-center gap-2">
@@ -758,12 +758,12 @@ export function ControlPanel({
                           className="border-b-0 border-t"
                         >
                           <AccordionTrigger 
-                            className="group px-6 py-2 hover:no-underline text-sm"
+                            className="group px-6 py-2 hover:no-underline text-sm font-normal"
                             data-testid={`accordion-subsection-${section.id}-${subSection.id}`}
                           >
                             <div className="flex items-center gap-2">
                               <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
-                              <span>{subSection.name}</span>
+                              <span className="font-normal">{subSection.name}</span>
                               <span className="text-xs text-muted-foreground">
                                 ({subSection.variables.length})
                               </span>
