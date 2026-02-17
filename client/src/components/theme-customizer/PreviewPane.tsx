@@ -827,26 +827,28 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       };
       const universalDarkBgVars = ['--universal-accent-color-on-bg-dark'];
 
-      function isOnDarkSurface(el) {
+      function getSurfaceInfo(el) {
         let current = el;
         while (current && current !== document.body && current !== document.documentElement) {
           const classList = Array.from(current.classList || []);
-          const hasBgColorClass = classList.some(c => /^bg-color-[a-g]$/.test(c));
-          if (hasBgColorClass) {
+          const bgMatch = classList.find(c => /^bg-color-[a-g]$/.test(c));
+          if (bgMatch) {
+            const colorLetter = bgMatch.replace('bg-color-', '');
             const bg = getComputedStyle(current).backgroundColor;
             const match = bg.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
+            let isDark = true;
             if (match) {
               const r = parseInt(match[1]) / 255;
               const g = parseInt(match[2]) / 255;
               const b = parseInt(match[3]) / 255;
               const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-              return luminance < 0.5;
+              isDark = luminance < 0.5;
             }
-            return true;
+            return { onSurface: true, isDark: isDark, colorLetter: colorLetter, bgClass: bgMatch };
           }
           current = current.parentElement;
         }
-        return false;
+        return { onSurface: false, isDark: false, colorLetter: null, bgClass: null };
       }
 
       const navContainerIds = ['nav-main', 'nav-service', 'breadcrumb'];
@@ -890,18 +892,32 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
 
       function augmentMapping(mapping, element) {
         if (!mapping) return mapping;
-        const onDark = isOnDarkSurface(element);
-        if (!onDark) return mapping;
+        const surface = getSurfaceInfo(element);
+        if (!surface.onSurface) return mapping;
 
-        const extraVars = darkBgVarMap[mapping.id] || [];
-        const allExtra = [...extraVars, ...universalDarkBgVars];
-        if (allExtra.length === 0) return mapping;
+        const surfaceColorVar = surface.colorLetter ? '--color-brand-' + surface.colorLetter : null;
+        let extraVars = [];
+        let label = '';
+
+        if (surface.isDark) {
+          extraVars = darkBgVarMap[mapping.id] || [];
+          extraVars = [...extraVars, ...universalDarkBgVars];
+          label = ' (Dark Surface: ' + (surface.bgClass || '') + ')';
+        } else {
+          label = ' (Light Surface: ' + (surface.bgClass || '') + ')';
+        }
+
+        if (surfaceColorVar) {
+          extraVars = [surfaceColorVar, ...extraVars];
+        }
+
+        if (extraVars.length === 0 && !label) return mapping;
 
         return {
           id: mapping.id,
-          name: mapping.name + ' (Dark Surface)',
+          name: mapping.name + label,
           selectors: mapping.selectors,
-          variables: [...mapping.variables, ...allExtra],
+          variables: [...mapping.variables, ...extraVars],
         };
       }
       
