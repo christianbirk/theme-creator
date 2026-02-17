@@ -21,7 +21,10 @@ import { WeightReferenceSelect } from './WeightReferenceSelect';
 import { BorderInput } from './BorderInput';
 
 // Subsections that are only visible in expert mode
-const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors'];
+const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors', 'grid', 'font-sizes', 'line-heights', 'alternate-module-heading'];
+
+// Main sections that are only visible in expert mode
+const EXPERT_ONLY_MAIN_SECTIONS = ['colors-combinations', 'icons', 'labels', 'aspect-ratios'];
 
 // Navigation mode types
 type NavigationMode = 'standard' | 'burger';
@@ -245,6 +248,11 @@ export function ControlPanel({
       
       const mainSection = v.mainSection || 'other';
       const subSection = v.subSection || 'general';
+
+      // Filter out expert-only main sections when not in expert mode
+      if (!expertMode && EXPERT_ONLY_MAIN_SECTIONS.includes(mainSection)) {
+        return;
+      }
 
       // Filter out expert-only subsections when not in expert mode
       if (!expertMode && EXPERT_ONLY_SUBSECTIONS.includes(subSection)) {
