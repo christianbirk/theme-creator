@@ -262,30 +262,28 @@ export function ColorPicker({
                     })}
                   </div>
                 </ScrollArea>
-                {effectiveRef && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-medium text-muted-foreground">Amount</label>
-                      <span className="text-xs font-mono text-muted-foreground">{effectiveRef.percentage}%</span>
-                    </div>
-                    <Slider
-                      value={[effectiveRef.percentage]}
-                      onValueChange={([val]) => handleAmountChange(val)}
-                      min={1}
-                      max={100}
-                      step={1}
-                      className="w-full"
-                      data-testid={`color-amount-${label}`}
-                    />
-                    {effectiveRef.percentage < 100 && (
-                      <div className="pt-1 mt-2 border-t">
-                        <p className="text-[10px] font-mono text-muted-foreground break-all">
-                          {value}
-                        </p>
-                      </div>
-                    )}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-muted-foreground">Amount</label>
+                    <span className="text-xs font-mono text-muted-foreground">{(effectiveRef?.percentage ?? 100)}%</span>
                   </div>
-                )}
+                  <Slider
+                    value={[effectiveRef?.percentage ?? 100]}
+                    onValueChange={([val]) => handleAmountChange(val)}
+                    min={1}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                    data-testid={`color-amount-${label}`}
+                  />
+                  {effectiveRef && effectiveRef.percentage < 100 && (
+                    <div className="pt-1 mt-2 border-t">
+                      <p className="text-[10px] font-mono text-muted-foreground break-all">
+                        {value}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
               <TabsContent value="custom" className="mt-2">
                 <HexColorPicker 
