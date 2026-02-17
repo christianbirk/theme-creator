@@ -791,37 +791,55 @@ export async function registerRoutes(
   });
 
   // Google Fonts API - fetch complete font list and cache it
-  let cachedGoogleFonts: { fonts: string[]; timestamp: number } | null = null;
+  let cachedGoogleFonts: { fonts: string[]; fontsWithMeta: { family: string; category: string }[]; timestamp: number } | null = null;
   const FONT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+  async function fetchAndCacheGoogleFonts() {
+    if (cachedGoogleFonts && Date.now() - cachedGoogleFonts.timestamp < FONT_CACHE_TTL) {
+      return cachedGoogleFonts;
+    }
+
+    const response = await fetch('https://fonts.google.com/metadata/fonts');
+    if (!response.ok) {
+      throw new Error(`Google Fonts API returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const fonts: string[] = [];
+    const fontsWithMeta: { family: string; category: string }[] = [];
+
+    if (data.familyMetadataList && Array.isArray(data.familyMetadataList)) {
+      for (const entry of data.familyMetadataList) {
+        if (entry.family) {
+          fonts.push(entry.family);
+          fontsWithMeta.push({ family: entry.family, category: entry.category || 'sans-serif' });
+        }
+      }
+    }
+
+    fonts.sort((a: string, b: string) => a.localeCompare(b));
+    fontsWithMeta.sort((a, b) => a.family.localeCompare(b.family));
+
+    cachedGoogleFonts = { fonts, fontsWithMeta, timestamp: Date.now() };
+    return cachedGoogleFonts;
+  }
 
   app.get('/api/google-fonts', async (_req, res) => {
     try {
-      if (cachedGoogleFonts && Date.now() - cachedGoogleFonts.timestamp < FONT_CACHE_TTL) {
-        return res.json({ fonts: cachedGoogleFonts.fonts });
-      }
-
-      const response = await fetch('https://fonts.google.com/metadata/fonts');
-      if (!response.ok) {
-        throw new Error(`Google Fonts API returned ${response.status}`);
-      }
-
-      const data = await response.json();
-      const fonts: string[] = [];
-
-      if (data.familyMetadataList && Array.isArray(data.familyMetadataList)) {
-        for (const entry of data.familyMetadataList) {
-          if (entry.family) {
-            fonts.push(entry.family);
-          }
-        }
-      }
-
-      fonts.sort((a: string, b: string) => a.localeCompare(b));
-
-      cachedGoogleFonts = { fonts, timestamp: Date.now() };
-      res.json({ fonts });
+      const cached = await fetchAndCacheGoogleFonts();
+      res.json({ fonts: cached.fonts });
     } catch (err) {
       console.error('Failed to fetch Google Fonts:', err);
+      res.status(500).json({ error: 'Failed to fetch Google Fonts list' });
+    }
+  });
+
+  app.get('/api/google-fonts-metadata', async (_req, res) => {
+    try {
+      const cached = await fetchAndCacheGoogleFonts();
+      res.json({ fonts: cached.fontsWithMeta });
+    } catch (err) {
+      console.error('Failed to fetch Google Fonts metadata:', err);
       res.status(500).json({ error: 'Failed to fetch Google Fonts list' });
     }
   });

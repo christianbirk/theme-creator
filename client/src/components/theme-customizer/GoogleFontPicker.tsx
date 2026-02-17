@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { RotateCcw, Check, ChevronsUpDown } from 'lucide-react';
+import { RotateCcw, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface CustomFont {
@@ -20,50 +20,10 @@ interface GoogleFontPickerProps {
   customFonts?: CustomFont[];
 }
 
-const POPULAR_GOOGLE_FONTS = [
-  { name: 'Inter', category: 'sans-serif' },
-  { name: 'Roboto', category: 'sans-serif' },
-  { name: 'Open Sans', category: 'sans-serif' },
-  { name: 'Lato', category: 'sans-serif' },
-  { name: 'Montserrat', category: 'sans-serif' },
-  { name: 'Poppins', category: 'sans-serif' },
-  { name: 'Roboto Condensed', category: 'sans-serif' },
-  { name: 'Source Sans 3', category: 'sans-serif' },
-  { name: 'Oswald', category: 'sans-serif' },
-  { name: 'Raleway', category: 'sans-serif' },
-  { name: 'Nunito', category: 'sans-serif' },
-  { name: 'Nunito Sans', category: 'sans-serif' },
-  { name: 'Ubuntu', category: 'sans-serif' },
-  { name: 'Rubik', category: 'sans-serif' },
-  { name: 'Work Sans', category: 'sans-serif' },
-  { name: 'DM Sans', category: 'sans-serif' },
-  { name: 'Outfit', category: 'sans-serif' },
-  { name: 'Manrope', category: 'sans-serif' },
-  { name: 'Space Grotesk', category: 'sans-serif' },
-  { name: 'Plus Jakarta Sans', category: 'sans-serif' },
-  { name: 'IBM Plex Sans', category: 'sans-serif' },
-  { name: 'Mulish', category: 'sans-serif' },
-  { name: 'Figtree', category: 'sans-serif' },
-  { name: 'Lexend', category: 'sans-serif' },
-  { name: 'Playfair Display', category: 'serif' },
-  { name: 'Merriweather', category: 'serif' },
-  { name: 'Lora', category: 'serif' },
-  { name: 'PT Serif', category: 'serif' },
-  { name: 'Roboto Slab', category: 'serif' },
-  { name: 'Source Serif 4', category: 'serif' },
-  { name: 'Libre Baskerville', category: 'serif' },
-  { name: 'Cormorant Garamond', category: 'serif' },
-  { name: 'EB Garamond', category: 'serif' },
-  { name: 'Crimson Text', category: 'serif' },
-  { name: 'DM Serif Display', category: 'serif' },
-  { name: 'Bitter', category: 'serif' },
-  { name: 'Fira Code', category: 'monospace' },
-  { name: 'JetBrains Mono', category: 'monospace' },
-  { name: 'Source Code Pro', category: 'monospace' },
-  { name: 'Roboto Mono', category: 'monospace' },
-  { name: 'IBM Plex Mono', category: 'monospace' },
-  { name: 'Space Mono', category: 'monospace' },
-];
+interface GoogleFontEntry {
+  family: string;
+  category?: string;
+}
 
 const loadedFonts = new Set<string>();
 
@@ -77,9 +37,26 @@ function loadGoogleFont(fontName: string) {
   loadedFonts.add(fontName);
 }
 
-const sansSerifFonts = POPULAR_GOOGLE_FONTS.filter(f => f.category === 'sans-serif');
-const serifFonts = POPULAR_GOOGLE_FONTS.filter(f => f.category === 'serif');
-const monospaceFonts = POPULAR_GOOGLE_FONTS.filter(f => f.category === 'monospace');
+let allFontsCache: GoogleFontEntry[] | null = null;
+let fontFetchPromise: Promise<GoogleFontEntry[]> | null = null;
+
+async function fetchAllGoogleFonts(): Promise<GoogleFontEntry[]> {
+  if (allFontsCache) return allFontsCache;
+  if (fontFetchPromise) return fontFetchPromise;
+
+  fontFetchPromise = fetch('/api/google-fonts-metadata')
+    .then(res => res.json())
+    .then(data => {
+      allFontsCache = data.fonts || [];
+      return allFontsCache!;
+    })
+    .catch(() => {
+      fontFetchPromise = null;
+      return [];
+    });
+
+  return fontFetchPromise;
+}
 
 export function GoogleFontPicker({ 
   value, 
@@ -91,6 +68,8 @@ export function GoogleFontPicker({
   customFonts = [],
 }: GoogleFontPickerProps) {
   const [open, setOpen] = useState(false);
+  const [allFonts, setAllFonts] = useState<GoogleFontEntry[]>([]);
+  const [fontsLoading, setFontsLoading] = useState(false);
   const isModified = value !== defaultValue;
 
   useEffect(() => {
@@ -100,8 +79,15 @@ export function GoogleFontPicker({
   }, [value]);
 
   useEffect(() => {
-    POPULAR_GOOGLE_FONTS.forEach(font => loadGoogleFont(font.name));
-  }, []);
+    if (open && allFonts.length === 0 && !fontsLoading) {
+      setFontsLoading(true);
+      fetchAllGoogleFonts().then(fonts => {
+        setAllFonts(fonts);
+        setFontsLoading(false);
+        fonts.slice(0, 20).forEach(f => loadGoogleFont(f.family));
+      });
+    }
+  }, [open, allFonts.length, fontsLoading]);
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -119,6 +105,13 @@ export function GoogleFontPicker({
     return value;
   }, [value]);
 
+  const catLower = useCallback((f: GoogleFontEntry) => (f.category || '').toLowerCase(), []);
+  const sansSerifFonts = useMemo(() => allFonts.filter(f => catLower(f) === 'sans serif' || catLower(f) === 'sans-serif'), [allFonts, catLower]);
+  const serifFonts = useMemo(() => allFonts.filter(f => catLower(f) === 'serif'), [allFonts, catLower]);
+  const displayFonts = useMemo(() => allFonts.filter(f => catLower(f) === 'display'), [allFonts, catLower]);
+  const handwritingFonts = useMemo(() => allFonts.filter(f => catLower(f) === 'handwriting'), [allFonts, catLower]);
+  const monospaceFonts = useMemo(() => allFonts.filter(f => catLower(f) === 'monospace'), [allFonts, catLower]);
+
   const fontCommandContent = (
     <Command 
       className={embedded ? "border rounded-md" : ""}
@@ -127,87 +120,149 @@ export function GoogleFontPicker({
         return 0;
       }}
     >
-      <CommandInput placeholder="Search fonts..." data-testid={`font-search-${label}`} />
-      <CommandList className={embedded ? "max-h-[180px]" : ""}>
-        <CommandEmpty>No font found.</CommandEmpty>
-        {customFonts.length > 0 && (
-          <CommandGroup heading="Custom Fonts">
-            {customFonts.map((font) => (
-              <CommandItem
-                key={font.name}
-                value={font.name}
-                onSelect={() => handleSelect(font.fontFamily)}
-                style={{ fontFamily: font.fontFamily }}
-                data-testid={`font-option-custom-${font.name}`}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === font.fontFamily ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {font.name}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+      <CommandInput placeholder="Search all Google Fonts..." data-testid={`font-search-${label}`} />
+      <CommandList className={embedded ? "max-h-[180px]" : "max-h-[300px]"}>
+        {fontsLoading ? (
+          <div className="flex items-center justify-center gap-2 py-6">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm text-muted-foreground">Loading fonts...</span>
+          </div>
+        ) : (
+          <>
+            <CommandEmpty>No font found.</CommandEmpty>
+            {customFonts.length > 0 && (
+              <CommandGroup heading="Custom Fonts">
+                {customFonts.map((font) => (
+                  <CommandItem
+                    key={font.name}
+                    value={font.name}
+                    onSelect={() => handleSelect(font.fontFamily)}
+                    style={{ fontFamily: font.fontFamily }}
+                    data-testid={`font-option-custom-${font.name}`}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === font.fontFamily ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {font.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {sansSerifFonts.length > 0 && (
+              <CommandGroup heading={`Sans-Serif (${sansSerifFonts.length})`}>
+                {sansSerifFonts.map((font) => (
+                  <CommandItem
+                    key={font.family}
+                    value={font.family}
+                    onSelect={() => handleSelect(font.family)}
+                    onMouseEnter={() => loadGoogleFont(font.family)}
+                    style={{ fontFamily: font.family }}
+                    data-testid={`font-option-${font.family}`}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === font.family ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {font.family}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {serifFonts.length > 0 && (
+              <CommandGroup heading={`Serif (${serifFonts.length})`}>
+                {serifFonts.map((font) => (
+                  <CommandItem
+                    key={font.family}
+                    value={font.family}
+                    onSelect={() => handleSelect(font.family)}
+                    onMouseEnter={() => loadGoogleFont(font.family)}
+                    style={{ fontFamily: font.family }}
+                    data-testid={`font-option-${font.family}`}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === font.family ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {font.family}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {displayFonts.length > 0 && (
+              <CommandGroup heading={`Display (${displayFonts.length})`}>
+                {displayFonts.map((font) => (
+                  <CommandItem
+                    key={font.family}
+                    value={font.family}
+                    onSelect={() => handleSelect(font.family)}
+                    onMouseEnter={() => loadGoogleFont(font.family)}
+                    style={{ fontFamily: font.family }}
+                    data-testid={`font-option-${font.family}`}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === font.family ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {font.family}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {handwritingFonts.length > 0 && (
+              <CommandGroup heading={`Handwriting (${handwritingFonts.length})`}>
+                {handwritingFonts.map((font) => (
+                  <CommandItem
+                    key={font.family}
+                    value={font.family}
+                    onSelect={() => handleSelect(font.family)}
+                    onMouseEnter={() => loadGoogleFont(font.family)}
+                    style={{ fontFamily: font.family }}
+                    data-testid={`font-option-${font.family}`}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === font.family ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {font.family}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {monospaceFonts.length > 0 && (
+              <CommandGroup heading={`Monospace (${monospaceFonts.length})`}>
+                {monospaceFonts.map((font) => (
+                  <CommandItem
+                    key={font.family}
+                    value={font.family}
+                    onSelect={() => handleSelect(font.family)}
+                    onMouseEnter={() => loadGoogleFont(font.family)}
+                    style={{ fontFamily: font.family }}
+                    data-testid={`font-option-${font.family}`}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === font.family ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {font.family}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </>
         )}
-        <CommandGroup heading="Sans-Serif">
-          {sansSerifFonts.map((font) => (
-            <CommandItem
-              key={font.name}
-              value={font.name}
-              onSelect={() => handleSelect(font.name)}
-              style={{ fontFamily: font.name }}
-              data-testid={`font-option-${font.name}`}
-            >
-              <Check
-                className={cn(
-                  "mr-2 h-4 w-4",
-                  value === font.name ? "opacity-100" : "opacity-0"
-                )}
-              />
-              {font.name}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandGroup heading="Serif">
-          {serifFonts.map((font) => (
-            <CommandItem
-              key={font.name}
-              value={font.name}
-              onSelect={() => handleSelect(font.name)}
-              style={{ fontFamily: font.name }}
-              data-testid={`font-option-${font.name}`}
-            >
-              <Check
-                className={cn(
-                  "mr-2 h-4 w-4",
-                  value === font.name ? "opacity-100" : "opacity-0"
-                )}
-              />
-              {font.name}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandGroup heading="Monospace">
-          {monospaceFonts.map((font) => (
-            <CommandItem
-              key={font.name}
-              value={font.name}
-              onSelect={() => handleSelect(font.name)}
-              style={{ fontFamily: font.name }}
-              data-testid={`font-option-${font.name}`}
-            >
-              <Check
-                className={cn(
-                  "mr-2 h-4 w-4",
-                  value === font.name ? "opacity-100" : "opacity-0"
-                )}
-              />
-              {font.name}
-            </CommandItem>
-          ))}
-        </CommandGroup>
       </CommandList>
     </Command>
   );
@@ -246,7 +301,7 @@ export function GoogleFontPicker({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[250px] p-0" align="start">
+        <PopoverContent className="w-[280px] p-0" align="start">
           {fontCommandContent}
         </PopoverContent>
       </Popover>
