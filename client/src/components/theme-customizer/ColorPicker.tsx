@@ -25,7 +25,7 @@ interface ColorMixInfo {
 }
 
 function parseColorMixForPicker(value: string): ColorMixInfo | null {
-  const match = value.match(/color-mix\(\s*in\s+[a-z0-9-]+\s*,\s*(.+?)\s+(\d+)%\s*,\s*[a-z]+\s*\)/i);
+  const match = value.match(/color-mix\(\s*in\s+[a-z0-9-]+\s*,\s*(.*?(?:\([^)]*\))?.*?)\s+(\d+)%\s*,\s*[a-z]+\s*\)/i);
   if (match) {
     return { baseColor: match[1], percentage: parseInt(match[2]) };
   }

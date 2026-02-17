@@ -44,8 +44,22 @@ interface ColorMixParts {
 const BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted', 'double', 'groove', 'ridge', 'inset', 'outset'];
 
 
+function extractColorMixFromString(str: string): string | null {
+  const start = str.indexOf('color-mix(');
+  if (start === -1) return null;
+  let depth = 0;
+  for (let i = start; i < str.length; i++) {
+    if (str[i] === '(') depth++;
+    else if (str[i] === ')') {
+      depth--;
+      if (depth === 0) return str.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
 function parseColorMix(value: string): ColorMixParts | null {
-  const match = value.match(/color-mix\(\s*in\s+([a-z0-9-]+)\s*,\s*(.+?)\s+(\d+)%\s*,\s*([a-z]+)\s*\)/i);
+  const match = value.match(/color-mix\(\s*in\s+([a-z0-9-]+)\s*,\s*(.*?(?:\([^)]*\))?.*?)\s+(\d+)%\s*,\s*([a-z]+)\s*\)/i);
   if (match) {
     return {
       colorSpace: match[1],
@@ -80,9 +94,9 @@ function parseBorderValue(value: string): BorderParts {
   }
   
   let color = '';
-  const colorMixMatch = trimmed.match(/color-mix\([^)]*(?:\([^)]*\))*[^)]*\)/);
-  if (colorMixMatch) {
-    color = colorMixMatch[0];
+  const colorMixStr = extractColorMixFromString(trimmed);
+  if (colorMixStr) {
+    color = colorMixStr;
   } else {
     const varMatch = trimmed.match(/var\([^)]+\)/);
     if (varMatch) {
