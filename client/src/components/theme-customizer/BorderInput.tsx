@@ -43,9 +43,6 @@ interface ColorMixParts {
 
 const BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted', 'double', 'groove', 'ridge', 'inset', 'outset'];
 
-const BLEND_COLORS = ['transparent', 'black', 'white'];
-
-const COLOR_SPACES = ['srgb', 'oklch', 'oklab', 'display-p3', 'srgb-linear', 'xyz'];
 
 function parseColorMix(value: string): ColorMixParts | null {
   const match = value.match(/color-mix\(\s*in\s+([a-z0-9-]+)\s*,\s*(.+?)\s+(\d+)%\s*,\s*([a-z]+)\s*\)/i);
@@ -155,7 +152,7 @@ export function BorderInput({
   const colorMixParts = useMemo(() => parseColorMix(parts.color), [parts.color]);
 
   const effectiveColorMix = useMemo((): ColorMixParts | null => {
-    if (colorMixParts) return colorMixParts;
+    if (colorMixParts) return { ...colorMixParts, colorSpace: 'srgb', blendColor: 'transparent' };
     if (parts.color.startsWith('var(')) {
       return {
         colorSpace: 'srgb',
@@ -285,101 +282,59 @@ export function BorderInput({
           <PopoverContent className="w-auto p-3" align="start">
             <Tabs defaultValue={defaultTab} className="w-[260px]">
               <TabsList className="w-full">
-                <TabsTrigger value="color-mix" className="flex-1 text-xs">Color Mix</TabsTrigger>
+                <TabsTrigger value="color-mix" className="flex-1 text-xs">Reference</TabsTrigger>
                 <TabsTrigger value="custom" className="flex-1 text-xs">Custom</TabsTrigger>
               </TabsList>
               <TabsContent value="color-mix" className="mt-2 space-y-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Base Color</label>
-                  <ScrollArea className="h-[140px] border rounded-md p-1">
-                    <div className="space-y-0.5">
-                      {colorOptions.map((colorVar) => {
-                        const varRef = `var(${colorVar.name})`;
-                        const isSelected = effectiveColorMix?.baseColor === varRef;
-                        return (
-                          <button
-                            key={colorVar.name}
-                            type="button"
-                            onClick={() => handleSelectBaseColor(colorVar)}
-                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs hover-elevate ${
-                              isSelected ? 'bg-accent' : ''
-                            }`}
-                            data-testid={`border-color-option-${colorVar.name}`}
-                          >
-                            <span 
-                              className="w-3.5 h-3.5 rounded border flex-shrink-0" 
-                              style={{ backgroundColor: colorVar.value }}
-                            />
-                            <span className="capitalize truncate">{formatLabel(colorVar.name)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </div>
+                <ScrollArea className="h-[140px] border rounded-md p-1">
+                  <div className="space-y-0.5">
+                    {colorOptions.map((colorVar) => {
+                      const varRef = `var(${colorVar.name})`;
+                      const isSelected = effectiveColorMix?.baseColor === varRef;
+                      return (
+                        <button
+                          key={colorVar.name}
+                          type="button"
+                          onClick={() => handleSelectBaseColor(colorVar)}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs hover-elevate ${
+                            isSelected ? 'bg-accent' : ''
+                          }`}
+                          data-testid={`border-color-option-${colorVar.name}`}
+                        >
+                          <span 
+                            className="w-3.5 h-3.5 rounded border flex-shrink-0" 
+                            style={{ backgroundColor: colorVar.value }}
+                          />
+                          <span className="capitalize truncate">{formatLabel(colorVar.name)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
 
                 {effectiveColorMix && (
-                  <>
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-medium text-muted-foreground">Amount</label>
-                        <span className="text-xs font-mono text-muted-foreground">{effectiveColorMix.percentage}%</span>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-medium text-muted-foreground">Amount</label>
+                      <span className="text-xs font-mono text-muted-foreground">{effectiveColorMix.percentage}%</span>
+                    </div>
+                    <Slider
+                      value={[effectiveColorMix.percentage]}
+                      onValueChange={([val]) => handleColorMixChange({ percentage: val })}
+                      min={1}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                      data-testid={`border-mix-pct-${label}`}
+                    />
+                    {effectiveColorMix.percentage < 100 && (
+                      <div className="pt-1 mt-2 border-t">
+                        <p className="text-[10px] font-mono text-muted-foreground break-all">
+                          {parts.color}
+                        </p>
                       </div>
-                      <Slider
-                        value={[effectiveColorMix.percentage]}
-                        onValueChange={([val]) => handleColorMixChange({ percentage: val })}
-                        min={1}
-                        max={100}
-                        step={1}
-                        className="w-full"
-                        data-testid={`border-mix-pct-${label}`}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground mb-1 block">Blend With</label>
-                      <Select
-                        value={effectiveColorMix.blendColor}
-                        onValueChange={(val) => handleColorMixChange({ blendColor: val })}
-                      >
-                        <SelectTrigger className="h-8 text-xs" data-testid={`border-mix-blend-${label}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {BLEND_COLORS.map((c) => (
-                            <SelectItem key={c} value={c} className="text-xs capitalize">
-                              {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground mb-1 block">Color Space</label>
-                      <Select
-                        value={effectiveColorMix.colorSpace}
-                        onValueChange={(val) => handleColorMixChange({ colorSpace: val })}
-                      >
-                        <SelectTrigger className="h-8 text-xs" data-testid={`border-mix-space-${label}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COLOR_SPACES.map((cs) => (
-                            <SelectItem key={cs} value={cs} className="text-xs">
-                              {cs}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="pt-1 border-t">
-                      <p className="text-[10px] font-mono text-muted-foreground break-all">
-                        {parts.color}
-                      </p>
-                    </div>
-                  </>
+                    )}
+                  </div>
                 )}
               </TabsContent>
               <TabsContent value="custom" className="mt-2">

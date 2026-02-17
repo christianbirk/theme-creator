@@ -13,10 +13,28 @@ import {
 } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Slider } from '@/components/ui/slider';
 import { HexColorPicker } from 'react-colorful';
 import { RotateCcw, AlertTriangle } from 'lucide-react';
 import { CSSVariable } from './types';
 import { getContrastInfo, ContrastLevel } from '@/lib/contrast-utils';
+
+interface ColorMixInfo {
+  baseColor: string;
+  percentage: number;
+}
+
+function parseColorMixForPicker(value: string): ColorMixInfo | null {
+  const match = value.match(/color-mix\(\s*in\s+[a-z0-9-]+\s*,\s*(.+?)\s+(\d+)%\s*,\s*[a-z]+\s*\)/i);
+  if (match) {
+    return { baseColor: match[1], percentage: parseInt(match[2]) };
+  }
+  return null;
+}
+
+function composeColorMixForPicker(baseColor: string, percentage: number): string {
+  return `color-mix(in srgb, ${baseColor} ${percentage}%, transparent)`;
+}
 
 interface ColorPickerProps {
   value: string;
@@ -45,7 +63,6 @@ export function ColorPicker({
   const contrastInfo = useMemo(() => {
     if (!contrastBackground) return null;
     
-    // Resolve the foreground color value
     let foregroundColor = value;
     if (value.startsWith('var(')) {
       const varMatch = value.match(/var\(([^)]+)\)/);
@@ -62,7 +79,6 @@ export function ColorPicker({
       }
     }
     
-    // Check if we can parse the colors
     if (!foregroundColor.startsWith('#') && !foregroundColor.startsWith('rgb')) {
       return null;
     }
@@ -82,8 +98,17 @@ export function ColorPicker({
     }
   };
   
-  // Check if current value is a var() reference
-  const isVarReference = value.startsWith('var(');
+  const colorMixInfo = useMemo(() => parseColorMixForPicker(value), [value]);
+
+  const effectiveRef = useMemo((): ColorMixInfo | null => {
+    if (colorMixInfo) return colorMixInfo;
+    if (value.startsWith('var(')) {
+      return { baseColor: value, percentage: 100 };
+    }
+    return null;
+  }, [colorMixInfo, value]);
+
+  const isVarReference = !!effectiveRef;
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -96,6 +121,16 @@ export function ColorPicker({
 
   const getResolvedColor = useCallback((val: string): string => {
     if (!val) return '#cccccc';
+    
+    const mixInfo = parseColorMixForPicker(val);
+    if (mixInfo) {
+      const varMatch = mixInfo.baseColor.match(/var\(([^)]+)\)/);
+      if (varMatch && colorOptions.length > 0) {
+        const colorVar = colorOptions.find(c => c.name === varMatch[1]);
+        if (colorVar) return colorVar.value;
+      }
+      return '#cccccc';
+    }
     
     const varMatch = val.match(/var\(([^)]+)\)/);
     if (varMatch && colorOptions.length > 0) {
@@ -115,7 +150,6 @@ export function ColorPicker({
 
   const resolvedColor = useMemo(() => getResolvedColor(value), [value, getResolvedColor]);
 
-  // Normalize color for the picker (needs to be hex)
   const pickerColor = useMemo(() => {
     const color = resolvedColor;
     if (color.startsWith('#') && (color.length === 4 || color.length === 7)) {
@@ -125,18 +159,35 @@ export function ColorPicker({
   }, [resolvedColor]);
 
   const handleSelectColor = useCallback((colorVar: CSSVariable) => {
-    onChange(`var(${colorVar.name})`);
+    const currentPct = effectiveRef?.percentage ?? 100;
+    const varRef = `var(${colorVar.name})`;
+    if (currentPct === 100) {
+      onChange(varRef);
+    } else {
+      onChange(composeColorMixForPicker(varRef, currentPct));
+    }
     setPickerOpen(false);
-  }, [onChange]);
+  }, [onChange, effectiveRef]);
 
-  // Display value - show formatted name for var references
+  const handleAmountChange = useCallback((newPct: number) => {
+    const baseColor = effectiveRef?.baseColor || (colorOptions.length > 0 ? `var(${colorOptions[0].name})` : '#000000');
+    if (newPct === 100) {
+      onChange(baseColor);
+    } else {
+      onChange(composeColorMixForPicker(baseColor, newPct));
+    }
+  }, [effectiveRef, onChange, colorOptions]);
+
   const displayValue = useMemo(() => {
-    if (isVarReference) {
-      const match = value.match(/var\(([^)]+)\)/);
-      return match ? formatLabel(match[1]) : value;
+    if (effectiveRef) {
+      const baseLabel = effectiveRef.baseColor.startsWith('var(')
+        ? formatLabel(effectiveRef.baseColor.match(/var\(([^)]+)\)/)?.[1] || '')
+        : effectiveRef.baseColor;
+      if (effectiveRef.percentage === 100) return baseLabel;
+      return `${baseLabel} ${effectiveRef.percentage}%`;
     }
     return value;
-  }, [value, isVarReference]);
+  }, [value, effectiveRef]);
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -186,28 +237,56 @@ export function ColorPicker({
                 <TabsTrigger value="reference" className="flex-1 text-xs">Reference</TabsTrigger>
                 <TabsTrigger value="custom" className="flex-1 text-xs">Custom</TabsTrigger>
               </TabsList>
-              <TabsContent value="reference" className="mt-2">
-                <ScrollArea className="h-[200px]">
-                  <div className="space-y-1">
-                    {colorOptions.map((colorVar) => (
-                      <button
-                        key={colorVar.name}
-                        type="button"
-                        onClick={() => handleSelectColor(colorVar)}
-                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-sm hover-elevate ${
-                          value === `var(${colorVar.name})` ? 'bg-accent' : ''
-                        }`}
-                        data-testid={`color-option-${colorVar.name}`}
-                      >
-                        <div 
-                          className="w-5 h-5 rounded border border-input flex-shrink-0"
-                          style={{ backgroundColor: colorVar.value }}
-                        />
-                        <span className="capitalize truncate">{formatLabel(colorVar.name)}</span>
-                      </button>
-                    ))}
+              <TabsContent value="reference" className="mt-2 space-y-3">
+                <ScrollArea className="h-[160px] border rounded-md p-1">
+                  <div className="space-y-0.5">
+                    {colorOptions.map((colorVar) => {
+                      const varRef = `var(${colorVar.name})`;
+                      const isSelected = effectiveRef?.baseColor === varRef;
+                      return (
+                        <button
+                          key={colorVar.name}
+                          type="button"
+                          onClick={() => handleSelectColor(colorVar)}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-sm hover-elevate ${
+                            isSelected ? 'bg-accent' : ''
+                          }`}
+                          data-testid={`color-option-${colorVar.name}`}
+                        >
+                          <div 
+                            className="w-4 h-4 rounded border border-input flex-shrink-0"
+                            style={{ backgroundColor: colorVar.value }}
+                          />
+                          <span className="capitalize truncate text-xs">{formatLabel(colorVar.name)}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </ScrollArea>
+                {effectiveRef && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-medium text-muted-foreground">Amount</label>
+                      <span className="text-xs font-mono text-muted-foreground">{effectiveRef.percentage}%</span>
+                    </div>
+                    <Slider
+                      value={[effectiveRef.percentage]}
+                      onValueChange={([val]) => handleAmountChange(val)}
+                      min={1}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                      data-testid={`color-amount-${label}`}
+                    />
+                    {effectiveRef.percentage < 100 && (
+                      <div className="pt-1 mt-2 border-t">
+                        <p className="text-[10px] font-mono text-muted-foreground break-all">
+                          {value}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="custom" className="mt-2">
                 <HexColorPicker 
