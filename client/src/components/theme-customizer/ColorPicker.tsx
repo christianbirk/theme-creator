@@ -166,7 +166,6 @@ export function ColorPicker({
     } else {
       onChange(composeColorMixForPicker(varRef, currentPct));
     }
-    setPickerOpen(false);
   }, [onChange, effectiveRef]);
 
   const handleAmountChange = useCallback((newPct: number) => {
