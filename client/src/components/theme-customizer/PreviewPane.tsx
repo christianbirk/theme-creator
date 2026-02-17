@@ -743,11 +743,10 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         { id: 'colors-neutral', name: 'Neutral Colors', selectors: ['.bg-neutral-a', '.bg-neutral-b', '.bg-neutral-c', '.bg-neutral-d', '.bg-neutral-e', '.bg-neutral-f', '.neutral-bg'], variables: ['--color-neutral-a', '--color-neutral-b', '--color-neutral-c', '--color-neutral-d', '--color-neutral-e', '--color-neutral-f'] },
       ];
       
-      function findMapping(element) {
-        const tagName = element.tagName.toLowerCase();
-        const classList = Array.from(element.classList);
+      function matchElement(el) {
+        const tagName = el.tagName.toLowerCase();
+        const classList = Array.from(el.classList);
         
-        // First pass: check class-based matches (more specific)
         for (const mapping of elementMappings) {
           for (const selector of mapping.selectors) {
             if (selector.startsWith('.')) {
@@ -755,20 +754,60 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
               if (classList.some(c => c === className || c.includes(className))) {
                 return mapping;
               }
+            } else if (selector.startsWith('[')) {
+              if (el.matches && el.matches(selector)) {
+                return mapping;
+              }
             }
           }
         }
-        
-        // Second pass: check tag-based matches (more generic)
+        return null;
+      }
+
+      function matchTag(el) {
+        const tagName = el.tagName.toLowerCase();
         for (const mapping of elementMappings) {
           for (const selector of mapping.selectors) {
-            if (!selector.startsWith('.') && selector === tagName) {
+            if (!selector.startsWith('.') && !selector.startsWith('[') && selector === tagName) {
               return mapping;
             }
           }
         }
-        
         return null;
+      }
+
+      const containerIds = ['nav-main', 'nav-service', 'header', 'footer', 'breadcrumb', 'hero', 'card', 'form', 'search'];
+
+      function findMapping(element) {
+        // Walk up ancestors to find the most specific container mapping first
+        let ancestor = element.parentElement;
+        let parentMapping = null;
+        while (ancestor && ancestor !== document.body) {
+          const am = matchElement(ancestor);
+          if (am && containerIds.includes(am.id)) {
+            parentMapping = am;
+            break;
+          }
+          ancestor = ancestor.parentElement;
+        }
+
+        // Check the element itself for class-based matches
+        const directMatch = matchElement(element);
+        if (directMatch) {
+          // If the direct match is a generic tag-level match like 'link' and
+          // the element lives inside a container (nav, header, footer, etc.),
+          // prefer the container mapping
+          return directMatch;
+        }
+
+        // If the element is inside a known container, return that container mapping
+        // instead of a generic tag match (e.g. don't return 'Link' for <a> inside nav)
+        if (parentMapping) {
+          return parentMapping;
+        }
+
+        // Fall back to tag-based match
+        return matchTag(element);
       }
       
       let hoveredElement = null;
