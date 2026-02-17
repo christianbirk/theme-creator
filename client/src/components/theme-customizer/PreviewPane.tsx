@@ -671,13 +671,14 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         color: var(--pre-heading-color) !important;
       }
       
-      /* Module-heading background override - template sets a muted bg but 
-         the SCSS variables define it as transparent; force transparent so 
-         the parent surface color shows through */
-      .module.module-heading,
-      .module.module-heading > .introduction,
-      .module.module-heading > .text {
-        background-color: transparent !important;
+      /* Dynamic-list inside span columns: template says bg-color-* should be 
+         transparent here but our surface overrides force a background-color. 
+         Re-apply transparent to match the template's intended rule. */
+      [class*=span-] > .dynamic-list[class*=bg-color-],
+      [class*=span-] > .module-heading[class*=bg-color-],
+      [class*=span-] > .module.module-heading[class*=bg-color-] {
+        background: transparent !important;
+        padding: 0 !important;
       }
       
       /* Navigation border overrides - target main nav only */
