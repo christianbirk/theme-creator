@@ -702,6 +702,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     return `<script id="nav-intercept-script">
 (function() {
   document.addEventListener('click', function(e) {
+    if (document.getElementById('inspector-script')) return;
     var anchor = e.target.closest('a');
     if (!anchor) return;
     var href = anchor.getAttribute('href');
