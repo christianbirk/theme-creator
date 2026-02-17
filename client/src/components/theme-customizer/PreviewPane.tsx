@@ -671,24 +671,15 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         color: var(--pre-heading-color) !important;
       }
       
-      /* Navigation border overrides - exclude service navigation */
+      /* Navigation border overrides - target main nav only */
       .nav-main,
       nav.nav-main,
+      nav.main,
       .navigation-main,
       .header-navigation,
-      .main-navigation,
-      header nav:not(.service-navigation):not(.service-nav):not(.nav-service) {
+      .main-navigation {
         border-top: var(--nav-main-border-top) !important;
         border-bottom: var(--nav-main-border-bottom) !important;
-      }
-      
-      /* Ensure service navigation doesn't inherit main nav borders */
-      .service-navigation,
-      .service-nav,
-      .nav-service,
-      .service-links {
-        border-top: none !important;
-        border-bottom: none !important;
       }
       
       /* Surface overrides for bg-color-* classes */
