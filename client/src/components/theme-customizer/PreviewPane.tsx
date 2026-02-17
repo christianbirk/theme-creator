@@ -776,38 +776,43 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         return null;
       }
 
-      const containerIds = ['nav-main', 'nav-service', 'header', 'footer', 'breadcrumb', 'hero', 'card', 'form', 'search'];
+      const navContainerIds = ['nav-main', 'nav-service', 'breadcrumb'];
 
       function findMapping(element) {
-        // Walk up ancestors to find the most specific container mapping first
+        const directMatch = matchElement(element);
+        if (directMatch) {
+          return directMatch;
+        }
+
+        const tagMatch = matchTag(element);
+
         let ancestor = element.parentElement;
         let parentMapping = null;
         while (ancestor && ancestor !== document.body) {
           const am = matchElement(ancestor);
-          if (am && containerIds.includes(am.id)) {
+          if (am) {
             parentMapping = am;
             break;
           }
           ancestor = ancestor.parentElement;
         }
 
-        // Check the element itself for class-based matches
-        const directMatch = matchElement(element);
-        if (directMatch) {
-          // If the direct match is a generic tag-level match like 'link' and
-          // the element lives inside a container (nav, header, footer, etc.),
-          // prefer the container mapping
-          return directMatch;
+        if (tagMatch && parentMapping && navContainerIds.includes(parentMapping.id)) {
+          const genericTagIds = ['link', 'icon'];
+          if (genericTagIds.includes(tagMatch.id)) {
+            return parentMapping;
+          }
         }
 
-        // If the element is inside a known container, return that container mapping
-        // instead of a generic tag match (e.g. don't return 'Link' for <a> inside nav)
+        if (tagMatch) {
+          return tagMatch;
+        }
+
         if (parentMapping) {
           return parentMapping;
         }
 
-        // Fall back to tag-based match
-        return matchTag(element);
+        return null;
       }
       
       let hoveredElement = null;
