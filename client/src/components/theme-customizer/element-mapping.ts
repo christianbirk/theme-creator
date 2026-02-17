@@ -3,7 +3,51 @@ export interface ElementMapping {
   name: string;
   selectors: string[];
   variables: string[];
+  darkBgVariables?: string[];
 }
+
+export const darkBgVariableMap: Record<string, string[]> = {
+  'h1': ['--font-heading-color-bg-dark'],
+  'h2': ['--font-heading-color-bg-dark'],
+  'h3': ['--font-heading-color-bg-dark'],
+  'h4': ['--font-heading-color-bg-dark'],
+  'h5': ['--font-heading-color-bg-dark'],
+  'h6': ['--font-heading-color-bg-dark'],
+  'paragraph': ['--font-base-color-bg-dark'],
+  'lead': ['--lead-color-bg-dark'],
+  'pre-heading': ['--pre-heading-color-bg-dark'],
+  'link': ['--link-color-bg-dark'],
+  'button': [
+    '--button-background-color-bg-dark',
+    '--button-font-color-bg-dark',
+    '--button-outline-border-color-bg-dark',
+    '--button-outline-font-color-bg-dark',
+    '--button-alternate-background-color-bg-dark',
+    '--button-alternate-font-color-bg-dark',
+  ],
+  'button-primary': ['--button-background-color-bg-dark', '--button-font-color-bg-dark'],
+  'button-outline': ['--button-outline-border-color-bg-dark', '--button-outline-font-color-bg-dark'],
+  'button-alternate': ['--button-alternate-background-color-bg-dark', '--button-alternate-font-color-bg-dark'],
+  'button-secondary': ['--button-background-color-bg-dark', '--button-font-color-bg-dark'],
+  'button-text': ['--button-font-color-bg-dark'],
+  'label': [
+    '--label-background-bg-dark',
+    '--label-color-bg-dark',
+    '--label-border-bg-dark',
+  ],
+  'icon': [
+    '--icon-background-color-bg-dark',
+    '--icon-color-bg-dark',
+  ],
+  'card': [
+    '--boxed-border-color-bg-dark',
+    '--module-heading-border-color-bg-dark',
+  ],
+};
+
+export const universalDarkBgVariables = [
+  '--universal-accent-color-on-bg-dark',
+];
 
 export const elementMappings: ElementMapping[] = [
   {

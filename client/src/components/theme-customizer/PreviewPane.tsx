@@ -776,6 +776,51 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         return null;
       }
 
+      const darkBgVarMap = {
+        'h1': ['--font-heading-color-bg-dark'],
+        'h2': ['--font-heading-color-bg-dark'],
+        'h3': ['--font-heading-color-bg-dark'],
+        'h4': ['--font-heading-color-bg-dark'],
+        'h5': ['--font-heading-color-bg-dark'],
+        'h6': ['--font-heading-color-bg-dark'],
+        'paragraph': ['--font-base-color-bg-dark'],
+        'lead': ['--lead-color-bg-dark'],
+        'pre-heading': ['--pre-heading-color-bg-dark'],
+        'link': ['--link-color-bg-dark'],
+        'button': ['--button-background-color-bg-dark', '--button-font-color-bg-dark', '--button-outline-border-color-bg-dark', '--button-outline-font-color-bg-dark', '--button-alternate-background-color-bg-dark', '--button-alternate-font-color-bg-dark'],
+        'button-primary': ['--button-background-color-bg-dark', '--button-font-color-bg-dark'],
+        'button-outline': ['--button-outline-border-color-bg-dark', '--button-outline-font-color-bg-dark'],
+        'button-alternate': ['--button-alternate-background-color-bg-dark', '--button-alternate-font-color-bg-dark'],
+        'button-secondary': ['--button-background-color-bg-dark', '--button-font-color-bg-dark'],
+        'button-text': ['--button-font-color-bg-dark'],
+        'label': ['--label-background-bg-dark', '--label-color-bg-dark', '--label-border-bg-dark'],
+        'icon': ['--icon-background-color-bg-dark', '--icon-color-bg-dark'],
+        'card': ['--boxed-border-color-bg-dark', '--module-heading-border-color-bg-dark'],
+      };
+      const universalDarkBgVars = ['--universal-accent-color-on-bg-dark'];
+
+      function isOnDarkSurface(el) {
+        let current = el;
+        while (current && current !== document.body && current !== document.documentElement) {
+          const classList = Array.from(current.classList || []);
+          const hasBgColorClass = classList.some(c => /^bg-color-[a-g]$/.test(c));
+          if (hasBgColorClass) {
+            const bg = getComputedStyle(current).backgroundColor;
+            const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (match) {
+              const r = parseInt(match[1]) / 255;
+              const g = parseInt(match[2]) / 255;
+              const b = parseInt(match[3]) / 255;
+              const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+              return luminance < 0.5;
+            }
+            return true;
+          }
+          current = current.parentElement;
+        }
+        return false;
+      }
+
       const navContainerIds = ['nav-main', 'nav-service', 'breadcrumb'];
 
       function findMapping(element) {
@@ -814,6 +859,23 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
 
         return null;
       }
+
+      function augmentMapping(mapping, element) {
+        if (!mapping) return mapping;
+        const onDark = isOnDarkSurface(element);
+        if (!onDark) return mapping;
+
+        const extraVars = darkBgVarMap[mapping.id] || [];
+        const allExtra = [...extraVars, ...universalDarkBgVars];
+        if (allExtra.length === 0) return mapping;
+
+        return {
+          id: mapping.id,
+          name: mapping.name + ' (Dark Surface)',
+          selectors: mapping.selectors,
+          variables: [...mapping.variables, ...allExtra],
+        };
+      }
       
       let hoveredElement = null;
       
@@ -847,7 +909,8 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         const target = e.target;
         const mapping = findMapping(target);
         if (mapping) {
-          window.parent.postMessage({ type: 'element-selected', element: mapping }, '*');
+          const augmented = augmentMapping(mapping, target);
+          window.parent.postMessage({ type: 'element-selected', element: augmented }, '*');
         }
       }, true);
     })();
