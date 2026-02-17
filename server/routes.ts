@@ -586,6 +586,14 @@ export async function registerRoutes(
         const basePath = parsedUrl.pathname.replace(/\/[^\/]*$/, '/') || '/';
 
         // HTML Sanitization: Remove potentially dangerous elements
+        // Extract GoBasic script URLs before removing scripts (trusted domain)
+        const goBasicScriptUrls: string[] = [];
+        const scriptSrcRegex = /<script\b[^>]*src=["']([^"']*poc\.media\.gopublic\.eu[^"']*)["'][^>]*>\s*<\/script>/gi;
+        let scriptMatch;
+        while ((scriptMatch = scriptSrcRegex.exec(html)) !== null) {
+          goBasicScriptUrls.push(scriptMatch[1]);
+        }
+        
         // Remove <script> tags and their content
         html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
         
@@ -678,6 +686,62 @@ export async function registerRoutes(
         // Add <base> tag to handle any remaining relative URLs
         if (!html.includes('<base')) {
           html = html.replace(/(<head[^>]*>)/i, `$1\n<base href="${baseUrl}${basePath}" target="_self">`);
+        }
+
+        // Fetch and inline GoBasic scripts (trusted domain only)
+        if (goBasicScriptUrls.length > 0) {
+          const inlinedScripts = await Promise.all(
+            goBasicScriptUrls.map(async (scriptUrl) => {
+              try {
+                let fullUrl = scriptUrl;
+                if (fullUrl.startsWith('//')) fullUrl = 'https:' + fullUrl;
+                else if (!fullUrl.startsWith('http')) fullUrl = baseUrl + scriptUrl;
+                
+                const jsResp = await fetch(fullUrl, {
+                  headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Theme-Customizer/1.0)' },
+                  signal: AbortSignal.timeout(8000),
+                });
+                if (jsResp.ok) {
+                  const code = await jsResp.text();
+                  return `<script>try{${code}}catch(e){console.warn('GoBasic script error:',e)}<\/script>`;
+                }
+              } catch (e) {
+                console.warn(`Failed to fetch GoBasic script: ${scriptUrl}`, e);
+              }
+              return '';
+            })
+          );
+          const scriptBlock = inlinedScripts.filter(Boolean).join('\n');
+          // Re-initialize hero sections after all images load (offsetHeight needs rendered elements)
+          const heroReinit = `<script>
+window.addEventListener('load', function() {
+  document.querySelectorAll('.hero.text-in-box-overlapping').forEach(function(e) {
+    var t = e.querySelector('.text > .wrap');
+    if (!t) return;
+    var n = t.offsetHeight;
+    if (window.innerWidth >= 1024) {
+      t.style.top = n / 2 + 'px';
+      e.style.marginBottom = n / 2 + 32 + 'px';
+    } else if (window.innerWidth >= 767) {
+      t.style.top = n / 1.5 + 'px';
+      e.style.marginBottom = n / 1.5 + 32 + 'px';
+    }
+  });
+  document.querySelectorAll('.hero.split-box').forEach(function(e) {
+    var v = e.querySelector('video');
+    var txt = e.querySelector('.text');
+    if (v && txt) v.style.height = txt.offsetHeight + 'px';
+  });
+});
+<\/script>`;
+          if (scriptBlock) {
+            const allScripts = scriptBlock + '\n' + heroReinit;
+            if (html.includes('</body>')) {
+              html = html.replace('</body>', `${allScripts}\n</body>`);
+            } else {
+              html += allScripts;
+            }
+          }
         }
 
         res.json({
