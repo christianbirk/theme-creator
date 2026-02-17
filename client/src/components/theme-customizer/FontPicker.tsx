@@ -9,12 +9,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RotateCcw, Search, Loader2 } from 'lucide-react';
-import { googleFonts, CSSVariable } from './types';
+import { CSSVariable } from './types';
 
-// Track loaded fonts to avoid duplicate loading
 const loadedFonts = new Set<string>();
 
-// Load a Google Font dynamically
 function loadGoogleFont(fontName: string): void {
   if (loadedFonts.has(fontName)) return;
   loadedFonts.add(fontName);
@@ -23,6 +21,32 @@ function loadGoogleFont(fontName: string): void {
   link.rel = 'stylesheet';
   link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName.replace(/ /g, '+'))}:wght@400;700&display=swap`;
   document.head.appendChild(link);
+}
+
+const SYSTEM_FONTS = [
+  'Arial', 'Helvetica', 'Georgia', 'Times New Roman', 'Verdana', 'Tahoma', 'Trebuchet MS',
+];
+
+let allGoogleFontsCache: string[] | null = null;
+let fetchPromise: Promise<string[]> | null = null;
+
+async function fetchAllGoogleFonts(): Promise<string[]> {
+  if (allGoogleFontsCache) return allGoogleFontsCache;
+  if (fetchPromise) return fetchPromise;
+
+  fetchPromise = fetch('/api/google-fonts')
+    .then(res => res.json())
+    .then(data => {
+      const fonts = data.fonts || [];
+      allGoogleFontsCache = [...fonts, ...SYSTEM_FONTS.filter(f => !fonts.includes(f))];
+      return allGoogleFontsCache;
+    })
+    .catch(() => {
+      fetchPromise = null;
+      return SYSTEM_FONTS;
+    });
+
+  return fetchPromise;
 }
 
 interface FontPickerProps {
@@ -46,15 +70,26 @@ export function FontPicker({
 }: FontPickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [allFonts, setAllFonts] = useState<string[]>([]);
+  const [fontsLoading, setFontsLoading] = useState(false);
   const isModified = value !== defaultValue;
   const isVarReference = value.startsWith('var(');
 
-  // Load font for preview when value changes
   useEffect(() => {
-    if (value && !isVarReference && googleFonts.includes(value)) {
+    if (value && !isVarReference) {
       loadGoogleFont(value);
     }
   }, [value, isVarReference]);
+
+  useEffect(() => {
+    if (pickerOpen && allFonts.length === 0 && !fontsLoading) {
+      setFontsLoading(true);
+      fetchAllGoogleFonts().then(fonts => {
+        setAllFonts(fonts);
+        setFontsLoading(false);
+      });
+    }
+  }, [pickerOpen, allFonts.length, fontsLoading]);
 
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -85,21 +120,18 @@ export function FontPicker({
     return value;
   }, [value, isVarReference]);
 
-  // Filter fonts based on search query
   const filteredFonts = useMemo(() => {
     if (!searchQuery.trim()) {
-      return googleFonts.slice(0, 50); // Show first 50 by default
+      return allFonts.slice(0, 50);
     }
     const query = searchQuery.toLowerCase();
-    return googleFonts.filter(font => 
+    return allFonts.filter(font => 
       font.toLowerCase().includes(query)
-    ).slice(0, 100); // Limit results
-  }, [searchQuery]);
+    ).slice(0, 100);
+  }, [searchQuery, allFonts]);
 
-  // Load visible fonts for preview
   useEffect(() => {
     if (pickerOpen) {
-      // Load first few fonts for preview
       filteredFonts.slice(0, 10).forEach(font => {
         loadGoogleFont(font);
       });
@@ -173,9 +205,15 @@ export function FontPicker({
                   )}
                 </div>
               </ScrollArea>
-              {!searchQuery && (
+              {fontsLoading && (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <p className="text-xs text-muted-foreground">Loading fonts...</p>
+                </div>
+              )}
+              {!searchQuery && !fontsLoading && (
                 <p className="text-xs text-muted-foreground text-center">
-                  Search to find more fonts from 300+ Google Fonts
+                  Search {allFonts.length.toLocaleString()} Google Fonts
                 </p>
               )}
             </div>

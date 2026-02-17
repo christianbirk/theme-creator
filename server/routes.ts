@@ -790,5 +790,41 @@ export async function registerRoutes(
     }
   });
 
+  // Google Fonts API - fetch complete font list and cache it
+  let cachedGoogleFonts: { fonts: string[]; timestamp: number } | null = null;
+  const FONT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+  app.get('/api/google-fonts', async (_req, res) => {
+    try {
+      if (cachedGoogleFonts && Date.now() - cachedGoogleFonts.timestamp < FONT_CACHE_TTL) {
+        return res.json({ fonts: cachedGoogleFonts.fonts });
+      }
+
+      const response = await fetch('https://fonts.google.com/metadata/fonts');
+      if (!response.ok) {
+        throw new Error(`Google Fonts API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      const fonts: string[] = [];
+
+      if (data.familyMetadataList && Array.isArray(data.familyMetadataList)) {
+        for (const entry of data.familyMetadataList) {
+          if (entry.family) {
+            fonts.push(entry.family);
+          }
+        }
+      }
+
+      fonts.sort((a: string, b: string) => a.localeCompare(b));
+
+      cachedGoogleFonts = { fonts, timestamp: Date.now() };
+      res.json({ fonts });
+    } catch (err) {
+      console.error('Failed to fetch Google Fonts:', err);
+      res.status(500).json({ error: 'Failed to fetch Google Fonts list' });
+    }
+  });
+
   return httpServer;
 }
