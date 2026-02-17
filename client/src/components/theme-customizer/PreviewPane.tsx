@@ -215,10 +215,9 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
   }, [resolveVarReferences, hexToRgb]);
 
-  // Determine if a color is light (luminance > 0.5 means light background)
   const isLightColor = useCallback((colorValue: string): boolean => {
     const luminance = getLuminance(colorValue);
-    return luminance !== null && luminance > 0.5;
+    return luminance !== null && luminance > 0.179;
   }, [getLuminance]);
 
   // Generate CSS content with !important to override existing styles
@@ -838,11 +837,14 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
             const match = bg.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
             let isDark = true;
             if (match) {
-              const r = parseInt(match[1]) / 255;
-              const g = parseInt(match[2]) / 255;
-              const b = parseInt(match[3]) / 255;
-              const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-              isDark = luminance < 0.5;
+              var rr = parseInt(match[1]) / 255;
+              var gg = parseInt(match[2]) / 255;
+              var bb = parseInt(match[3]) / 255;
+              var rl = rr <= 0.03928 ? rr / 12.92 : Math.pow((rr + 0.055) / 1.055, 2.4);
+              var gl = gg <= 0.03928 ? gg / 12.92 : Math.pow((gg + 0.055) / 1.055, 2.4);
+              var bl = bb <= 0.03928 ? bb / 12.92 : Math.pow((bb + 0.055) / 1.055, 2.4);
+              var luminance = 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+              isDark = luminance <= 0.179;
             }
             return { onSurface: true, isDark: isDark, colorLetter: colorLetter, bgClass: bgMatch };
           }
