@@ -828,7 +828,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
           const hasBgColorClass = classList.some(c => /^bg-color-[a-g]$/.test(c));
           if (hasBgColorClass) {
             const bg = getComputedStyle(current).backgroundColor;
-            const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            const match = bg.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/);
             if (match) {
               const r = parseInt(match[1]) / 255;
               const g = parseInt(match[2]) / 255;
@@ -956,7 +956,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   // Base HTML for initial iframe load - only changes when template loads, NOT when variables change
   const iframeSrcDoc = useMemo(() => {
     const baseHtml = getCurrentHtml();
-    const styleTag = `<style id="custom-variables"></style>${inspectorScript}${navigationScript}`;
+    const styleTag = `<style id="custom-variables"></style>${navigationScript}`;
     
     let cleanedHtml = baseHtml.replace(/<style id="custom-variables">[\s\S]*?<\/style>/g, '');
     cleanedHtml = cleanedHtml.replace(/<script id="inspector-script">[\s\S]*?<\/script>/g, '');
@@ -988,19 +988,29 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       if (existingScript) existingScript.remove();
       if (existingStyles) existingStyles.remove();
       
-      if (inspectorMode) {
-        // Inject inspector script
-        const scriptEl = iframeDoc.createElement('script');
-        scriptEl.id = 'inspector-script';
-        scriptEl.textContent = inspectorScript.replace(/<script id="inspector-script">|<\/script>|<style id="inspector-styles">[\s\S]*?<\/style>/g, '');
+      if (inspectorMode && inspectorScript) {
+        const jsMatch = inspectorScript.match(/<script id="inspector-script">([\s\S]*?)<\/script>/);
+        const jsCode = jsMatch ? jsMatch[1] : '';
         
-        const styleEl = iframeDoc.createElement('style');
-        styleEl.id = 'inspector-styles';
-        styleEl.textContent = '* { cursor: default !important; }';
-        
-        if (iframeDoc.body) {
-          iframeDoc.body.appendChild(scriptEl);
+        if (jsCode.trim() && iframeDoc.body) {
+          const markerEl = iframeDoc.createElement('div');
+          markerEl.id = 'inspector-script';
+          markerEl.style.display = 'none';
+          iframeDoc.body.appendChild(markerEl);
+          
+          const styleEl = iframeDoc.createElement('style');
+          styleEl.id = 'inspector-styles';
+          styleEl.textContent = '* { cursor: default !important; }';
           iframeDoc.body.appendChild(styleEl);
+          
+          try {
+            const iframeWindow = iframeRef.current!.contentWindow;
+            if (iframeWindow) {
+              iframeWindow.eval(jsCode);
+            }
+          } catch (evalErr) {
+            console.warn('Inspector script eval failed:', evalErr);
+          }
         }
       }
     } catch (e) {
