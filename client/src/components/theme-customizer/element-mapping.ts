@@ -222,7 +222,7 @@ export const elementMappings: ElementMapping[] = [
   {
     id: 'nav-main',
     name: 'Main Navigation',
-    selectors: ['.nav-main', '.main-nav', '.navigation-main', '.main-navigation', '.header-navigation'],
+    selectors: ['.nav-main', '.main-nav', '.navigation-main', '.main-navigation', '.header-navigation', 'nav.main', 'nav[aria-label="Hovedmenu"]', 'nav.mobile', 'nav[aria-label="Mobil Menu"]'],
     variables: [
       '--nav-main-align',
       '--nav-main-background-color',
@@ -388,7 +388,7 @@ export const elementMappings: ElementMapping[] = [
   {
     id: 'nav-service',
     name: 'Service Navigation',
-    selectors: ['.service-navigation', '.nav-service', '.service-nav', '.service-links'],
+    selectors: ['.service-navigation', '.nav-service', '.service-nav', '.service-links', 'nav.service', 'nav[aria-label="Service Menu"]'],
     variables: [
       '--service-color',
       '--service-font-weight',

@@ -750,7 +750,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         { id: 'button-text', name: 'Text Button', selectors: ['.btn-text', '.button-text', '.btn-link'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-text-color'] },
         { id: 'button', name: 'Button (Generic)', selectors: ['button', '.btn', '.button'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-background-color', '--button-color'] },
         { id: 'link', name: 'Link', selectors: ['a'], variables: ['--link-style', '--link-color'] },
-        { id: 'nav-main', name: 'Main Navigation', selectors: ['.nav-main', '.main-nav', '.navigation-main', '.main-navigation', '.header-navigation'], variables: ['--nav-main-align', '--nav-main-background-color', '--nav-main-container-background-color', '--nav-main-container-padding-inline', '--nav-main-border-top', '--nav-main-border-bottom', '--nav-main-active-state-height', '--nav-main-active-state-color', '--nav-main-font-family', '--nav-main-link-gap', '--nav-main-link-padding', '--nav-main-link-font-size', '--nav-main-link-font-weight', '--nav-main-link-text-transform', '--nav-main-link-color'] },
+        { id: 'nav-main', name: 'Main Navigation', selectors: ['.nav-main', '.main-nav', '.navigation-main', '.main-navigation', '.header-navigation', 'nav.main', 'nav[aria-label="Hovedmenu"]', 'nav.mobile', 'nav[aria-label="Mobil Menu"]'], variables: ['--nav-main-align', '--nav-main-background-color', '--nav-main-container-background-color', '--nav-main-container-padding-inline', '--nav-main-border-top', '--nav-main-border-bottom', '--nav-main-active-state-height', '--nav-main-active-state-color', '--nav-main-font-family', '--nav-main-link-gap', '--nav-main-link-padding', '--nav-main-link-font-size', '--nav-main-link-font-weight', '--nav-main-link-text-transform', '--nav-main-link-color'] },
         { id: 'header', name: 'Header', selectors: ['header', '.header', '.site-header'], variables: ['--header-container-padding', '--header-background-color'] },
         { id: 'footer', name: 'Footer', selectors: ['footer', '.footer', '.site-footer'], variables: ['--footer-background-color', '--footer-heading-font-size', '--footer-heading-text-transform', '--footer-heading-font-family', '--footer-heading-font-weight'] },
         { id: 'label', name: 'Label / Badge', selectors: ['.label', '.badge', '.tag', '.chip'], variables: ['--label-border-radius', '--label-text-transform', '--label-font-family', '--label-font-weight', '--label-padding', '--label-background', '--label-color', '--label-border-color'] },
@@ -758,7 +758,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         { id: 'form', name: 'Form Field', selectors: ['input', 'textarea', 'select', '.form-control', '.input'], variables: ['--form-field-height', '--universal-border-radius'] },
         { id: 'hero', name: 'Hero Section', selectors: ['.hero', '.banner', '.jumbotron'], variables: ['--hero-ratio-full-width', '--hero-ratio-desktop', '--hero-ratio-mobile', '--hero-h1-font-size', '--hero-h1-line-height', '--hero-h2-font-size', '--hero-h2-line-height'] },
         { id: 'card', name: 'Card / Box', selectors: ['.card', '.box', '.module', '.boxed', '.highlighted'], variables: ['--universal-border-radius', '--boxed-border-width', '--boxed-border-color', '--highlighted-box-shadow', '--grid-box-padding', '--grid-box-padding-mobile'] },
-        { id: 'nav-service', name: 'Service Navigation', selectors: ['.service-navigation', '.nav-service', '.service-nav', '.service-links'], variables: ['--service-color', '--service-font-weight', '--service-font-family', '--service-font-size', '--service-text-transform'] },
+        { id: 'nav-service', name: 'Service Navigation', selectors: ['.service-navigation', '.nav-service', '.service-nav', '.service-links', 'nav.service', 'nav[aria-label="Service Menu"]'], variables: ['--service-color', '--service-font-weight', '--service-font-family', '--service-font-size', '--service-text-transform'] },
         { id: 'search', name: 'Search', selectors: ['.search-btn', '.search-button', '.search', '[type="search"]', '.search-form', '.site-search'], variables: ['--search-btn-border-radius', '--search-btn-background-color', '--search-btn-background-color-hover', '--search-text-color', '--search-text-color-hover', '--search-icon-color', '--search-icon-color-hover'] },
         { id: 'breadcrumb', name: 'Breadcrumb', selectors: ['.breadcrumb', '.breadcrumbs', 'nav[aria-label="breadcrumb"]', '.breadcrumb-nav'], variables: ['--breadcrumb-bg-color', '--breadcrumb-padding', '--breadcrumb-link-color', '--breadcrumb-label-color', '--breadcrumb-active-color', '--breadcrumb-divider-color'] },
         { id: 'colors-brand', name: 'Brand Colors', selectors: ['.bg-color-a', '.bg-color-b', '.bg-color-c', '.bg-color-d', '.bg-color-e', '.bg-color-f', '.bg-color-g', '.bg-brand-a', '.bg-brand-b', '.bg-brand-c', '.bg-brand-d', '.bg-brand-e', '.bg-brand-f', '.bg-brand-g'], variables: ['--color-brand-a', '--color-brand-b', '--color-brand-c', '--color-brand-d', '--color-brand-e', '--color-brand-f', '--color-brand-g'] },
@@ -780,6 +780,12 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
               if (el.matches && el.matches(selector)) {
                 return mapping;
               }
+            } else if (selector.includes('.') || selector.includes('[')) {
+              try {
+                if (el.matches && el.matches(selector)) {
+                  return mapping;
+                }
+              } catch(e) {}
             }
           }
         }
