@@ -962,7 +962,17 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   // Base HTML for initial iframe load - only changes when template loads, NOT when variables change
   const iframeSrcDoc = useMemo(() => {
     const baseHtml = getCurrentHtml();
-    const styleTag = `<style id="custom-variables"></style>${navigationScript}`;
+    const goBasicScripts = [
+      'accordionAndTabs.min.js',
+      'application.min.js',
+      'cookies.min.js',
+      'focusVisible.min.js',
+      'heroSection.min.js',
+      'itemList.min.js',
+      'navigation.min.js',
+      'popUpFrame.min.js',
+    ].map(f => `<script src="https://poc.media.gopublic.eu/GoBasic/Applications/Release/${f}"><\/script>`).join('\n');
+    const styleTag = `<style id="custom-variables"></style>${navigationScript}${goBasicScripts}`;
     
     let cleanedHtml = baseHtml.replace(/<style id="custom-variables">[\s\S]*?<\/style>/g, '');
     cleanedHtml = cleanedHtml.replace(/<script id="inspector-script">[\s\S]*?<\/script>/g, '');
