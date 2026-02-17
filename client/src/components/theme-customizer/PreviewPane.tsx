@@ -17,7 +17,6 @@ interface PreviewPaneProps {
   previewHtml: string;
   customCssFiles?: ScssFile[];
   fontCss?: string;
-  githubCss?: string;
   onElementSelect?: (element: SelectedElement | null) => void;
   inspectorMode?: boolean;
 }
@@ -73,7 +72,7 @@ const loadingHtml = `
 </html>
 `;
 
-export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontCss = '', githubCss = '', onElementSelect, inspectorMode = false }: PreviewPaneProps) {
+export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontCss = '', onElementSelect, inspectorMode = false }: PreviewPaneProps) {
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [templateHtml, setTemplateHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -649,9 +648,6 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
 
   const customCssContent = useMemo(() => {
     return `
-      /* GitHub theme base styles */
-      ${githubCss}
-      
       /* Font-face declarations */
       ${fontCss}
       
@@ -689,7 +685,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       /* Surface overrides for bg-color-* classes */
       ${surfaceOverrides}
     `;
-  }, [cssVariablesImportant, surfaceOverrides, customCssFilesContent, fontCss, githubCss]);
+  }, [cssVariablesImportant, surfaceOverrides, customCssFilesContent, fontCss]);
 
   // Get the current HTML - template or loading
   const getCurrentHtml = useCallback(() => {

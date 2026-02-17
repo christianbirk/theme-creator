@@ -14,14 +14,13 @@ import { defaultCategories, CSSVariable, VariableCategory } from '@/components/t
 import { parseScssContent, compileTheme, fetchSampleScss } from '@/lib/theme-api';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Settings2, Tag, Code, Upload, FileType, Github, RefreshCw, Loader2, KeyRound } from 'lucide-react';
+import { Settings2, Tag, Code, Upload, FileType } from 'lucide-react';
 import { CustomCssManager, ScssFile } from '@/components/theme-customizer/CustomCssManager';
 import { CustomFontsManager, FontFile, generateFontFaceCssForExport } from '@/components/theme-customizer/CustomFontsManager';
 import { LegacyImportModal, PreservedFolders, CustomScssFile, ImportedFontFile } from '@/components/theme-customizer/LegacyImportModal';
 import { mergeMappedVariables } from '@/lib/legacy-import';
 import type { CssClassesData } from '@shared/schema';
 import JSZip from 'jszip';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function ThemeCustomizer() {
@@ -49,13 +48,6 @@ export default function ThemeCustomizer() {
   
   // Font CSS for preview (uses blob URLs)
   const [fontCssForPreview, setFontCssForPreview] = useState<string>('');
-  
-  // GitHub theme CSS state
-  const [githubCss, setGithubCss] = useState('');
-  const [githubUrl, setGithubUrl] = useState('https://github.com/beru-org/Assets/blob/main/Clients/template/Themes/blank-v6/css/theme.scss');
-  const [githubToken, setGithubToken] = useState('');
-  const [githubSyncing, setGithubSyncing] = useState(false);
-  const [githubSyncStatus, setGithubSyncStatus] = useState<string | null>(null);
   
   // Element inspector state
   const [inspectorMode, setInspectorMode] = useState(false);
@@ -92,39 +84,6 @@ export default function ThemeCustomizer() {
       description: 'All variables have been reset to their default values.',
     });
   }, [toast, originalDefaults]);
-
-  const handleGithubSync = useCallback(async () => {
-    if (!githubUrl.trim()) {
-      toast({ title: 'No URL', description: 'Please enter a GitHub URL.', variant: 'destructive' });
-      return;
-    }
-    setGithubSyncing(true);
-    setGithubSyncStatus(null);
-    try {
-      const response = await fetch('/api/fetch-github-scss', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: githubUrl.trim(), token: githubToken.trim() || undefined }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch');
-      }
-      setGithubCss(data.css);
-      setGithubSyncStatus('synced');
-      toast({
-        title: 'Theme CSS synced',
-        description: data.warning 
-          ? `Synced with warnings: ${data.warning}` 
-          : 'Successfully fetched and compiled the SCSS from GitHub.',
-      });
-    } catch (err: any) {
-      setGithubSyncStatus('error');
-      toast({ title: 'Sync failed', description: err.message, variant: 'destructive' });
-    } finally {
-      setGithubSyncing(false);
-    }
-  }, [githubUrl, githubToken, toast]);
 
   const handleResetEverything = useCallback(() => {
     setVariables(prev => prev.map(v => {
@@ -794,79 +753,6 @@ export default function ThemeCustomizer() {
           </TabsList>
         </Tabs>
         <div className="flex gap-2 flex-wrap">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm"
-                data-testid="button-github-sync"
-              >
-                <Github className="h-4 w-4 mr-2" />
-                GitHub CSS
-                {githubSyncStatus === 'synced' && (
-                  <span className="ml-1.5 w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-                )}
-                {githubSyncStatus === 'error' && (
-                  <span className="ml-1.5 w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-96" align="end">
-              <div className="space-y-3">
-                <div>
-                  <h4 className="font-medium text-sm mb-1">Sync Theme SCSS from GitHub</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Fetches an SCSS file from GitHub, compiles it to CSS, and applies it to the preview.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="github-url" className="text-xs">GitHub File URL</Label>
-                  <Input
-                    id="github-url"
-                    value={githubUrl}
-                    onChange={(e) => setGithubUrl(e.target.value)}
-                    placeholder="https://github.com/org/repo/blob/main/path/to/file.scss"
-                    className="text-xs"
-                    data-testid="input-github-url"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="github-token" className="text-xs flex items-center gap-1">
-                    <KeyRound className="h-3 w-3" />
-                    Access Token (for private repos)
-                  </Label>
-                  <Input
-                    id="github-token"
-                    type="password"
-                    value={githubToken}
-                    onChange={(e) => setGithubToken(e.target.value)}
-                    placeholder="ghp_xxxxxxxxxxxx"
-                    className="text-xs"
-                    data-testid="input-github-token"
-                  />
-                </div>
-                <Button 
-                  onClick={handleGithubSync} 
-                  disabled={githubSyncing || !githubUrl.trim()}
-                  className="w-full"
-                  size="sm"
-                  data-testid="button-github-fetch"
-                >
-                  {githubSyncing ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                  )}
-                  {githubSyncing ? 'Syncing...' : 'Sync from GitHub'}
-                </Button>
-                {githubCss && (
-                  <p className="text-xs text-muted-foreground">
-                    Currently loaded: {Math.round(githubCss.length / 1024)}KB of compiled CSS
-                  </p>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
           <input
             ref={themeImportInputRef}
             type="file"
@@ -926,7 +812,6 @@ export default function ThemeCustomizer() {
                   previewHtml={previewHtml} 
                   customCssFiles={scssFiles} 
                   fontCss={fontCssForPreview}
-                  githubCss={githubCss}
                   inspectorMode={inspectorMode}
                   onElementSelect={(element) => {
                     setSelectedElement(element);
