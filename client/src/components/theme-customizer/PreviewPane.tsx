@@ -675,6 +675,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
          transparent here but our surface overrides force a background-color. 
          Re-apply transparent to match the template's intended rule. */
       [class*=span-] > .dynamic-list[class*=bg-color-],
+      [class*=span-] > .event-list[class*=bg-color-],
       [class*=span-] > .module-heading[class*=bg-color-],
       [class*=span-] > .module.module-heading[class*=bg-color-] {
         background: transparent !important;
