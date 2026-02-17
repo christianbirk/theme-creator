@@ -29,7 +29,7 @@ const deviceWidths: Record<DeviceMode, string> = {
   mobile: '375px',
 };
 
-const DEFAULT_TEMPLATE_URL = 'https://dominik.gopublic.dk/';
+const DEFAULT_TEMPLATE_URL = 'https://municipality-template.gopublic.dk/';
 
 const loadingHtml = `
 <!DOCTYPE html>
