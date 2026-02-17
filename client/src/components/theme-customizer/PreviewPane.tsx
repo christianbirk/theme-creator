@@ -899,9 +899,17 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         };
       }
       
+      if (window.__inspectorInitialized) return;
+      window.__inspectorInitialized = true;
+      
       let hoveredElement = null;
       
+      function isInspectorActive() {
+        return !!document.getElementById('inspector-script');
+      }
+      
       document.addEventListener('mouseover', function(e) {
+        if (!isInspectorActive()) return;
         const target = e.target;
         if (hoveredElement) {
           hoveredElement.style.outline = '';
@@ -917,6 +925,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       }, true);
       
       document.addEventListener('mouseout', function(e) {
+        if (!isInspectorActive()) return;
         if (hoveredElement) {
           hoveredElement.style.outline = '';
           hoveredElement.style.outlineOffset = '';
@@ -926,6 +935,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       }, true);
       
       document.addEventListener('click', function(e) {
+        if (!isInspectorActive()) return;
         e.preventDefault();
         e.stopPropagation();
         const target = e.target;
