@@ -277,7 +277,7 @@ export function ControlPanel({
         } else {
           // Keep other nav subsections in main-navigation
           effectiveMainSection = 'main-navigation';
-          if (!isNavSubsectionVisible(subSection, navigationMode)) {
+          if (expertMode && !isNavSubsectionVisible(subSection, navigationMode)) {
             return;
           }
         }
@@ -719,7 +719,7 @@ export function ControlPanel({
                 </AccordionTrigger>
                 <AccordionContent className="pb-0">
                   {/* Navigation mode toggle for main-navigation section */}
-                  {section.id === 'main-navigation' && (
+                  {section.id === 'main-navigation' && expertMode && (
                     <div className="px-4 py-3 border-b bg-muted/30">
                       <Label className="text-xs text-muted-foreground mb-2 block">Navigation Type</Label>
                       <Tabs 
