@@ -1,14 +1,25 @@
+/* --- Color by SCSS --- */
+$color-brand-a: #342BA2;
+$color-brand-b: #1B184D;
+$color-brand-c: #FF9E7E;
+$color-brand-d: #F2EEEC;
+$color-brand-e: #FFF1EB;
+$color-brand-f: #eeeef7;
+$color-brand-g: #ffffff;
+
+$grid-max-width: 1240px;
+
 :root {
 	/* --- Colors --- */
 
 	/* Identity Colors */
-	--color-brand-a: #342BA2;
-	--color-brand-b: #1B184D;
-	--color-brand-c: #FF9E7E;
-	--color-brand-d: #F2EEEC;
-	--color-brand-e: #FFF1EB;
-	--color-brand-f: #eeeef7;
-	--color-brand-g: #ffffff;
+	--color-brand-a: #{$color-brand-a};
+	--color-brand-b: #{$color-brand-b};
+	--color-brand-c: #{$color-brand-c};
+	--color-brand-d: #{$color-brand-d};
+	--color-brand-e: #{$color-brand-e};
+	--color-brand-f: #{$color-brand-f};
+	--color-brand-g: #{$color-brand-g};
 
 	/* Neutral Colors */
 	--color-neutral-a: #252525;
@@ -94,7 +105,7 @@
 	--font-xlarge-size-span-1-9: var(--font-medium);
 	--font-xxlarge-size-span-1-9: var(--font-xmedium);
 		
-	/* Line Heights */
+	/* line-heights (pre-multiplied) */
 	--font-xsmall-line-height: calc(var(--font-xsmall) * 1.33);
 	--font-small-line-height: calc(var(--font-small) * 1.43);
 	--font-normal-line-height: calc(var(--font-normal) * 1.45);
@@ -148,14 +159,14 @@
 	--lead-font-line-height: var(--font-xnormal-line-height);
 
 	/* Links */
-	--link-style: underline;
+	--link-style: underline; /* set to 'underline' or 'arrow' */
 
 	/* --- Layout and Spacing--- */
 
 	/* Grid */
 	--grid-gutter-desktop: 16px;
 	--grid-gutter-mobile: 12px;
-	--grid-container-max-width: 1240px;
+	--grid-container-max-width: #{$grid-max-width};
 	--grid-header-container-width: min(100%, var(--grid-container-max-width)); 
 	--grid-box-padding: 32px;
 	--grid-box-padding-mobile: 24px;
