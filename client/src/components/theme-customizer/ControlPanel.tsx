@@ -21,10 +21,10 @@ import { WeightReferenceSelect } from './WeightReferenceSelect';
 import { BorderInput } from './BorderInput';
 
 // Subsections that are only visible in expert mode
-const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors', 'grid', 'font-sizes', 'line-heights', 'alternate-module-heading'];
+const EXPERT_ONLY_SUBSECTIONS = ['neutral-colors', 'grid', 'font-sizes', 'line-heights', 'alternate-module-heading', 'mega-menu', 'burger-navigation', 'search', 'breadcrumb-navigation', 'left-navigation'];
 
 // Main sections that are only visible in expert mode
-const EXPERT_ONLY_MAIN_SECTIONS = ['colors-combinations', 'icons', 'labels', 'aspect-ratios'];
+const EXPERT_ONLY_MAIN_SECTIONS = ['colors-combinations', 'icons', 'labels', 'aspect-ratios', 'buttons', 'forms'];
 
 // Navigation mode types
 type NavigationMode = 'standard' | 'burger';
