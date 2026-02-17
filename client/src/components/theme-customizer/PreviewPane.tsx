@@ -80,8 +80,41 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   const [templateUrl, setTemplateUrl] = useState(DEFAULT_TEMPLATE_URL);
   const [urlInput, setUrlInput] = useState(DEFAULT_TEMPLATE_URL);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [goBasicJsInline, setGoBasicJsInline] = useState<string>('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
+
+  const GOBASIC_JS_FILES = [
+    'accordionAndTabs.min.js',
+    'application.min.js',
+    'cookies.min.js',
+    'focusVisible.min.js',
+    'heroSection.min.js',
+    'itemList.min.js',
+    'navigation.min.js',
+    'popUpFrame.min.js',
+  ];
+
+  useEffect(() => {
+    async function fetchGoBasicJs() {
+      try {
+        const results = await Promise.all(
+          GOBASIC_JS_FILES.map(async (file) => {
+            try {
+              const resp = await fetch(`/api/proxy-js?file=${encodeURIComponent(file)}`);
+              if (resp.ok) return await resp.text();
+              return '';
+            } catch { return ''; }
+          })
+        );
+        const combined = results.filter(Boolean).map(code => `try{${code}}catch(e){}`).join('\n');
+        setGoBasicJsInline(combined);
+      } catch (err) {
+        console.error('Failed to fetch GoBasic JS:', err);
+      }
+    }
+    fetchGoBasicJs();
+  }, []);
 
   // Load template HTML
   const loadTemplate = useCallback(async (url: string) => {
@@ -962,22 +995,14 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   // Base HTML for initial iframe load - only changes when template loads, NOT when variables change
   const iframeSrcDoc = useMemo(() => {
     const baseHtml = getCurrentHtml();
-    const goBasicScripts = [
-      'accordionAndTabs.min.js',
-      'application.min.js',
-      'cookies.min.js',
-      'focusVisible.min.js',
-      'heroSection.min.js',
-      'itemList.min.js',
-      'navigation.min.js',
-      'popUpFrame.min.js',
-    ].map(f => `<script src="https://poc.media.gopublic.eu/GoBasic/Applications/Release/${f}"><\/script>`).join('\n');
-    const styleTag = `<style id="custom-variables"></style>${navigationScript}${goBasicScripts}`;
+    const goBasicScriptTag = goBasicJsInline ? `<script id="gobasic-scripts">${goBasicJsInline}<\/script>` : '';
+    const styleTag = `<style id="custom-variables"></style>${navigationScript}${goBasicScriptTag}`;
     
     let cleanedHtml = baseHtml.replace(/<style id="custom-variables">[\s\S]*?<\/style>/g, '');
     cleanedHtml = cleanedHtml.replace(/<script id="inspector-script">[\s\S]*?<\/script>/g, '');
     cleanedHtml = cleanedHtml.replace(/<style id="inspector-styles">[\s\S]*?<\/style>/g, '');
     cleanedHtml = cleanedHtml.replace(/<script id="nav-intercept-script">[\s\S]*?<\/script>/g, '');
+    cleanedHtml = cleanedHtml.replace(/<script id="gobasic-scripts">[\s\S]*?<\/script>/g, '');
     
     if (cleanedHtml.includes('</body>')) {
       return cleanedHtml.replace('</body>', `${styleTag}</body>`);
@@ -988,7 +1013,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     }
     
     return `${cleanedHtml}${styleTag}`;
-  }, [getCurrentHtml]);
+  }, [getCurrentHtml, goBasicJsInline]);
 
   // Dynamically inject/remove inspector script without reloading iframe
   useEffect(() => {

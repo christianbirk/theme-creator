@@ -699,6 +699,55 @@ export async function registerRoutes(
     }
   });
 
+  app.get('/api/proxy-js', async (req, res) => {
+    try {
+      const { file } = req.query;
+      if (!file || typeof file !== 'string') {
+        return res.status(400).json({ error: 'File parameter is required' });
+      }
+
+      const allowedFiles = [
+        'accordionAndTabs.min.js',
+        'application.min.js',
+        'cookies.min.js',
+        'focusVisible.min.js',
+        'heroSection.min.js',
+        'itemList.min.js',
+        'navigation.min.js',
+        'popUpFrame.min.js',
+      ];
+
+      if (!allowedFiles.includes(file)) {
+        return res.status(403).json({ error: 'File not allowed' });
+      }
+
+      const url = `https://poc.media.gopublic.eu/GoBasic/Applications/Release/${file}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Theme-Customizer/1.0)',
+          'Accept': 'application/javascript,*/*;q=0.8',
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        return res.status(response.status).json({ error: `Failed to fetch ${file}` });
+      }
+
+      const content = await response.text();
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(content);
+    } catch (err) {
+      console.error('Proxy JS error:', err);
+      res.status(500).json({ error: 'Failed to proxy JS file' });
+    }
+  });
+
   app.get('/api/sample-scss', async (req, res) => {
     try {
       const samplePath = path.join(process.cwd(), 'server/sample-scss/variables.scss');
