@@ -698,6 +698,25 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     `;
   }, [cssVariablesImportant, surfaceOverrides, customCssFilesContent, fontCss]);
 
+  const navigationScript = useMemo(() => {
+    return `<script id="nav-intercept-script">
+(function() {
+  document.addEventListener('click', function(e) {
+    var anchor = e.target.closest('a');
+    if (!anchor) return;
+    var href = anchor.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      var resolved = new URL(href, document.baseURI).href;
+      window.parent.postMessage({ type: 'preview-navigate', url: resolved }, '*');
+    } catch(err) {}
+  }, true);
+})();
+</script>`;
+  }, []);
+
   // Get the current HTML - template or loading
   const getCurrentHtml = useCallback(() => {
     if (templateHtml) {
@@ -926,11 +945,12 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   // Base HTML for initial iframe load - only changes when template loads, NOT when variables change
   const iframeSrcDoc = useMemo(() => {
     const baseHtml = getCurrentHtml();
-    const styleTag = `<style id="custom-variables"></style>${inspectorScript}`;
+    const styleTag = `<style id="custom-variables"></style>${inspectorScript}${navigationScript}`;
     
     let cleanedHtml = baseHtml.replace(/<style id="custom-variables">[\s\S]*?<\/style>/g, '');
     cleanedHtml = cleanedHtml.replace(/<script id="inspector-script">[\s\S]*?<\/script>/g, '');
     cleanedHtml = cleanedHtml.replace(/<style id="inspector-styles">[\s\S]*?<\/style>/g, '');
+    cleanedHtml = cleanedHtml.replace(/<script id="nav-intercept-script">[\s\S]*?<\/script>/g, '');
     
     if (cleanedHtml.includes('</body>')) {
       return cleanedHtml.replace('</body>', `${styleTag}</body>`);
@@ -1025,6 +1045,19 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [inspectorMode, onElementSelect]);
+
+  // Listen for navigation messages from iframe link clicks
+  useEffect(() => {
+    const handleNavMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'preview-navigate' && event.data.url) {
+        const newUrl = event.data.url;
+        setUrlInput(newUrl);
+        loadTemplate(newUrl);
+      }
+    };
+    window.addEventListener('message', handleNavMessage);
+    return () => window.removeEventListener('message', handleNavMessage);
+  }, [loadTemplate]);
 
   // Reset iframe loaded state when template changes
   useEffect(() => {
