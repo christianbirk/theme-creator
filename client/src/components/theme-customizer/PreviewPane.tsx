@@ -671,6 +671,15 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         color: var(--pre-heading-color) !important;
       }
       
+      /* Module-heading background override - template sets a muted bg but 
+         the SCSS variables define it as transparent; force transparent so 
+         the parent surface color shows through */
+      .module.module-heading,
+      .module.module-heading > .introduction,
+      .module.module-heading > .text {
+        background-color: transparent !important;
+      }
+      
       /* Navigation border overrides - target main nav only */
       .nav-main,
       nav.nav-main,
