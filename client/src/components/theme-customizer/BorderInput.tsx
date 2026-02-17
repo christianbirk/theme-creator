@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Slider } from '@/components/ui/slider';
 import { RotateCcw } from 'lucide-react';
 import { CSSVariable } from './types';
 
@@ -33,42 +34,71 @@ interface BorderParts {
   color: string;
 }
 
+interface ColorMixParts {
+  colorSpace: string;
+  baseColor: string;
+  percentage: number;
+  blendColor: string;
+}
+
 const BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted', 'double', 'groove', 'ridge', 'inset', 'outset'];
+
+const BLEND_COLORS = ['transparent', 'black', 'white'];
+
+const COLOR_SPACES = ['srgb', 'oklch', 'oklab', 'display-p3', 'srgb-linear', 'xyz'];
+
+function parseColorMix(value: string): ColorMixParts | null {
+  const match = value.match(/color-mix\(\s*in\s+([a-z0-9-]+)\s*,\s*(.+?)\s+(\d+)%\s*,\s*([a-z]+)\s*\)/i);
+  if (match) {
+    return {
+      colorSpace: match[1],
+      baseColor: match[2],
+      percentage: parseInt(match[3]),
+      blendColor: match[4],
+    };
+  }
+  return null;
+}
+
+function composeColorMix(parts: ColorMixParts): string {
+  return `color-mix(in ${parts.colorSpace}, ${parts.baseColor} ${parts.percentage}%, ${parts.blendColor})`;
+}
 
 function parseBorderValue(value: string): BorderParts {
   if (!value || value.trim() === '') {
-    // Default to solid so user can start entering values
     return { width: '', style: 'solid', color: '' };
   }
 
   const trimmed = value.trim();
   
-  // Try to extract width (e.g., 1px, 2rem)
-  const widthMatch = trimmed.match(/(\d+(?:\.\d+)?(?:px|rem|em|%)?)/);
+  const widthMatch = trimmed.match(/^(\d+(?:\.\d+)?(?:px|rem|em|%)?)\s/);
   const width = widthMatch ? widthMatch[1] : '';
   
-  // Try to extract style
   let style = 'solid';
   for (const s of BORDER_STYLES) {
-    if (s !== 'solid' && trimmed.includes(s)) {
+    if (trimmed.includes(s)) {
       style = s;
       break;
     }
   }
   
-  // Extract color - could be hex, rgb, or var()
   let color = '';
-  const varMatch = trimmed.match(/var\([^)]+\)/);
-  if (varMatch) {
-    color = varMatch[0];
+  const colorMixMatch = trimmed.match(/color-mix\([^)]*(?:\([^)]*\))*[^)]*\)/);
+  if (colorMixMatch) {
+    color = colorMixMatch[0];
   } else {
-    const hexMatch = trimmed.match(/#[a-fA-F0-9]{3,8}/);
-    if (hexMatch) {
-      color = hexMatch[0];
+    const varMatch = trimmed.match(/var\([^)]+\)/);
+    if (varMatch) {
+      color = varMatch[0];
     } else {
-      const rgbMatch = trimmed.match(/rgba?\([^)]+\)/);
-      if (rgbMatch) {
-        color = rgbMatch[0];
+      const hexMatch = trimmed.match(/#[a-fA-F0-9]{3,8}/);
+      if (hexMatch) {
+        color = hexMatch[0];
+      } else {
+        const rgbMatch = trimmed.match(/rgba?\([^)]+\)/);
+        if (rgbMatch) {
+          color = rgbMatch[0];
+        }
       }
     }
   }
@@ -81,7 +111,6 @@ function composeBorderValue(parts: BorderParts): string {
     return '';
   }
   
-  // Always include the style, only add width/color if present
   const components = [parts.width, parts.style, parts.color].filter(Boolean);
   return components.join(' ');
 }
@@ -100,7 +129,6 @@ export function BorderInput({
   
   const isModified = value !== defaultValue;
   
-  // Sync parts when value changes externally (not from local edits)
   useEffect(() => {
     if (!isLocalEdit) {
       setParts(parseBorderValue(value));
@@ -129,15 +157,46 @@ export function BorderInput({
     setColorPickerOpen(false);
   }, [updatePart]);
 
+  const colorMixParts = useMemo(() => parseColorMix(parts.color), [parts.color]);
+
+  const handleColorMixChange = useCallback((updated: Partial<ColorMixParts>) => {
+    const current = colorMixParts || {
+      colorSpace: 'srgb',
+      baseColor: colorOptions.length > 0 ? `var(${colorOptions[0].name})` : '#000000',
+      percentage: 50,
+      blendColor: 'transparent',
+    };
+    const newMix = { ...current, ...updated };
+    updatePart('color', composeColorMix(newMix));
+  }, [colorMixParts, updatePart, colorOptions]);
+
+  const handleCreateColorMix = useCallback(() => {
+    const defaultMix: ColorMixParts = {
+      colorSpace: 'srgb',
+      baseColor: colorOptions.length > 0 ? `var(${colorOptions[0].name})` : '#000000',
+      percentage: 25,
+      blendColor: 'transparent',
+    };
+    updatePart('color', composeColorMix(defaultMix));
+  }, [updatePart, colorOptions]);
+
   const colorDisplayValue = useMemo(() => {
+    if (colorMixParts) {
+      const baseLabel = colorMixParts.baseColor.startsWith('var(')
+        ? formatLabel(colorMixParts.baseColor.match(/var\(([^)]+)\)/)?.[1] || '')
+        : colorMixParts.baseColor;
+      return `${baseLabel} ${colorMixParts.percentage}%`;
+    }
     if (parts.color.startsWith('var(')) {
       const match = parts.color.match(/var\(([^)]+)\)/);
       return match ? formatLabel(match[1]) : parts.color;
     }
     return parts.color || 'Select color...';
-  }, [parts.color]);
+  }, [parts.color, colorMixParts]);
 
   const isColorVar = parts.color.startsWith('var(');
+  const isColorMix = !!colorMixParts;
+  const defaultTab = isColorMix ? 'color-mix' : isColorVar ? 'reference' : 'custom';
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -156,7 +215,6 @@ export function BorderInput({
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Width input */}
         <Input
           type="text"
           value={parts.width}
@@ -167,7 +225,6 @@ export function BorderInput({
           data-testid={`border-width-${label}`}
         />
 
-        {/* Style select */}
         <Select
           value={parts.style}
           onValueChange={(val) => updatePart('style', val)}
@@ -184,30 +241,38 @@ export function BorderInput({
           </SelectContent>
         </Select>
 
-        {/* Color picker */}
         <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
               disabled={parts.style === 'none'}
-              className="w-24 h-8 px-2 flex items-center gap-2 border rounded-md bg-background text-xs truncate cursor-pointer hover:border-primary transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-28 h-8 px-2 flex items-center gap-2 border rounded-md bg-background text-xs truncate cursor-pointer hover:border-primary transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid={`border-color-trigger-${label}`}
             >
-              {parts.color && !isColorVar && (
+              {isColorMix && (
+                <span className="w-4 h-4 rounded border flex-shrink-0 bg-muted" title="color-mix()">
+                  <svg viewBox="0 0 16 16" className="w-full h-full">
+                    <circle cx="6" cy="8" r="4" fill="currentColor" opacity="0.3" />
+                    <circle cx="10" cy="8" r="4" fill="currentColor" opacity="0.6" />
+                  </svg>
+                </span>
+              )}
+              {parts.color && !isColorVar && !isColorMix && (
                 <span 
                   className="w-4 h-4 rounded border flex-shrink-0" 
                   style={{ backgroundColor: parts.color }}
                 />
               )}
-              <span className={isColorVar ? "capitalize text-muted-foreground" : ""}>
+              <span className={isColorVar || isColorMix ? "capitalize text-muted-foreground truncate" : "truncate"}>
                 {colorDisplayValue}
               </span>
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-3" align="start">
-            <Tabs defaultValue={isColorVar ? "reference" : "custom"} className="w-[220px]">
+            <Tabs defaultValue={defaultTab} className="w-[260px]">
               <TabsList className="w-full">
                 <TabsTrigger value="reference" className="flex-1 text-xs">Reference</TabsTrigger>
+                <TabsTrigger value="color-mix" className="flex-1 text-xs">Color Mix</TabsTrigger>
                 <TabsTrigger value="custom" className="flex-1 text-xs">Custom</TabsTrigger>
               </TabsList>
               <TabsContent value="reference" className="mt-2">
@@ -233,16 +298,120 @@ export function BorderInput({
                   </div>
                 </ScrollArea>
               </TabsContent>
+              <TabsContent value="color-mix" className="mt-2 space-y-3">
+                {!isColorMix ? (
+                  <div className="text-center py-4">
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Create a blended color using color-mix()
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCreateColorMix}
+                      data-testid={`border-create-color-mix-${label}`}
+                    >
+                      Create Color Mix
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">Base Color</label>
+                      <Select
+                        value={colorMixParts.baseColor}
+                        onValueChange={(val) => handleColorMixChange({ baseColor: val })}
+                      >
+                        <SelectTrigger className="h-8 text-xs" data-testid={`border-mix-base-${label}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {colorOptions.map((colorVar) => (
+                            <SelectItem key={colorVar.name} value={`var(${colorVar.name})`} className="text-xs">
+                              <div className="flex items-center gap-2">
+                                <span 
+                                  className="w-3 h-3 rounded border flex-shrink-0" 
+                                  style={{ backgroundColor: colorVar.value }}
+                                />
+                                <span className="capitalize">{formatLabel(colorVar.name)}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-medium text-muted-foreground">Amount</label>
+                        <span className="text-xs font-mono text-muted-foreground">{colorMixParts.percentage}%</span>
+                      </div>
+                      <Slider
+                        value={[colorMixParts.percentage]}
+                        onValueChange={([val]) => handleColorMixChange({ percentage: val })}
+                        min={1}
+                        max={100}
+                        step={1}
+                        className="w-full"
+                        data-testid={`border-mix-pct-${label}`}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">Blend With</label>
+                      <Select
+                        value={colorMixParts.blendColor}
+                        onValueChange={(val) => handleColorMixChange({ blendColor: val })}
+                      >
+                        <SelectTrigger className="h-8 text-xs" data-testid={`border-mix-blend-${label}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BLEND_COLORS.map((c) => (
+                            <SelectItem key={c} value={c} className="text-xs capitalize">
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">Color Space</label>
+                      <Select
+                        value={colorMixParts.colorSpace}
+                        onValueChange={(val) => handleColorMixChange({ colorSpace: val })}
+                      >
+                        <SelectTrigger className="h-8 text-xs" data-testid={`border-mix-space-${label}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COLOR_SPACES.map((cs) => (
+                            <SelectItem key={cs} value={cs} className="text-xs">
+                              {cs}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="pt-1 border-t">
+                      <p className="text-[10px] font-mono text-muted-foreground break-all">
+                        {parts.color}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </TabsContent>
               <TabsContent value="custom" className="mt-2">
                 <Input
-                  value={isColorVar ? '' : parts.color}
+                  value={isColorVar ? '' : (isColorMix ? '' : parts.color)}
                   onChange={(e) => updatePart('color', e.target.value)}
                   className="font-mono text-xs"
-                  placeholder="#cccccc"
+                  placeholder="#cccccc or color-mix(...)"
                   data-testid={`border-color-custom-${label}`}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Enter a hex color value
+                  Enter a hex color, var() reference, or color-mix() expression
                 </p>
               </TabsContent>
             </Tabs>
