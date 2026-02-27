@@ -702,7 +702,8 @@ export async function registerRoutes(
                   signal: AbortSignal.timeout(8000),
                 });
                 if (jsResp.ok) {
-                  const code = await jsResp.text();
+                  let code = await jsResp.text();
+                  code = code.replace(/<\/(script|body|html|style)/gi, '<\\/$1');
                   return `<script>try{${code}}catch(e){console.warn('GoBasic script error:',e)}<\/script>`;
                 }
               } catch (e) {
@@ -736,8 +737,9 @@ window.addEventListener('load', function() {
 <\/script>`;
           if (scriptBlock) {
             const allScripts = scriptBlock + '\n' + heroReinit;
-            if (html.includes('</body>')) {
-              html = html.replace('</body>', `${allScripts}\n</body>`);
+            const lastBodyIdx = html.lastIndexOf('</body>');
+            if (lastBodyIdx !== -1) {
+              html = html.slice(0, lastBodyIdx) + `${allScripts}\n` + html.slice(lastBodyIdx);
             } else {
               html += allScripts;
             }

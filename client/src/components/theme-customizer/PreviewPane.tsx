@@ -990,12 +990,14 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     cleanedHtml = cleanedHtml.replace(/<style id="inspector-styles">[\s\S]*?<\/style>/g, '');
     cleanedHtml = cleanedHtml.replace(/<script id="nav-intercept-script">[\s\S]*?<\/script>/g, '');
     
-    if (cleanedHtml.includes('</body>')) {
-      return cleanedHtml.replace('</body>', `${styleTag}</body>`);
+    const lastBodyIdx = cleanedHtml.lastIndexOf('</body>');
+    if (lastBodyIdx !== -1) {
+      return cleanedHtml.slice(0, lastBodyIdx) + styleTag + cleanedHtml.slice(lastBodyIdx);
     }
     
-    if (cleanedHtml.includes('</html>')) {
-      return cleanedHtml.replace('</html>', `${styleTag}</html>`);
+    const lastHtmlIdx = cleanedHtml.lastIndexOf('</html>');
+    if (lastHtmlIdx !== -1) {
+      return cleanedHtml.slice(0, lastHtmlIdx) + styleTag + cleanedHtml.slice(lastHtmlIdx);
     }
     
     return `${cleanedHtml}${styleTag}`;
