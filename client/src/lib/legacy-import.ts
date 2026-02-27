@@ -85,6 +85,53 @@ const PREDEFINED_SCSS_VALUES: Record<string, string> = {
 };
 
 /**
+ * Convert SCSS arithmetic expressions to CSS calc() expressions.
+ * SCSS allows bare math like `24px - 4px` or `$var * 1.5`, but CSS requires calc().
+ * Also handles parenthesized sub-expressions like `24px 0 (24px - 4px)`.
+ */
+function wrapScssArithmeticInCalc(value: string): string {
+  if (!value || value.startsWith('calc(') || value.startsWith('var(')) return value;
+
+  let result = value;
+
+  const isCalcOperand = (s: string) => /[\d.]/.test(s) || s.startsWith('var(');
+
+  result = result.replace(/\(([^()]+)\)/g, (match, inner) => {
+    const trimmed = inner.trim();
+    if (/(?:[\d.]+[a-z%]*|var\([^)]+\))\s*[+\-*/]\s*(?:[\d.]+|var\()/.test(trimmed) && !trimmed.startsWith('calc(')) {
+      return `calc(${trimmed})`;
+    }
+    return match;
+  });
+
+  if (!/\bcalc\(/.test(result)) {
+    const parts = result.split(/\s+/);
+    if (parts.length >= 3) {
+      const rebuilt: string[] = [];
+      let i = 0;
+      while (i < parts.length) {
+        if (i + 2 < parts.length && /^[+\-*/]$/.test(parts[i + 1]) && 
+            isCalcOperand(parts[i]) && isCalcOperand(parts[i + 2])) {
+          let exprParts = [parts[i], parts[i + 1], parts[i + 2]];
+          i += 3;
+          while (i + 1 < parts.length && /^[+\-*/]$/.test(parts[i]) && isCalcOperand(parts[i + 1])) {
+            exprParts.push(parts[i], parts[i + 1]);
+            i += 2;
+          }
+          rebuilt.push(`calc(${exprParts.join(' ')})`);
+        } else {
+          rebuilt.push(parts[i]);
+          i++;
+        }
+      }
+      result = rebuilt.join(' ');
+    }
+  }
+
+  return result;
+}
+
+/**
  * Replace all predefined SCSS variables in a value with their fixed values
  * Handles compound values like "$space-12 0" -> "12px 0"
  */
@@ -250,6 +297,8 @@ export function applyMapping(
       finalValue = fontSizeMap[cleanFontSize];
     }
     
+    finalValue = wrapScssArithmeticInCalc(finalValue);
+    
     result.push({
       name: mapping.cssVariable,
       value: finalValue
@@ -331,13 +380,13 @@ function resolveToLiteral(
   for (const ref of varRefs) {
     const refValue = resolveToLiteral(ref, scssVariables, new Set(visited), cache);
     if (refValue === null) {
-      // Can't resolve this reference, return null for the whole value
       cache.set(varName, null);
       return null;
     }
     resolvedValue = resolvedValue.replace(ref, refValue);
   }
   
+  resolvedValue = wrapScssArithmeticInCalc(resolvedValue);
   cache.set(varName, resolvedValue);
   return resolvedValue;
 }
@@ -411,6 +460,20 @@ export function convertScssVariablesToCss(
   result = result.replace(/(?<!^\s*)(\$[a-zA-Z0-9_-]+)(?!\s*:)/gm, (match, scssVar) => {
     return replaceVar(scssVar);
   });
+  
+  // Post-process: wrap any remaining SCSS arithmetic in calc() for CSS compatibility
+  // Only apply to CSS property declarations (--var or property lines), skip @rules and selectors
+  result = result.split('\n').map(line => {
+    const trimmed = line.trimStart();
+    if (trimmed.startsWith('@') || trimmed.startsWith('//') || trimmed.startsWith('/*')) return line;
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) return line;
+    const beforeColon = line.substring(0, colonIdx).trimStart();
+    if (!/^-?-?[a-zA-Z]/.test(beforeColon)) return line;
+    const prop = line.substring(0, colonIdx + 1);
+    const val = line.substring(colonIdx + 1);
+    return prop + wrapScssArithmeticInCalc(val);
+  }).join('\n');
   
   return result;
 }
