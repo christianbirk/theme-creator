@@ -81,6 +81,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   const [urlInput, setUrlInput] = useState(DEFAULT_TEMPLATE_URL);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const customCssRef = useRef<string>('');
   const { toast } = useToast();
 
   // Load template HTML
@@ -646,7 +647,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   }, [customCssFiles]);
 
   const customCssContent = useMemo(() => {
-    return `
+    const css = `
       /* Font-face declarations */
       ${fontCss}
       
@@ -695,6 +696,8 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       /* Surface overrides for bg-color-* classes */
       ${surfaceOverrides}
     `;
+    customCssRef.current = css;
+    return css;
   }, [cssVariablesImportant, surfaceOverrides, customCssFilesContent, fontCss]);
 
   const navigationScript = useMemo(() => {
@@ -980,7 +983,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   // Base HTML for initial iframe load - only changes when template loads, NOT when variables change
   const iframeSrcDoc = useMemo(() => {
     const baseHtml = getCurrentHtml();
-    const styleTag = `<style id="custom-variables"></style>${navigationScript}`;
+    const styleTag = `<style id="custom-variables">${customCssRef.current}</style>${navigationScript}`;
     
     let cleanedHtml = baseHtml.replace(/<style id="custom-variables">[\s\S]*?<\/style>/g, '');
     cleanedHtml = cleanedHtml.replace(/<script id="inspector-script">[\s\S]*?<\/script>/g, '');
@@ -1075,6 +1078,24 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoaded(true);
+    if (iframeRef.current) {
+      try {
+        const iframeDoc = iframeRef.current.contentDocument;
+        if (iframeDoc) {
+          let styleEl = iframeDoc.getElementById('custom-variables') as HTMLStyleElement;
+          if (!styleEl) {
+            styleEl = iframeDoc.createElement('style');
+            styleEl.id = 'custom-variables';
+            (iframeDoc.body || iframeDoc.head)?.appendChild(styleEl);
+          }
+          if (customCssRef.current && styleEl.textContent !== customCssRef.current) {
+            styleEl.textContent = customCssRef.current;
+          }
+        }
+      } catch (e) {
+        // Effect will handle CSS injection as fallback
+      }
+    }
   }, []);
 
   // Listen for messages from the iframe (element inspector)
