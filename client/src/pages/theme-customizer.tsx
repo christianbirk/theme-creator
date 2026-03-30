@@ -588,25 +588,16 @@ export default function ThemeCustomizer() {
           return lines.join('\n');
         };
         
-        // ── Build _variables.scss ─────────────────────────────────────────
+        // ── Build _variables.scss (SCSS vars + :root block only) ─────────
         let variablesScss = '';
 
-        // 1. Custom @font-face declarations
-        const fontFaceCss = generateFontFaceCssForExport(customFonts);
-        if (fontFaceCss) {
-          variablesScss += `/* Custom Font Definitions */\n${fontFaceCss}\n\n`;
-        }
-
-        // 2. GoBasic base variables import
-        variablesScss += `// variables\n@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';\n\n`;
-
-        // 3. SCSS variable definitions (colors, grid)
+        // 1. SCSS variable definitions (colors, grid)
         const scssVarDefs = generateScssVariableDefinitions(variables);
         if (scssVarDefs) {
           variablesScss += `${scssVarDefs}\n\n`;
         }
 
-        // 4. :root CSS custom properties
+        // 2. :root CSS custom properties
         const cssProps = generateCssCustomProperties(variables);
         if (cssProps) {
           variablesScss += `:root {\n${cssProps}\n}\n`;
@@ -615,8 +606,19 @@ export default function ThemeCustomizer() {
         // ── Build theme.scss ──────────────────────────────────────────────
         let themeScss = '';
 
-        // Import _variables (no extension — SCSS partial convention)
-        themeScss += `@import 'variables';\n\n`;
+        // Custom @font-face declarations (at top of theme.scss)
+        const fontFaceCss = generateFontFaceCssForExport(customFonts);
+        if (fontFaceCss) {
+          themeScss += `/* Custom Font Definitions */\n${fontFaceCss}\n\n`;
+        }
+
+        // Fundamentals variables import
+        themeScss += `// Importing Fundamentals Variables\n`;
+        themeScss += `@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';\n\n`;
+
+        // Theme-specific variables
+        themeScss += `// Importing Theme Specific Variables\n`;
+        themeScss += `@import 'variables.scss';\n\n`;
 
         // Fundamentals style imports
         themeScss += `// Importing Fundamentals Styles\n`;
