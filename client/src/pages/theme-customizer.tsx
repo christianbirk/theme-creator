@@ -588,52 +588,68 @@ export default function ThemeCustomizer() {
           return lines.join('\n');
         };
         
-        // Build the complete theme file
-        let fullCss = '';
-        
-        // 1. Custom fonts CSS first
+        // ── Build _variables.scss ─────────────────────────────────────────
+        let variablesScss = '';
+
+        // 1. Custom @font-face declarations
         const fontFaceCss = generateFontFaceCssForExport(customFonts);
         if (fontFaceCss) {
-          fullCss += `/* Custom Font Definitions */\n${fontFaceCss}\n\n`;
+          variablesScss += `/* Custom Font Definitions */\n${fontFaceCss}\n\n`;
         }
-        
-        // 2. Import statements for fundamentals variables
-        const importVariables = `// variables
-@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';`;
-        fullCss += `${importVariables}\n\n`;
-        
-        // 3. SCSS variable definitions (for colors and grid)
+
+        // 2. GoBasic base variables import
+        variablesScss += `// variables\n@import '../../../../../GoBasic/baseStylesV6/css/variables.scss';\n\n`;
+
+        // 3. SCSS variable definitions (colors, grid)
         const scssVarDefs = generateScssVariableDefinitions(variables);
         if (scssVarDefs) {
-          fullCss += `${scssVarDefs}\n\n`;
+          variablesScss += `${scssVarDefs}\n\n`;
         }
-        
-        // 4. CSS custom properties in :root block
+
+        // 4. :root CSS custom properties
         const cssProps = generateCssCustomProperties(variables);
         if (cssProps) {
-          fullCss += `:root {\n${cssProps}\n}\n\n`;
+          variablesScss += `:root {\n${cssProps}\n}\n`;
         }
-        
-        // 5. Import statements for fundamentals styles
-        const importStyles = `// Importing Fundamentals Styles
-@import '../../../../../GoBasic/baseStylesV6/css/imports.scss';
-@import '../../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';`;
-        fullCss += importStyles;
-        
-        // 5. Import statements for custom SCSS files (only non-empty)
+
+        // ── Build theme.scss ──────────────────────────────────────────────
+        let themeScss = '';
+
+        // Import _variables (no extension — SCSS partial convention)
+        themeScss += `@import 'variables';\n\n`;
+
+        // Fundamentals style imports
+        themeScss += `// Importing Fundamentals Styles\n`;
+        themeScss += `@import '../../../../../GoBasic/baseStylesV6/css/imports.scss';\n`;
+        themeScss += `@import '../../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';`;
+
+        // Custom SCSS file imports (only non-empty)
         if (nonEmptyFiles.length > 0) {
-          fullCss += '\n\n// Custom SCSS Files';
+          themeScss += '\n\n// Custom SCSS Files';
           for (const file of nonEmptyFiles) {
-            fullCss += `\n@import '../custom/${file.name}';`;
+            themeScss += `\n@import '../custom/${file.name}';`;
           }
         }
-        
-        // Create css folder and put theme.scss inside it
+
+        // ── Populate zip ──────────────────────────────────────────────────
         const cssFolder = themeFolder.folder('css');
         if (cssFolder) {
-          cssFolder.file('theme.scss', fullCss);
+          cssFolder.file('_variables.scss', variablesScss);
+          cssFolder.file('theme.scss', themeScss);
+          // Compiled CSS output
+          cssFolder.file('theme.css', css);
+
+          // Custom fonts go inside css/fonts/
+          if (customFonts.length > 0) {
+            const cssFontsFolder = cssFolder.folder('fonts');
+            if (cssFontsFolder) {
+              for (const font of customFonts) {
+                cssFontsFolder.file(font.name, font.data);
+              }
+            }
+          }
         }
-        
+
         // Add individual SCSS files to custom folder (only non-empty)
         if (nonEmptyFiles.length > 0) {
           const customFolder = themeFolder.folder('custom');
@@ -660,23 +676,12 @@ export default function ThemeCustomizer() {
         if (preservedFolders) {
           const addFolderContents = (folderMap: Map<string, Uint8Array>) => {
             folderMap.forEach((data, filePath) => {
-              // filePath is like "charts/subfolder/file.png" - create proper path
               themeFolder.file(filePath, data);
             });
           };
           addFolderContents(preservedFolders.charts);
           addFolderContents(preservedFolders.fonts);
           addFolderContents(preservedFolders.release);
-        }
-        
-        // Add custom fonts from Custom Fonts tab
-        if (customFonts.length > 0) {
-          const fontsFolder = themeFolder.folder('fonts');
-          if (fontsFolder) {
-            for (const font of customFonts) {
-              fontsFolder.file(font.name, font.data);
-            }
-          }
         }
         
         // Generate and download the zip

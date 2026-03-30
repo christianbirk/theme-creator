@@ -99,7 +99,7 @@ export function generateFontFaceCssForExport(fonts: FontFile[]): string {
     
     return `@font-face {
   font-family: '${fontFamily}';
-  src: url('../fonts/${font.name}') format('${format}');
+  src: url('fonts/${font.name}') format('${format}');
   font-display: swap;
 }`;
   });
@@ -377,7 +377,7 @@ export function CustomFontsManager({ fonts, onFontsChange, onFontCssChange }: Cu
         <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
         <p className="text-xs text-muted-foreground">
           {fonts.length > 0 
-            ? <>The @font-face CSS above will be included in your exported theme. Fonts are placed in the <code className="bg-muted px-1 rounded">fonts/</code> folder.</>
+            ? <>The @font-face CSS above will be included in your exported theme. Fonts are placed in the <code className="bg-muted px-1 rounded">css/fonts/</code> folder.</>
             : <>Upload custom font files to include them in your theme export. @font-face rules will be generated automatically.</>
           }
         </p>
