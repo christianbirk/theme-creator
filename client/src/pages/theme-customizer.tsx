@@ -784,7 +784,7 @@ export default function ThemeCustomizer() {
             data-testid="button-legacy-import"
           >
             <Upload className="h-4 w-4 mr-2" />
-            Import Legacy Theme
+            Convert Legacy Theme
           </Button>
         </div>
       </header>

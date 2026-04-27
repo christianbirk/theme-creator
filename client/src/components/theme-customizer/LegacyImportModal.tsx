@@ -377,7 +377,7 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileArchive className="h-5 w-5" />
-            Import Legacy Theme
+            Convert Legacy Theme
           </DialogTitle>
           <DialogDescription>
             Upload a zip file containing your legacy theme folder to convert it to the new format.
