@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, FileArchive, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileArchive, FolderOpen, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import { parseMappingCsv, parseScssFile, applyMapping, ParsedScssVariables, convertScssVariablesToCss } from '@/lib/legacy-import';
@@ -69,17 +69,15 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
     onOpenChange(false);
   }, [onOpenChange, resetState]);
 
-  const processZip = useCallback(async (file: File) => {
+  const processZip = useCallback(async (zip: JSZip) => {
     setStep('processing');
     setProgress(0);
     setValidationErrors([]);
 
     try {
-      setStatusMessage('Reading zip file...');
+      setStatusMessage('Analyzing files...');
       setProgress(10);
-      
-      const zip = await JSZip.loadAsync(file);
-      
+
       let rootPrefix = '';
       const entries = Object.keys(zip.files);
       // Filter out __MACOSX and .DS_Store entries for detection
@@ -337,25 +335,63 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       console.error('Import error:', err);
       toast({
         title: 'Import failed',
-        description: err instanceof Error ? err.message : 'Failed to process the zip file',
+        description: err instanceof Error ? err.message : 'Failed to process the legacy theme',
         variant: 'destructive'
       });
       setStep('upload');
     }
   }, [toast]);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (!file.name.endsWith('.zip')) {
-        toast({
-          title: 'Invalid file type',
-          description: 'Please upload a .zip file',
-          variant: 'destructive'
-        });
-        return;
+    e.target.value = '';
+    if (!file) return;
+    if (!file.name.endsWith('.zip')) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a .zip file',
+        variant: 'destructive'
+      });
+      return;
+    }
+    try {
+      const zip = await JSZip.loadAsync(file);
+      processZip(zip);
+    } catch (err) {
+      toast({
+        title: 'Could not read zip',
+        description: err instanceof Error ? err.message : 'Failed to open zip file',
+        variant: 'destructive'
+      });
+    }
+  }, [processZip, toast]);
+
+  const handleFolderChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    e.target.value = '';
+    if (!files || files.length === 0) return;
+    
+    setStep('processing');
+    setProgress(0);
+    setStatusMessage('Reading folder...');
+    setValidationErrors([]);
+    
+    try {
+      const zip = new JSZip();
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const relPath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+        const data = await file.arrayBuffer();
+        zip.file(relPath, data);
       }
-      processZip(file);
+      processZip(zip);
+    } catch (err) {
+      toast({
+        title: 'Could not read folder',
+        description: err instanceof Error ? err.message : 'Failed to read folder contents',
+        variant: 'destructive'
+      });
+      setStep('upload');
     }
   }, [processZip, toast]);
 
@@ -379,25 +415,42 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
             Convert Legacy Theme
           </DialogTitle>
           <DialogDescription>
-            Upload a zip file containing your legacy theme folder to convert it to the new format.
+            Upload a zip file or pick a folder containing your legacy theme to convert it to the new format.
           </DialogDescription>
         </DialogHeader>
 
         {step === 'upload' && (
           <div className="space-y-4">
             <div 
-              className="border-2 border-dashed rounded-lg p-8 text-center hover-elevate cursor-pointer"
-              onClick={() => document.getElementById('legacy-zip-input')?.click()}
+              className="border-2 border-dashed rounded-lg p-8 text-center"
               data-testid="dropzone-legacy-import"
             >
               <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-sm font-medium mb-1">Click to upload zip file</p>
+              <p className="text-sm font-medium mb-1">Upload your legacy theme</p>
               <p className="text-xs text-muted-foreground">
                 Must contain: css/, styles.xml
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mb-4">
                 Optional: charts/, fonts/, release/
               </p>
+              <div className="flex gap-2 justify-center">
+                <Button 
+                  variant="outline"
+                  onClick={() => document.getElementById('legacy-zip-input')?.click()}
+                  data-testid="button-choose-zip"
+                >
+                  <FileArchive className="h-4 w-4 mr-2" />
+                  Choose Zip
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => document.getElementById('legacy-folder-input')?.click()}
+                  data-testid="button-choose-folder"
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  Choose Folder
+                </Button>
+              </div>
               <input
                 id="legacy-zip-input"
                 type="file"
@@ -405,6 +458,15 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
                 className="hidden"
                 onChange={handleFileChange}
                 data-testid="input-legacy-zip"
+              />
+              <input
+                id="legacy-folder-input"
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFolderChange}
+                data-testid="input-legacy-folder"
+                {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
               />
             </div>
 
