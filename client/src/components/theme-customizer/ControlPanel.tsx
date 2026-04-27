@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, RotateCcw, ChevronRight, MousePointer2, ArrowLeft } from 'lucide-react';
-import { CSSVariable, VariableCategory, formatVariableName, formatSectionName, sectionIcons } from './types';
+import { CSSVariable, VariableCategory, formatVariableName, formatSectionName } from './types';
 import { ColorPicker } from './ColorPicker';
 import { SizeInput } from './SizeInput';
 import { FontPicker } from './FontPicker';

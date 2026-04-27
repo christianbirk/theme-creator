@@ -30,16 +30,6 @@ interface CustomFontsManagerProps {
 }
 
 const SUPPORTED_EXTENSIONS = ['ttf', 'woff', 'woff2', 'eot'];
-const SUPPORTED_MIME_TYPES = [
-  'font/ttf',
-  'font/woff',
-  'font/woff2',
-  'application/vnd.ms-fontobject',
-  'application/x-font-ttf',
-  'application/x-font-woff',
-  'application/font-woff',
-  'application/font-woff2',
-];
 
 function getFileExtension(filename: string): string {
   return filename.split('.').pop()?.toLowerCase() || '';

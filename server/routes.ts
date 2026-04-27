@@ -1,6 +1,5 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { type Server } from "http";
 import * as sass from 'sass';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -59,115 +58,6 @@ function detectVariableType(name: string, value: string): CSSVariable['type'] {
   }
 
   return 'string';
-}
-
-function categorizeVariable(name: string): string {
-  const lowerName = name.toLowerCase();
-
-  // Identity/Brand Colors
-  if (lowerName.includes('color-brand') || lowerName.includes('primary') ||
-      lowerName.includes('accent') || lowerName.includes('universal-accent')) {
-    return 'brand-colors';
-  }
-
-  // Neutral Colors
-  if (lowerName.includes('color-neutral') || lowerName.includes('main-bg') ||
-      lowerName.includes('body-bg')) {
-    return 'neutral-colors';
-  }
-
-  // Dark Background Tones
-  if (lowerName.includes('-bg-dark') || lowerName.includes('on-bg-dark')) {
-    return 'dark-bg-tones';
-  }
-
-  // Light Background Tones (color combinations for light backgrounds)
-  if ((lowerName.includes('button') && (lowerName.includes('background') || lowerName.includes('color'))) ||
-      lowerName.includes('icon-background') || lowerName.includes('icon-color') ||
-      lowerName.includes('label-background') || lowerName.includes('label-color') ||
-      lowerName.includes('link-color') || lowerName.includes('font-base-color') ||
-      lowerName.includes('font-heading-color') || lowerName.includes('lead-color') ||
-      lowerName.includes('pre-heading-color') || lowerName.includes('boxed-border') ||
-      lowerName.includes('module-heading-border') || lowerName.includes('universal-accent-color')) {
-    return 'light-bg-tones';
-  }
-
-  // Typography
-  if (lowerName.includes('font') || lowerName.includes('text-transform') ||
-      lowerName.includes('line-height') || lowerName.includes('hyphens') ||
-      lowerName.includes('lead-') || lowerName.includes('pre-heading')) {
-    return 'typography';
-  }
-
-  // Layout & Spacing
-  if (lowerName.includes('grid') || lowerName.includes('spacing') ||
-      lowerName.includes('gutter') || lowerName.includes('padding') ||
-      lowerName.includes('margin') || lowerName.includes('gap') ||
-      lowerName.includes('container')) {
-    return 'layout';
-  }
-
-  // Borders & Radius
-  if (lowerName.includes('radius') || lowerName.includes('border-width') ||
-      lowerName.includes('boxed-border')) {
-    return 'borders';
-  }
-
-  // Shadows
-  if (lowerName.includes('shadow')) {
-    return 'shadows';
-  }
-
-  // Header, Footer, Body
-  if (lowerName.includes('header') || lowerName.includes('footer')) {
-    return 'header-footer';
-  }
-
-  // Navigation
-  if (lowerName.includes('nav') || lowerName.includes('breadcrumb') ||
-      lowerName.includes('menu') || lowerName.includes('service-') ||
-      lowerName.includes('burger')) {
-    return 'navigation';
-  }
-
-  // Search
-  if (lowerName.includes('search')) {
-    return 'search';
-  }
-
-  // Buttons
-  if (lowerName.includes('button') || lowerName.includes('btn') ||
-      lowerName.includes('link-arrow')) {
-    return 'buttons';
-  }
-
-  // Icons
-  if (lowerName.includes('icon')) {
-    return 'icons';
-  }
-
-  // Labels
-  if (lowerName.includes('label')) {
-    return 'labels';
-  }
-
-  // Forms
-  if (lowerName.includes('form') || lowerName.includes('input')) {
-    return 'forms';
-  }
-
-  // Aspect Ratios (hero typography moved to typography section)
-  if (lowerName.includes('aspect-ratio') || lowerName.includes('ratio')) {
-    return 'aspect-ratios';
-  }
-
-  // Transitions
-  if (lowerName.includes('transition') || lowerName.includes('duration') ||
-      lowerName.includes('easing') || lowerName.includes('animation')) {
-    return 'transitions';
-  }
-
-  return 'other';
 }
 
 function parseScssVariables(content: string): CSSVariable[] {

@@ -155,7 +155,6 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       const mappings = parseMappingCsv();
       const mappedVariables = applyMapping(scssVariables, mappings);
       
-      const mappedScssVars = new Set(mappings.map(m => m.scssVariable));
       const totalScssVars = Object.keys(scssVariables).length;
       const unmappedScssCount = totalScssVars - mappedVariables.length;
       

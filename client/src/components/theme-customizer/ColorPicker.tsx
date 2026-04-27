@@ -177,16 +177,6 @@ export function ColorPicker({
     }
   }, [effectiveRef, onChange, colorOptions]);
 
-  const displayValue = useMemo(() => {
-    if (effectiveRef) {
-      const baseLabel = effectiveRef.baseColor.startsWith('var(')
-        ? formatLabel(effectiveRef.baseColor.match(/var\(([^)]+)\)/)?.[1] || '')
-        : effectiveRef.baseColor;
-      if (effectiveRef.percentage === 100) return baseLabel;
-      return `${baseLabel} ${effectiveRef.percentage}%`;
-    }
-    return value;
-  }, [value, effectiveRef]);
 
   return (
     <div className="flex items-center gap-3 py-2">

@@ -41,7 +41,7 @@ export function CssClassesEditor({ onExportXml, onDataChange, importedData }: Cs
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<{ index: number; group: CssClassGroup } | null>(null);
 
-  const { isLoading, error } = useQuery<StylesXmlResponse>({
+  const { isLoading } = useQuery<StylesXmlResponse>({
     queryKey: ['/api/styles-xml'],
     staleTime: Infinity,
   });

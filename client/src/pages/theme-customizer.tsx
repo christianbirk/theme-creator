@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -18,18 +18,14 @@ import { Settings2, Tag, Code, Upload, FileType } from 'lucide-react';
 import { CustomCssManager, ScssFile } from '@/components/theme-customizer/CustomCssManager';
 import { CustomFontsManager, FontFile, generateFontFaceCssForExport } from '@/components/theme-customizer/CustomFontsManager';
 import { LegacyImportModal, PreservedFolders, CustomScssFile, ImportedFontFile } from '@/components/theme-customizer/LegacyImportModal';
-import { mergeMappedVariables } from '@/lib/legacy-import';
 import type { CssClassesData } from '@shared/schema';
 import JSZip from 'jszip';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function ThemeCustomizer() {
   const { toast } = useToast();
   const [exportModalOpen, setExportModalOpen] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState('');
   const [baseScss, setBaseScss] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [compiledCss, setCompiledCss] = useState('');
   
   const [variables, setVariables] = useState<CSSVariable[]>(() =>
     defaultCategories.flatMap(cat => cat.variables)
@@ -525,7 +521,6 @@ export default function ThemeCustomizer() {
     try {
       // Compile CSS theme
       const css = await compileTheme(variables, baseScss);
-      setCompiledCss(css);
       
       // Sanitize theme name for filenames
       const safeName = exportThemeName.replace(/[^a-zA-Z0-9-_]/g, '') || 'theme';
@@ -816,7 +811,7 @@ export default function ThemeCustomizer() {
               <ResizablePanel defaultSize={65}>
                 <PreviewPane 
                   variables={variables} 
-                  previewHtml={previewHtml} 
+                  previewHtml="" 
                   customCssFiles={scssFiles} 
                   fontCss={fontCssForPreview}
                   inspectorMode={inspectorMode}

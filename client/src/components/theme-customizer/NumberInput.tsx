@@ -41,7 +41,6 @@ export function NumberInput({
 
   // Determine which options to use (weight or line-height)
   const referenceOptions = weightOptions.length > 0 ? weightOptions : lineHeightOptions;
-  const isBaseValue = isBaseFontWeight || isBaseLineHeight;
   const hasReferenceOptions = referenceOptions.length > 0;
 
   const handleReset = useCallback((e: React.MouseEvent) => {

@@ -77,7 +77,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   const [templateHtml, setTemplateHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [iframeLoaded, setIframeLoaded] = useState(false);
-  const [templateUrl, setTemplateUrl] = useState(DEFAULT_TEMPLATE_URL);
+  const [, setTemplateUrl] = useState(DEFAULT_TEMPLATE_URL);
   const [urlInput, setUrlInput] = useState(DEFAULT_TEMPLATE_URL);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -146,24 +146,6 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   const variableMap = useMemo(() => {
     const map = new Map<string, string>();
     variables.forEach(v => map.set(v.name, v.value));
-    return map;
-  }, [variables]);
-
-  // Build maps for Light Background Tones and Dark Background Tones sections
-  const lightBgTonesMap = useMemo(() => {
-    const map = new Map<string, string>();
-    variables
-      .filter(v => v.subSection === 'light-background-tones' || v.category === 'light-bg-tones')
-      .forEach(v => map.set(v.name, v.value));
-    return map;
-  }, [variables]);
-
-  const darkBgTonesMap = useMemo(() => {
-    const map = new Map<string, string>();
-    variables
-      .filter(v => v.subSection === 'dark-background-tones' || v.category === 'dark-bg-tones' || 
-                   v.name.includes('-bg-dark') || v.name.includes('-on-bg-dark'))
-      .forEach(v => map.set(v.name, v.value));
     return map;
   }, [variables]);
 
