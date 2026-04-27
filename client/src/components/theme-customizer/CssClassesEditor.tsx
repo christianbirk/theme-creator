@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,20 +46,31 @@ export function CssClassesEditor({ onExportXml, onDataChange, importedData }: Cs
     staleTime: Infinity,
   });
 
+  // Track imported data via ref so the async default fetch can check the
+  // latest value (the prop may change before the fetch resolves).
+  const importedDataRef = useRef(importedData);
+  importedDataRef.current = importedData;
+
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
       try {
         const response = await fetch('/api/styles-xml');
         const result: StylesXmlResponse = await response.json();
-        if (result.success) {
-          setData(result.data);
-          setExpandedGroups([]);
-        }
+        if (cancelled || !result.success) return;
+        // Skip applying defaults if an import has already populated data —
+        // otherwise the late-arriving default would clobber imported
+        // allow/deny attributes and other class metadata.
+        const imported = importedDataRef.current;
+        if (imported && imported.groups.length > 0) return;
+        setData(result.data);
+        setExpandedGroups([]);
       } catch (err) {
         console.error('Load styles error:', err);
       }
     };
     fetchData();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
