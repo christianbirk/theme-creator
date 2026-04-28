@@ -365,6 +365,140 @@ const SSRF_BLOCKED_HOSTNAME_PATTERNS: RegExp[] = [
   /\.internal$/i,
 ];
 
+// Canonical V6 template that ships a working theme.min.css (one that
+// uses var(--color-brand-*)). Used to source a "blank theme" for swap.
+const BLANK_THEME_SOURCE_URL = 'https://municipality-template.gopublic.dk/';
+
+// In-memory cache for the swap-source CSS. Populated lazily on first use.
+// `null` means "not loaded yet"; a string means a successful fetch.
+let blankThemeCssCache: string | null = null;
+let blankThemeCssInflight: Promise<string | null> | null = null;
+
+// Helper used by the swap-source fetch path. Manually follows up to a
+// small number of redirects, re-validating every hop's protocol and
+// hostname against the SSRF blocklist. `redirect: 'follow'` is unsafe
+// here because the initial URL came from third-party HTML (the canonical
+// V6 template page) and a 30x could otherwise land us on an internal
+// host. Reads the body in chunks so a CDN that closes the connection
+// mid-stream still yields the bytes we already received.
+async function fetchUrlText(url: string, timeoutMs: number): Promise<string | null> {
+  try {
+    let currentUrl = url;
+    let resp: Response | null = null;
+    const maxHops = 5;
+    for (let hop = 0; hop <= maxHops; hop++) {
+      let parsed: URL;
+      try { parsed = new URL(currentUrl); } catch { return null; }
+      if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      if (isBlockedHostname(parsed.hostname)) return null;
+      resp = await fetch(currentUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+        redirect: 'manual',
+      });
+      if (resp.status >= 300 && resp.status < 400) {
+        const loc = resp.headers.get('location');
+        if (!loc || hop === maxHops) return null;
+        try {
+          currentUrl = new URL(loc, currentUrl).toString();
+        } catch {
+          return null;
+        }
+        continue;
+      }
+      break;
+    }
+    if (!resp || !resp.ok) return null;
+    let received = '';
+    if (resp.body) {
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder('utf-8', { fatal: false });
+      const cap = 4 * 1024 * 1024;
+      try {
+        while (received.length < cap) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          received += decoder.decode(value, { stream: true });
+        }
+        received += decoder.decode();
+      } catch {
+        // Partial read — keep whatever we already have.
+      }
+    } else {
+      received = await resp.text();
+    }
+    return received.length > 0 ? received : null;
+  } catch {
+    return null;
+  }
+}
+
+// Neutralize sequences in untrusted CSS that would let it break out of
+// a <style> element and execute as HTML/JS inside the iframe document.
+// Used before inlining any externally-fetched CSS.
+function escapeForStyleTag(css: string): string {
+  return css
+    .replace(/<\/style/gi, '<\\/style')
+    .replace(/<!--/g, '<\\!--')
+    .replace(/-->/g, '--\\>');
+}
+
+// Discover and cache a complete V6 theme CSS that DOES use
+// var(--color-brand-*). Used to substitute the stylesheet of any
+// previewed site whose own theme.min.css was Sass-compiled with the
+// variables baked in. The CSS is inlined into the iframe HTML, so we
+// only need its text — no <link>/CORS path needed.
+async function getBlankThemeCss(): Promise<string | null> {
+  if (blankThemeCssCache) return blankThemeCssCache;
+  if (blankThemeCssInflight) return blankThemeCssInflight;
+  blankThemeCssInflight = (async () => {
+    try {
+      const html = await fetchUrlText(BLANK_THEME_SOURCE_URL, 8000);
+      if (!html) return null;
+      // Find the first stylesheet whose URL points at a baseStyles theme
+      // bundle (same predicate as the compatibility probe).
+      const linkTagRegex = /<link\b[^>]*>/gi;
+      let tag: RegExpExecArray | null;
+      let themeHref: string | null = null;
+      while ((tag = linkTagRegex.exec(html)) !== null) {
+        const t = tag[0];
+        const rel = /\srel\s*=\s*["']([^"']+)["']/i.exec(t);
+        if (!rel || !rel[1].toLowerCase().split(/\s+/).includes('stylesheet')) continue;
+        const href = /\shref\s*=\s*["']([^"']+)["']/i.exec(t);
+        if (!href) continue;
+        const lower = href[1].toLowerCase();
+        if (lower.includes('font-awesome') || lower.includes('fontawesome')) continue;
+        if (!/\/theme(?:\.min)?\.css(?:\?|$)/.test(lower)) continue;
+        themeHref = href[1];
+        break;
+      }
+      if (!themeHref) return null;
+      let absUrl: URL;
+      try {
+        absUrl = new URL(themeHref, BLANK_THEME_SOURCE_URL);
+      } catch {
+        return null;
+      }
+      if (!['http:', 'https:'].includes(absUrl.protocol)) return null;
+      if (isBlockedHostname(absUrl.hostname)) return null;
+      const css = await fetchUrlText(absUrl.toString(), 8000);
+      if (!css) return null;
+      // Sanity check: the CSS must actually use var(--color-brand-*),
+      // otherwise it's the wrong file and swapping it would still leave
+      // the customizer's variables disconnected.
+      if (!/var\(\s*--color-brand-[a-g]/i.test(css)) return null;
+      blankThemeCssCache = css;
+      return css;
+    } finally {
+      blankThemeCssInflight = null;
+    }
+  })();
+  return blankThemeCssInflight;
+}
+
 function isBlockedHostname(hostname: string): boolean {
   let h = hostname.toLowerCase();
   // Node's URL keeps IPv6 literals wrapped in brackets ("[::1]"). Strip
@@ -792,6 +926,51 @@ window.addEventListener('load', function() {
           console.warn('Theme compatibility probe failed:', compatErr);
         }
 
+        // If the previewed site's theme.min.css has the brand colors
+        // baked in (no var(--color-brand-*) references), the customizer's
+        // injected variables can't change anything visible. To make the
+        // customizer "just work" on those sites, swap their theme
+        // stylesheet for a known-good blank V6 theme that DOES use
+        // variables. We do this by removing every <link> tag whose href
+        // matches the offending stylesheet (or another /theme(.min).css
+        // bundle, in case there are several) and inlining the blank
+        // theme CSS as a <style> in <head>.
+        let themeSwapped = false;
+        if (themeCompatibility === 'compiled-no-vars') {
+          const blankCss = await getBlankThemeCss();
+          if (blankCss) {
+            const before = html;
+            // Strip every <link rel="stylesheet"> whose absolute href
+            // looks like a baseStyles theme bundle. Same predicate as
+            // the probe so the heuristic matches what we already trust.
+            html = html.replace(/<link\b[^>]*>/gi, (tag) => {
+              const rel = /\srel\s*=\s*["']([^"']+)["']/i.exec(tag);
+              if (!rel || !rel[1].toLowerCase().split(/\s+/).includes('stylesheet')) return tag;
+              const href = /\shref\s*=\s*["']([^"']+)["']/i.exec(tag);
+              if (!href) return tag;
+              const lower = href[1].toLowerCase();
+              if (lower.includes('font-awesome') || lower.includes('fontawesome')) return tag;
+              if (!/\/theme(?:\.min)?\.css(?:\?|$)/.test(lower)) return tag;
+              return ''; // drop this <link>
+            });
+            if (html !== before) {
+              // Escape any "</style", "<!--", "-->" sequences inside the
+              // upstream CSS so they cannot break out of the <style> tag
+              // and execute as HTML/JS inside the iframe document.
+              const safeBlankCss = escapeForStyleTag(blankCss);
+              const styleTag = `\n<style id="theme-customizer-blank-theme">${safeBlankCss}</style>\n`;
+              if (/<\/head>/i.test(html)) {
+                html = html.replace(/<\/head>/i, styleTag + '</head>');
+              } else if (/<head[^>]*>/i.test(html)) {
+                html = html.replace(/(<head[^>]*>)/i, '$1' + styleTag);
+              } else {
+                html = styleTag + html;
+              }
+              themeSwapped = true;
+            }
+          }
+        }
+
         res.json({
           success: true,
           html,
@@ -799,6 +978,7 @@ window.addEventListener('load', function() {
           baseUrl,
           themeCompatibility,
           themeStylesheetUrl,
+          themeSwapped,
         });
       } catch (fetchErr: any) {
         clearTimeout(timeoutId);

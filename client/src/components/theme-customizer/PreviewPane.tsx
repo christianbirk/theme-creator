@@ -82,10 +82,13 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   const [fetchError, setFetchError] = useState<string | null>(null);
   // Compatibility verdict from /api/fetch-preview. `compiled-no-vars`
   // means the loaded site's stylesheet has the brand colors hard-coded
-  // at compile time and does not reference --color-brand-* variables,
-  // so injecting CSS variables here cannot change anything visible.
+  // at compile time and does not reference --color-brand-* variables.
+  // When that happens, the server also swaps the site's theme stylesheet
+  // for a known-good blank V6 theme so the customizer's variables still
+  // take effect — `themeSwapped` says whether that swap actually ran.
   const [themeCompatibility, setThemeCompatibility] =
     useState<'compatible' | 'compiled-no-vars' | 'unknown'>('unknown');
+  const [themeSwapped, setThemeSwapped] = useState(false);
   const [compatBannerDismissed, setCompatBannerDismissed] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const customCssRef = useRef<string>('');
@@ -112,6 +115,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
             ? data.themeCompatibility
             : 'unknown',
         );
+        setThemeSwapped(Boolean(data.themeSwapped));
         // Surface a fresh banner whenever a new URL is loaded.
         setCompatBannerDismissed(false);
         toast({
@@ -1203,7 +1207,31 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         </Button>
       </div>
 
-      {themeCompatibility === 'compiled-no-vars' && !compatBannerDismissed && (
+      {themeCompatibility === 'compiled-no-vars' && themeSwapped && !compatBannerDismissed && (
+        <div
+          className="flex items-start gap-2 px-3 py-2 border-b bg-sky-50 text-sky-900 dark:bg-sky-950/40 dark:text-sky-200 text-sm"
+          role="status"
+          data-testid="banner-theme-swapped"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <strong className="font-medium">Theme swapped.</strong>{' '}
+            This site's own stylesheet had the brand colors baked in, so the customizer replaced it with a generic V6 theme.
+            Your variable changes now show through here, but the page may look different from the live site.
+          </div>
+          <button
+            type="button"
+            onClick={() => setCompatBannerDismissed(true)}
+            className="shrink-0 p-1 -m-1 rounded hover:bg-sky-100 dark:hover:bg-sky-900/40"
+            aria-label="Dismiss"
+            data-testid="button-dismiss-compat-banner"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {themeCompatibility === 'compiled-no-vars' && !themeSwapped && !compatBannerDismissed && (
         <div
           className="flex items-start gap-2 px-3 py-2 border-b bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 text-sm"
           role="status"
@@ -1213,17 +1241,15 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
           <div className="flex-1">
             <strong className="font-medium">This site's stylesheet was built without theme variables.</strong>{' '}
             Its <code className="text-xs px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40">theme.min.css</code>{' '}
-            has the brand colors baked in as fixed values, so changing variables in the customizer won't affect this preview.
-            Try a site whose CSS uses{' '}
-            <code className="text-xs px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40">var(--color-brand-*)</code>{' '}
-            (the default URL is a working example).
+            has the brand colors baked in as fixed values. We tried to swap it for a generic V6 theme so your changes would
+            show through, but couldn't reach the source theme right now.
           </div>
           <button
             type="button"
             onClick={() => setCompatBannerDismissed(true)}
             className="shrink-0 p-1 -m-1 rounded hover:bg-amber-100 dark:hover:bg-amber-900/40"
             aria-label="Dismiss"
-            data-testid="button-dismiss-compat-banner"
+            data-testid="button-dismiss-compat-banner-fallback"
           >
             <X className="h-4 w-4" />
           </button>
