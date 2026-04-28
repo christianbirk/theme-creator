@@ -38,8 +38,20 @@ interface NavMainContrastPair {
   cssVariable: string;
   /** SCSS source to read when bg lightness > threshold. */
   lightBgSource: string;
-  /** SCSS source to read when bg lightness ≤ threshold. */
-  darkBgSource: string;
+  /**
+   * Lookup chain to use when bg lightness ≤ threshold. Each entry that
+   * starts with `$` is read from the parsed V5 SCSS variables (and its
+   * own `$ref` chain is followed). The first entry that resolves wins.
+   * The final entry is the literal V5 master default that ships with the
+   * framework so the chain always terminates with the value V5 would
+   * have used at compile time.
+   *
+   * Mirrors V5 `!default` chains, e.g. for active-state-color-alternate:
+   *   $nav-main-active-state-color-alternate: $color-alternate !default;
+   *   $color-alternate: $color-white !default;
+   *   $color-white: white !default;
+   */
+  darkBgChain: string[];
 }
 
 const NAV_MAIN_BACKGROUND_VAR = '$nav-main-background-color';
@@ -48,12 +60,21 @@ const NAV_MAIN_PAIRS: NavMainContrastPair[] = [
   {
     cssVariable: '--nav-main-link-color',
     lightBgSource: '$nav-main-link-color',
-    darkBgSource: '$color-alternate',
+    // V5: nav-main link color on dark bg is `$color-alternate` directly.
+    darkBgChain: ['$color-alternate', 'white'],
   },
   {
     cssVariable: '--nav-main-active-state-color',
     lightBgSource: '$nav-main-active-state-color',
-    darkBgSource: '$nav-main-active-state-color-alternate',
+    // V5: `$nav-main-active-state-color-alternate: $color-alternate !default;`
+    // — falls back through $color-alternate so a theme that only overrides
+    // `$color-alternate` (and not the *-alternate token) still gets the
+    // theme's chosen alternate color.
+    darkBgChain: [
+      '$nav-main-active-state-color-alternate',
+      '$color-alternate',
+      'white',
+    ],
   },
 ];
 
@@ -110,17 +131,28 @@ export function applyNavMainContrastPairs(
   if (lightness === null) return mappedVariables;
   if (lightness > NAV_MAIN_CONTRAST_THRESHOLD) return mappedVariables;
 
-  // Dark background — pick the dark-bg source for each paired token.
+  // Dark background — walk the V5 `!default` fallback chain for each
+  // paired token. We try every `$var` entry in `darkBgChain` against the
+  // parsed V5 vars first; the chain ends with the V5 master literal
+  // default so it always terminates. This matches V5 semantics where, for
+  // example, `$nav-main-active-state-color-alternate` falls back through
+  // `$color-alternate` (which a theme can override) before defaulting to
+  // white.
   const overrides = new Map<string, string>();
   for (const pair of NAV_MAIN_PAIRS) {
-    const darkSrc = scssVariables[pair.darkBgSource];
-    let value: string;
-    if (darkSrc) {
-      value = resolveVariableReference(darkSrc, scssVariables);
-    } else {
-      // V5 master defaults: `$color-alternate: white` and
-      // `$nav-main-active-state-color-alternate: $color-alternate`.
-      value = 'white';
+    let value = 'white'; // safety net — should always be replaced by the chain
+    for (const entry of pair.darkBgChain) {
+      if (entry.startsWith('$')) {
+        const raw = scssVariables[entry];
+        if (raw) {
+          value = resolveVariableReference(raw, scssVariables);
+          break;
+        }
+      } else {
+        // Literal V5 master default — always wins if reached.
+        value = entry;
+        break;
+      }
     }
     overrides.set(pair.cssVariable, normalizeNavMainOverride(value));
   }

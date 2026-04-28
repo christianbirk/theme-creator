@@ -140,7 +140,11 @@ check(
 );
 
 // ── Fixture D: theme overrides $color-alternate ───────────────────────
-console.log('\nFixture D — theme overrides $color-alternate');
+// The active-state-color-alternate is also missing here, so V5 would
+// resolve it through `$nav-main-active-state-color-alternate: $color-alternate`
+// → `#fafafa`. Both link and active-state must pick up the theme's
+// overridden `$color-alternate`.
+console.log('\nFixture D — theme overrides $color-alternate (link + active-state fallback chain)');
 const altTheme: ParsedScssVariables = {
   '$color-a': '#1E4F5C',
   '$color-gray-a': '#252525',
@@ -148,6 +152,8 @@ const altTheme: ParsedScssVariables = {
   '$nav-main-background-color': '$color-a',
   '$nav-main-link-color': '$color-gray-a',
   '$nav-main-active-state-color': '$color-a',
+  // NOTE: $nav-main-active-state-color-alternate intentionally omitted —
+  // V5 falls through to $color-alternate.
 };
 const altMapped = [
   { name: '--nav-main-link-color', value: '#252525' },
@@ -155,10 +161,42 @@ const altMapped = [
 ];
 const altResult = applyNavMainContrastPairs(altMapped, altTheme);
 const altLink = altResult.find((v) => v.name === '--nav-main-link-color');
+const altActive = altResult.find(
+  (v) => v.name === '--nav-main-active-state-color'
+);
 check(
   '--nav-main-link-color uses the theme-overridden $color-alternate hex',
   altLink?.value === '#fafafa',
   `got ${JSON.stringify(altLink)}`
+);
+check(
+  '--nav-main-active-state-color falls through to overridden $color-alternate',
+  altActive?.value === '#fafafa',
+  `got ${JSON.stringify(altActive)}`
+);
+
+// ── Fixture D2: theme overrides BOTH alternates explicitly ────────────
+// When the *-alternate token is set explicitly, it wins over the
+// $color-alternate fallback in the chain.
+console.log('\nFixture D2 — explicit $nav-main-active-state-color-alternate wins over $color-alternate');
+const altExplicitTheme: ParsedScssVariables = {
+  '$color-a': '#1E4F5C',
+  '$color-alternate': '#fafafa',
+  '$nav-main-active-state-color-alternate': '#ffd400',
+  '$nav-main-background-color': '$color-a',
+  '$nav-main-active-state-color': '$color-a',
+};
+const altExplicitResult = applyNavMainContrastPairs(
+  [{ name: '--nav-main-active-state-color', value: 'var(--color-brand-a)' }],
+  altExplicitTheme
+);
+const altExplicitActive = altExplicitResult.find(
+  (v) => v.name === '--nav-main-active-state-color'
+);
+check(
+  '--nav-main-active-state-color uses explicit *-alternate value, not $color-alternate',
+  altExplicitActive?.value === '#ffd400',
+  `got ${JSON.stringify(altExplicitActive)}`
 );
 
 // ── Fixture E: missing token entry — helper appends it ────────────────
