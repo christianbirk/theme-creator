@@ -196,6 +196,110 @@ console.log('\nFixture E — merge does not mutate caller');
   );
 }
 
+// === Fixture F — V5 `notset` sentinel drops the V6 declaration ==============
+// 131 of the V5 framework defaults are the literal string `notset` —
+// V5's compile output omits the corresponding declaration so the cascade
+// default takes over. The converter must do the same; otherwise V6
+// inherits the literal word `notset` and overrides its own defaults
+// with garbage. See `isNotSetSentinel` in legacy-import-utils.
+console.log('\nFixture F — V5 `notset` sentinel drops the V6 declaration');
+{
+  // Sanity: the framework snapshot really does mark these as notset.
+  expect(
+    V5_BASE_DEFAULTS['$breadcrumb-link-color'] === 'notset',
+    'snapshot has $breadcrumb-link-color = notset',
+  );
+  expect(
+    V5_BASE_DEFAULTS['$nav-main-link-text-transform'] === 'notset',
+    'snapshot has $nav-main-link-text-transform = notset',
+  );
+
+  const out = applyMapping({}, mappings);
+  expect(
+    findVar(out, '--breadcrumb-link-color') === undefined,
+    "blank theme: --breadcrumb-link-color is dropped (V5 framework says 'notset')",
+  );
+  expect(
+    findVar(out, '--nav-main-link-text-transform') === undefined,
+    "blank theme: --nav-main-link-text-transform is dropped (V5 framework says 'notset')",
+  );
+
+  const leakingNotset = out.find((r) => /\bnotset\b/i.test(r.value));
+  expect(
+    leakingNotset === undefined,
+    leakingNotset
+      ? `no V6 value should contain the literal word 'notset' (leaked: ${leakingNotset.name} = ${leakingNotset.value})`
+      : "no V6 value contains the literal word 'notset'",
+  );
+}
+
+// === Fixture G — theme can also explicitly notset a variable ================
+// A V5 theme that wants to clear an upstream override sets the variable
+// to `notset` itself. Same semantics: drop the V6 declaration.
+console.log('\nFixture G — theme explicitly sets a variable to `notset`');
+{
+  const themeNotset: ParsedScssVariables = {
+    // The framework defines $color-a as a real hex; the theme clears it.
+    '$color-a': 'notset',
+  };
+  const out = applyMapping(themeNotset, mappings);
+  expect(
+    findVar(out, '--color-brand-a') === undefined,
+    'theme `notset` override drops --color-brand-a',
+  );
+}
+
+// === Fixture H — `'notset'` (quoted) is also treated as the sentinel ========
+// One framework default uses single-quoted form: `'notset'`. Plus a
+// theme could write `"notset"`. The check normalises both.
+console.log('\nFixture H — quoted `notset` variants also drop the declaration');
+{
+  expect(
+    V5_BASE_DEFAULTS['$flex-list-img-size'] === "'notset'",
+    "snapshot has $flex-list-img-size = 'notset' (single-quoted)",
+  );
+  const themeQuoted: ParsedScssVariables = {
+    '$color-a': '"notset"',
+  };
+  const out = applyMapping(themeQuoted, mappings);
+  expect(
+    findVar(out, '--color-brand-a') === undefined,
+    'double-quoted "notset" theme override also drops --color-brand-a',
+  );
+}
+
+// === Fixture H2 — multi-layered quoting `"'notset'"` is also dropped ========
+// A theme wrapping an already-quoted framework default could produce a
+// double-layered quoted form. The sentinel detector must strip nested
+// quotes before comparing.
+console.log('\nFixture H2 — multi-layered quoting `"\'notset\'"` is also dropped');
+{
+  const themeDoubleQuoted: ParsedScssVariables = {
+    '$color-a': `"'notset'"`,
+  };
+  const out = applyMapping(themeDoubleQuoted, mappings);
+  expect(
+    findVar(out, '--color-brand-a') === undefined,
+    'multi-layered "\'notset\'" theme override drops --color-brand-a',
+  );
+}
+
+// === Fixture I — chain ending in `notset` is also dropped ===================
+// `$foo: $bar; $bar: notset;` — after resolveVariableReference, $foo
+// resolves to `notset`, so it must be dropped too.
+console.log('\nFixture I — chained reference resolving to `notset` is dropped');
+{
+  const themeChain: ParsedScssVariables = {
+    '$color-a': '$some-other-var',
+    '$some-other-var': 'notset',
+  };
+  const out = applyMapping(themeChain, mappings);
+  expect(
+    findVar(out, '--color-brand-a') === undefined,
+    'chain that resolves to `notset` is dropped',
+  );
+}
+
 // === Result =================================================================
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) {

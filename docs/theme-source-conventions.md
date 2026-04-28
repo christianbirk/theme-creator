@@ -567,6 +567,24 @@ key collision; framework defaults only fill silence. Implementation:
   framework, the converter still skips it — no junk emitted.
 * Locked in by `scripts/verify-v5-base-fallback.ts`.
 
+##### `notset` sentinel
+
+131 of the 930 V5 framework defaults are the literal string `notset` —
+V5's compiled CSS leaves the corresponding declaration out entirely so
+the cascade default takes effect. The customizer mirrors that: a value
+of `notset` (with or without surrounding quotes, including nested forms
+like `"'notset'"`) drops the V6 declaration instead of emitting the
+literal word `notset`. Themes can also explicitly set a variable to
+`notset` to clear an override. The check is implemented in
+`isNotSetSentinel` (`client/src/lib/legacy-import-utils.ts`) and is
+applied:
+
+* in `applyMapping` per-mapping pass — drops the variable if either the
+  raw or the reference-resolved value is `notset`;
+* in `applyNavMainContrastPairs` — bails on the bg check if the nav
+  background resolves to `notset`, and skips `notset` entries in the
+  contrast-pair fallback chain so the chain keeps walking.
+
 ---
 
 ## 7. Build & deploy pipeline

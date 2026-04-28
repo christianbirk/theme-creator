@@ -27,6 +27,7 @@
 import {
   ParsedScssVariables,
   extractHexValue,
+  isNotSetSentinel,
   resolveVariableReference,
 } from './legacy-import-utils';
 
@@ -125,8 +126,13 @@ export function applyNavMainContrastPairs(
 ): { name: string; value: string }[] {
   const bgRaw = scssVariables[NAV_MAIN_BACKGROUND_VAR];
   if (!bgRaw) return mappedVariables;
+  // V5 `notset` sentinel on the bg var means "no nav background painted",
+  // i.e. there's no contrast risk to resolve — bail like the value was
+  // missing. See `isNotSetSentinel` in legacy-import-utils for the rule.
+  if (isNotSetSentinel(bgRaw)) return mappedVariables;
 
   const bgResolved = resolveVariableReference(bgRaw, scssVariables);
+  if (isNotSetSentinel(bgResolved)) return mappedVariables;
   const bgHex = extractHexValue(bgResolved);
   const lightness = sassLightness(bgHex);
   if (lightness === null) return mappedVariables;
@@ -145,9 +151,17 @@ export function applyNavMainContrastPairs(
     for (const entry of pair.darkBgChain) {
       if (entry.startsWith('$')) {
         const raw = scssVariables[entry];
-        if (raw) {
-          value = resolveVariableReference(raw, scssVariables);
-          break;
+        // Treat `notset` as absent so the chain keeps walking — V5
+        // semantics: a `notset` link/alternate means "no theme value
+        // here, fall through to the next default." Without this, a
+        // theme that explicitly sets e.g. `$color-alternate: notset`
+        // would land the literal `notset` on the V6 paired token.
+        if (raw && !isNotSetSentinel(raw)) {
+          const resolved = resolveVariableReference(raw, scssVariables);
+          if (!isNotSetSentinel(resolved)) {
+            value = resolved;
+            break;
+          }
         }
       } else {
         // Literal V5 master default — always wins if reached.

@@ -12,6 +12,7 @@
 import {
   ParsedScssVariables,
   extractHexValue,
+  isNotSetSentinel,
   resolveVariableReference,
   wrapScssArithmeticInCalc,
 } from './legacy-import-utils';
@@ -106,8 +107,15 @@ export function applyMapping(
       continue;
     }
 
-    // Try to resolve to a literal value first
+    // V5 `notset` sentinel — drop the V6 declaration entirely so the V6
+    // cascade default takes effect (mirrors V5's compiled-CSS behavior).
+    // Check both before and after reference resolution: a theme can
+    // either set a var directly to `notset` or chain to another var that
+    // resolves to `notset` (e.g. via a framework default). See
+    // `isNotSetSentinel` for the full rule.
+    if (isNotSetSentinel(rawValue)) continue;
     rawValue = resolveVariableReference(rawValue, scssVariables);
+    if (isNotSetSentinel(rawValue)) continue;
 
     let finalValue = rawValue;
 

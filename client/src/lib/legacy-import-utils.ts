@@ -58,6 +58,30 @@ export function resolveVariableReference(
 }
 
 /**
+ * V5 framework convention: a variable whose value is the literal string
+ * `notset` (with or without surrounding quotes) is **intentionally
+ * unset** — V5's compiled CSS leaves the corresponding declaration out
+ * entirely so the cascade default takes effect. The customizer must
+ * mirror that: when the V5 → V6 converter sees `notset`, it omits the
+ * V6 variable instead of emitting the literal word `notset` (which
+ * would override the V6 default with garbage).
+ *
+ * 131 entries in the V5 baseStyles framework defaults snapshot use this
+ * sentinel — see `client/src/lib/v5-base-defaults.json`. Themes can
+ * also explicitly set a variable to `notset` to clear an override; the
+ * same drop-the-output semantics apply.
+ */
+export function isNotSetSentinel(value: string | undefined): boolean {
+  if (!value) return false;
+  // Strip *all* leading/trailing quote chars (single or double) so
+  // multi-layered quoting like `"'notset'"` (which can happen when a
+  // theme wraps an already-quoted framework default) still normalises
+  // to `notset`. Outer whitespace is also tolerated.
+  const cleaned = value.trim().replace(/^['"]+|['"]+$/g, '').trim().toLowerCase();
+  return cleaned === 'notset';
+}
+
+/**
  * Convert SCSS arithmetic expressions to CSS calc() expressions.
  * SCSS allows bare math like `24px - 4px` or `$var * 1.5`, but CSS requires calc().
  * Also handles parenthesized sub-expressions like `24px 0 (24px - 4px)`.
