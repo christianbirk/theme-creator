@@ -34,10 +34,8 @@ import {
 export const NAV_MAIN_CONTRAST_THRESHOLD = 55;
 
 interface NavMainContrastPair {
-  /** V6 token to override. */
+  /** V6 token to override on dark backgrounds. */
   cssVariable: string;
-  /** SCSS source to read when bg lightness > threshold. */
-  lightBgSource: string;
   /**
    * Lookup chain to use when bg lightness ≤ threshold. Each entry that
    * starts with `$` is read from the parsed V5 SCSS variables (and its
@@ -50,6 +48,11 @@ interface NavMainContrastPair {
    *   $nav-main-active-state-color-alternate: $color-alternate !default;
    *   $color-alternate: $color-white !default;
    *   $color-white: white !default;
+   *
+   * (The light-bg branch isn't represented here because V5 just uses the
+   * resting `$nav-main-link-color` / `$nav-main-active-state-color`
+   * values — which the CSV mapping already produces — so we leave the
+   * mapped output untouched.)
    */
   darkBgChain: string[];
 }
@@ -59,13 +62,11 @@ const NAV_MAIN_BACKGROUND_VAR = '$nav-main-background-color';
 const NAV_MAIN_PAIRS: NavMainContrastPair[] = [
   {
     cssVariable: '--nav-main-link-color',
-    lightBgSource: '$nav-main-link-color',
     // V5: nav-main link color on dark bg is `$color-alternate` directly.
     darkBgChain: ['$color-alternate', 'white'],
   },
   {
     cssVariable: '--nav-main-active-state-color',
-    lightBgSource: '$nav-main-active-state-color',
     // V5: `$nav-main-active-state-color-alternate: $color-alternate !default;`
     // — falls back through $color-alternate so a theme that only overrides
     // `$color-alternate` (and not the *-alternate token) still gets the
