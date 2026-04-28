@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Monitor, Tablet, Smartphone, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
+import { Monitor, Tablet, Smartphone, Loader2, ExternalLink, AlertCircle, AlertTriangle, X } from 'lucide-react';
 import { CSSVariable } from './types';
 import { ScssFile } from './CustomCssManager';
 import { useToast } from '@/hooks/use-toast';
@@ -80,6 +80,13 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   const [, setTemplateUrl] = useState(DEFAULT_TEMPLATE_URL);
   const [urlInput, setUrlInput] = useState(DEFAULT_TEMPLATE_URL);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  // Compatibility verdict from /api/fetch-preview. `compiled-no-vars`
+  // means the loaded site's stylesheet has the brand colors hard-coded
+  // at compile time and does not reference --color-brand-* variables,
+  // so injecting CSS variables here cannot change anything visible.
+  const [themeCompatibility, setThemeCompatibility] =
+    useState<'compatible' | 'compiled-no-vars' | 'unknown'>('unknown');
+  const [compatBannerDismissed, setCompatBannerDismissed] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const customCssRef = useRef<string>('');
   const { toast } = useToast();
@@ -99,6 +106,14 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         setTemplateHtml(data.html);
         setTemplateUrl(url);
         setFetchError(null);
+        setThemeCompatibility(
+          data.themeCompatibility === 'compatible' ||
+          data.themeCompatibility === 'compiled-no-vars'
+            ? data.themeCompatibility
+            : 'unknown',
+        );
+        // Surface a fresh banner whenever a new URL is loaded.
+        setCompatBannerDismissed(false);
         toast({
           title: 'Preview loaded',
           description: `Successfully loaded ${new URL(url).hostname}`,
@@ -1187,6 +1202,33 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
           <span className="ml-1">Load</span>
         </Button>
       </div>
+
+      {themeCompatibility === 'compiled-no-vars' && !compatBannerDismissed && (
+        <div
+          className="flex items-start gap-2 px-3 py-2 border-b bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 text-sm"
+          role="status"
+          data-testid="banner-theme-incompatible"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <strong className="font-medium">This site's stylesheet was built without theme variables.</strong>{' '}
+            Its <code className="text-xs px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40">theme.min.css</code>{' '}
+            has the brand colors baked in as fixed values, so changing variables in the customizer won't affect this preview.
+            Try a site whose CSS uses{' '}
+            <code className="text-xs px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40">var(--color-brand-*)</code>{' '}
+            (the default URL is a working example).
+          </div>
+          <button
+            type="button"
+            onClick={() => setCompatBannerDismissed(true)}
+            className="shrink-0 p-1 -m-1 rounded hover:bg-amber-100 dark:hover:bg-amber-900/40"
+            aria-label="Dismiss"
+            data-testid="button-dismiss-compat-banner"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-auto bg-muted/50 p-4">
         <div 

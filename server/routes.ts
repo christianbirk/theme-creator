@@ -346,6 +346,56 @@ ${cssVarsBlock}
   return css;
 }
 
+// Hostnames that must never be reached by server-side fetches. Used by both
+// the main /api/fetch-preview proxy and the secondary CSS compatibility
+// probe to prevent SSRF into private/internal networks.
+const SSRF_BLOCKED_HOSTNAME_PATTERNS: RegExp[] = [
+  /^localhost$/i,
+  /^127\.\d+\.\d+\.\d+$/,                 // 127.x.x.x
+  /^10\.\d+\.\d+\.\d+$/,                  // 10.x.x.x
+  /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/,  // 172.16.x.x - 172.31.x.x
+  /^192\.168\.\d+\.\d+$/,                 // 192.168.x.x
+  /^0\.0\.0\.0$/,
+  /^::1$/,                                 // IPv6 localhost
+  /^\[::1\]$/,
+  /^f[cd][0-9a-f]{2}:/i,                  // IPv6 ULA fc00::/7 (covers fc.. and fd..)
+  /^fe[89ab][0-9a-f]:/i,                  // IPv6 link-local fe80::/10
+  /^169\.254\.\d+\.\d+$/,                 // IPv4 link-local / cloud metadata
+  /\.local$/i,
+  /\.internal$/i,
+];
+
+function isBlockedHostname(hostname: string): boolean {
+  let h = hostname.toLowerCase();
+  // Node's URL keeps IPv6 literals wrapped in brackets ("[::1]"). Strip
+  // them so the patterns below — which are anchored to the address text
+  // itself — match either form consistently.
+  if (h.startsWith('[') && h.endsWith(']')) {
+    h = h.slice(1, -1);
+  }
+  if (SSRF_BLOCKED_HOSTNAME_PATTERNS.some(p => p.test(h))) {
+    return true;
+  }
+  // IPv4-mapped IPv6 ("::ffff:127.0.0.1" or its compressed hex form
+  // "::ffff:7f00:1") — extract the embedded IPv4 and re-check against
+  // the IPv4 patterns so loopback/private targets cannot be reached
+  // through the v6 family.
+  const mappedDotted = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i.exec(h);
+  if (mappedDotted) {
+    return SSRF_BLOCKED_HOSTNAME_PATTERNS.some(p => p.test(mappedDotted[1]));
+  }
+  const mappedHex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i.exec(h);
+  if (mappedHex) {
+    const high = parseInt(mappedHex[1], 16);
+    const low = parseInt(mappedHex[2], 16);
+    if (Number.isFinite(high) && Number.isFinite(low) && high <= 0xffff && low <= 0xffff) {
+      const dotted = `${(high >> 8) & 0xff}.${high & 0xff}.${(low >> 8) & 0xff}.${low & 0xff}`;
+      return SSRF_BLOCKED_HOSTNAME_PATTERNS.some(p => p.test(dotted));
+    }
+  }
+  return false;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -416,23 +466,7 @@ export async function registerRoutes(
 
       // SSRF Protection: Block private/internal IP ranges and localhost
       const hostname = parsedUrl.hostname.toLowerCase();
-      const blockedPatterns = [
-        /^localhost$/i,
-        /^127\.\d+\.\d+\.\d+$/,          // 127.x.x.x
-        /^10\.\d+\.\d+\.\d+$/,           // 10.x.x.x
-        /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/, // 172.16.x.x - 172.31.x.x
-        /^192\.168\.\d+\.\d+$/,          // 192.168.x.x
-        /^0\.0\.0\.0$/,
-        /^::1$/,                          // IPv6 localhost
-        /^\[::1\]$/,
-        /^fc00:/i,                        // IPv6 private
-        /^fe80:/i,                        // IPv6 link-local
-        /^169\.254\.\d+\.\d+$/,          // Link-local
-        /\.local$/i,                      // .local domains
-        /\.internal$/i,
-      ];
-      
-      if (blockedPatterns.some(pattern => pattern.test(hostname))) {
+      if (isBlockedHostname(hostname)) {
         return res.status(403).json({ error: 'Access to internal/private addresses is not allowed' });
       }
 
@@ -636,11 +670,135 @@ window.addEventListener('load', function() {
           }
         }
 
+        // Theme-customizer compatibility check.
+        //
+        // The customizer themes a page by injecting CSS variables
+        // (`:root { --color-brand-a: …; }`) into the iframe. That only
+        // affects the visible page if the page's stylesheets actually
+        // reference `var(--color-brand-*)`. Some live sites ship a
+        // theme.min.css where Sass already resolved those variables to
+        // literal hex at build time — in that case the customizer can't
+        // change anything, and the user just sees "nothing happens."
+        //
+        // We pick the first stylesheet whose URL looks like a baseStyles
+        // theme bundle (filename contains "theme", excluding obvious
+        // utility libs like Font Awesome) and probe it for both a `:root`
+        // declaration of `--color-brand-*` and a `var(--color-brand-*)`
+        // reference. Result is sent back as `themeCompatibility`:
+        //   - `compatible`        — both definitions and references found
+        //   - `compiled-no-vars`  — neither found (the vesthimmerland case)
+        //   - `unknown`           — no theme stylesheet detected, or fetch
+        //                           failed; client should not warn
+        let themeCompatibility: 'compatible' | 'compiled-no-vars' | 'unknown' = 'unknown';
+        let themeStylesheetUrl: string | null = null;
+        try {
+          // Two-pass <link> parsing: first grab every <link …> tag, then
+          // extract `rel` and `href` independently so attribute order does
+          // not matter ("href before rel" is valid HTML and common).
+          const linkTagRegex = /<link\b[^>]*>/gi;
+          const stylesheetMatches: string[] = [];
+          let tagMatch: RegExpExecArray | null;
+          while ((tagMatch = linkTagRegex.exec(html)) !== null) {
+            const tag = tagMatch[0];
+            const relMatch = /\srel\s*=\s*["']([^"']+)["']/i.exec(tag);
+            if (!relMatch) continue;
+            const rels = relMatch[1].toLowerCase().split(/\s+/);
+            if (!rels.includes('stylesheet')) continue;
+            const hrefMatch = /\shref\s*=\s*["']([^"']+)["']/i.exec(tag);
+            if (!hrefMatch) continue;
+            stylesheetMatches.push(hrefMatch[1]);
+          }
+          const themeUrl = stylesheetMatches.find(href => {
+            const lower = href.toLowerCase();
+            if (lower.includes('font-awesome') || lower.includes('fontawesome')) return false;
+            // Match the conventional baseStyles output filename.
+            return /\/theme(?:\.min)?\.css(?:\?|$)/.test(lower);
+          });
+          // SSRF guard: only fetch the probe URL if it is absolute http/https
+          // and points to a publicly routable hostname. This URL came from
+          // arbitrary third-party HTML, so it must be re-validated even
+          // though the original preview URL was already checked.
+          let probeUrl: URL | null = null;
+          if (themeUrl) {
+            try {
+              probeUrl = new URL(themeUrl, baseUrl);
+            } catch {
+              probeUrl = null;
+            }
+            if (probeUrl) {
+              if (!['http:', 'https:'].includes(probeUrl.protocol)) {
+                probeUrl = null;
+              } else if (isBlockedHostname(probeUrl.hostname)) {
+                probeUrl = null;
+              }
+            }
+          }
+          if (probeUrl) {
+            themeStylesheetUrl = probeUrl.toString();
+            // Use a real browser UA — some CDNs (notably the gopublic
+            // poc.media.gopublic.eu host) close the connection mid-stream
+            // for "Theme-Customizer/1.0". A Chrome UA is accepted reliably.
+            // `redirect: 'manual'` prevents a 30x to an internal address
+            // from bypassing the SSRF guard above.
+            const cssResp = await fetch(probeUrl.toString(), {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/css,*/*;q=0.1',
+              },
+              signal: AbortSignal.timeout(6000),
+              redirect: 'manual',
+            });
+            if (cssResp.ok) {
+              const len = Number(cssResp.headers.get('content-length') || '0');
+              if (!len || len <= 4 * 1024 * 1024) {
+                // Read the body in chunks. Some CDNs terminate the
+                // connection partway through; whatever bytes we managed
+                // to receive are usually enough for the two boolean
+                // checks below.
+                let received = '';
+                try {
+                  if (cssResp.body) {
+                    const reader = cssResp.body.getReader();
+                    const decoder = new TextDecoder('utf-8', { fatal: false });
+                    const cap = 4 * 1024 * 1024;
+                    while (received.length < cap) {
+                      const { done, value } = await reader.read();
+                      if (done) break;
+                      received += decoder.decode(value, { stream: true });
+                    }
+                    received += decoder.decode();
+                  } else {
+                    received = await cssResp.text();
+                  }
+                } catch {
+                  // Partial read — keep whatever we already have.
+                }
+                if (received.length > 0) {
+                  const definesBrandVar = /--color-brand-[a-g]\s*:/i.test(received);
+                  const usesBrandVar = /var\(\s*--color-brand-[a-g]/i.test(received);
+                  if (definesBrandVar && usesBrandVar) {
+                    themeCompatibility = 'compatible';
+                  } else if (!definesBrandVar && !usesBrandVar) {
+                    themeCompatibility = 'compiled-no-vars';
+                  }
+                  // Mixed (defines but doesn't use, or vice versa) stays
+                  // 'unknown' — too ambiguous to warn confidently.
+                }
+              }
+            }
+          }
+        } catch (compatErr) {
+          // Probe failed — leave compatibility as 'unknown' and continue.
+          console.warn('Theme compatibility probe failed:', compatErr);
+        }
+
         res.json({
           success: true,
           html,
           url: parsedUrl.origin + parsedUrl.pathname,
           baseUrl,
+          themeCompatibility,
+          themeStylesheetUrl,
         });
       } catch (fetchErr: any) {
         clearTimeout(timeoutId);
