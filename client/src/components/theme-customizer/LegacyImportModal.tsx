@@ -436,14 +436,20 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
   }, [processZip, toast]);
 
   const handleFolderChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    const fileCount = files?.length ?? 0;
+    const inputEl = e.target;
+    // CRITICAL: snapshot the FileList into a stable array BEFORE doing
+    // anything that might mutate the input. Setting `inputEl.value = ''`
+    // clears the input's FileList in real browsers, which makes the cached
+    // FileList reference go to length 0 and silently breaks file reads.
+    const fileArray: File[] = inputEl.files ? Array.from(inputEl.files) : [];
+    const fileCount = fileArray.length;
     console.log('[LegacyImport] folder change fired, file count:', fileCount);
-    e.target.value = '';
-    if (!files || fileCount === 0) {
+
+    if (fileCount === 0) {
       // User cancelled the picker, the folder was empty, or the browser
       // could not read any files. Surface this so the user knows why
       // nothing happened.
+      inputEl.value = '';
       toast({
         title: 'No files were read from the folder',
         description: 'The folder picker returned no files. Try again, pick a folder that contains your theme files (styles.xml, css/, etc.), or use "Choose Zip" instead.',
@@ -451,15 +457,15 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       });
       return;
     }
-    
+
     setStep('processing');
     setProgress(0);
     setStatusMessage(`Reading folder (0 of ${fileCount} files)...`);
     setValidationErrors([]);
-    
+
     try {
       const zip = new JSZip();
-      const total = files.length;
+      const total = fileArray.length;
       // Yield to the browser every few files so the progress bar can paint.
       // requestAnimationFrame guarantees a paint cycle (setTimeout 0 may be
       // batched away by React on fast loops with small files).
@@ -473,7 +479,7 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
           }
         });
       for (let i = 0; i < total; i++) {
-        const file = files[i];
+        const file = fileArray[i];
         const relPath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
         const data = await file.arrayBuffer();
         zip.file(relPath, data);
@@ -484,8 +490,12 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
           await yieldToBrowser();
         }
       }
+      // Reset only AFTER the data has been copied into the zip. This lets
+      // the user re-pick the same folder later if they need to.
+      inputEl.value = '';
       processZip(zip);
     } catch (err) {
+      inputEl.value = '';
       toast({
         title: 'Could not read folder',
         description: err instanceof Error ? err.message : 'Failed to read folder contents',
