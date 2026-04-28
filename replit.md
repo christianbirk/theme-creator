@@ -4,6 +4,13 @@
 
 A visual SCSS theme customizer application that allows users to create and customize CSS themes through an interactive interface. The application provides a split-screen layout with variable controls on the left and a live preview pane on the right, enabling rapid theme iteration with real-time feedback. Users can modify 200+ CSS variables including colors, fonts, sizes, and spacing, then export the generated CSS for use in their projects.
 
+The themes the customizer produces and consumes follow the `beru-org/Assets`
+baseStyles conventions. The authoritative rules — V6 vs V5 vs pre-V5 layouts,
+variable taxonomy, `styles.xml` contract, V5→V6 migration steps, and what the
+customizer must enforce — are captured in [`docs/theme-source-conventions.md`](docs/theme-source-conventions.md).
+That document is the contract; when adding parsing, validation, export, or
+conversion features, read it first.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
