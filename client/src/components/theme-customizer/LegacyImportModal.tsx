@@ -368,12 +368,24 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
 
   const handleFolderChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    const fileCount = files?.length ?? 0;
+    console.log('[LegacyImport] folder change fired, file count:', fileCount);
     e.target.value = '';
-    if (!files || files.length === 0) return;
+    if (!files || fileCount === 0) {
+      // User cancelled the picker, the folder was empty, or the browser
+      // could not read any files. Surface this so the user knows why
+      // nothing happened.
+      toast({
+        title: 'No files were read from the folder',
+        description: 'The folder picker returned no files. Try again, pick a folder that contains your theme files (styles.xml, css/, etc.), or use "Choose Zip" instead.',
+        variant: 'destructive'
+      });
+      return;
+    }
     
     setStep('processing');
     setProgress(0);
-    setStatusMessage(`Reading folder (0 of ${files.length} files)...`);
+    setStatusMessage(`Reading folder (0 of ${fileCount} files)...`);
     setValidationErrors([]);
     
     try {
