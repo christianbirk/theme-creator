@@ -54,10 +54,30 @@ export function convertValueScssVarsToCss(
   });
 }
 
+export interface ApplyMappingResult {
+  mapped: { name: string; value: string }[];
+  /**
+   * V6 CSS-variable names that were explicitly cleared by the V5 theme
+   * (the theme set the source variable to `notset`, or chained to a value
+   * that resolves to `notset`). Distinct from variables that simply
+   * inherited a `notset` framework default while the theme stayed silent
+   * — those just fall through to the V6 cascade default and are not
+   * surfaced here. Consumers should use this list to override their own
+   * V6 defaults with empty values so the user sees the variable as
+   * intentionally unset rather than a leftover V6 default.
+   */
+  cleared: string[];
+}
+
 export function applyMapping(
   scssVariables: ParsedScssVariables,
   mappings: ScssVariableMapping[],
-): { name: string; value: string }[] {
+): ApplyMappingResult {
+  // Snapshot of the theme's own keys BEFORE merging in V5_BASE_DEFAULTS
+  // so we can later distinguish "theme explicitly said notset" from
+  // "framework default is notset, theme stayed silent".
+  const themeOnlyKeys = new Set(Object.keys(scssVariables));
+
   // Merge V5 base defaults UNDER the user's chosen theme so any V5 source
   // variable not overridden in the theme still resolves to the value V5
   // would have used at compile time. Theme entries always win on key
@@ -70,6 +90,18 @@ export function applyMapping(
   scssVariables = merged;
 
   const result: { name: string; value: string }[] = [];
+  const cleared: string[] = [];
+
+  // Helper: a V6 var was "explicitly cleared by the theme" if its V5
+  // source key was present in the theme (so the theme either set it to
+  // notset directly, or chained through one of its own vars to a value
+  // that resolves to notset). Variables whose only notset path comes
+  // from the framework defaults snapshot (theme silent) are NOT cleared.
+  const recordIfThemeNotset = (mapping: ScssVariableMapping) => {
+    if (themeOnlyKeys.has(mapping.scssVariable)) {
+      cleared.push(mapping.cssVariable);
+    }
+  };
 
   // Build a map from SCSS variable names to CSS variable names for reference conversion
   // Use the FIRST match found (most direct/generic mapping) rather than the last
@@ -112,10 +144,20 @@ export function applyMapping(
     // Check both before and after reference resolution: a theme can
     // either set a var directly to `notset` or chain to another var that
     // resolves to `notset` (e.g. via a framework default). See
-    // `isNotSetSentinel` for the full rule.
-    if (isNotSetSentinel(rawValue)) continue;
+    // `isNotSetSentinel` for the full rule. When the THEME (not just the
+    // framework default) is the source of the notset, surface the V6
+    // var name in `cleared` so the consumer can blank out its V6
+    // default — the user's intent was "no value here", not "give me
+    // the V6 default".
+    if (isNotSetSentinel(rawValue)) {
+      recordIfThemeNotset(mapping);
+      continue;
+    }
     rawValue = resolveVariableReference(rawValue, scssVariables);
-    if (isNotSetSentinel(rawValue)) continue;
+    if (isNotSetSentinel(rawValue)) {
+      recordIfThemeNotset(mapping);
+      continue;
+    }
 
     let finalValue = rawValue;
 
@@ -210,5 +252,6 @@ export function applyMapping(
   // once here, against the merged V5 sources (theme + base defaults), so
   // V6 ends up with the visually-correct value baked in. See
   // `applyNavMainContrastPairs` for the full rationale.
-  return applyNavMainContrastPairs(result, scssVariables);
+  const mapped = applyNavMainContrastPairs(result, scssVariables);
+  return { mapped, cleared };
 }

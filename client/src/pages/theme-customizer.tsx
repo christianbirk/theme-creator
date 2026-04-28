@@ -414,6 +414,7 @@ export default function ThemeCustomizer() {
 
   const handleLegacyImportComplete = useCallback(async (result: {
     mappedVariables: { name: string; value: string }[];
+    clearedVariables?: string[];
     stylesXml: string | null;
     preservedFolders: PreservedFolders;
     customScssFiles: CustomScssFile[];
@@ -422,6 +423,13 @@ export default function ThemeCustomizer() {
     // Apply mapped variables to existing state
     setVariables(prev => {
       const mappedMap = new Map(result.mappedVariables.map(v => [v.name, v.value]));
+      // V5 vars the theme explicitly set to `notset` — overwrite the
+      // V6 default with empty so the user sees an unset control,
+      // matching what V5's compile output would have produced (no
+      // declaration → cascade default → no value). Without this the
+      // V6 default leaks through and (e.g.) a notset border still
+      // shows "1px solid color-brand-a".
+      const clearedSet = new Set(result.clearedVariables ?? []);
       const existingNames = new Set(prev.map(v => v.name));
       
       // Update existing variables
@@ -429,6 +437,9 @@ export default function ThemeCustomizer() {
         const mappedValue = mappedMap.get(variable.name);
         if (mappedValue !== undefined) {
           return { ...variable, value: mappedValue };
+        }
+        if (clearedSet.has(variable.name)) {
+          return { ...variable, value: '' };
         }
         return variable;
       });
@@ -585,7 +596,18 @@ export default function ThemeCustomizer() {
           let currentSection = '';
           
           for (const v of vars) {
-            if (!v.value && !v.defaultValue) continue;
+            // An empty value is meaningful: it means the user (or a V5 →
+            // V6 conversion of a `notset` declaration) intentionally
+            // cleared this variable. Falling back to `defaultValue` here
+            // would silently re-emit the V6 default in the exported
+            // _variables.scss and undo the unset state. Skip the
+            // declaration entirely so the cascade default applies, which
+            // is what the empty-control state represents in the
+            // customizer UI. Only fall through to defaultValue if `value`
+            // is undefined (legacy / not yet initialized), not when it's
+            // an explicit empty string.
+            if (v.value === '') continue;
+            if (v.value === undefined && !v.defaultValue) continue;
             
             // Add section comment for Identity Colors
             if (v.name === '--color-brand-a' && currentSection !== 'identity') {
@@ -599,7 +621,7 @@ export default function ThemeCustomizer() {
               lines.push(`\t${v.name}: #{${scssVarName}};`);
             } else {
               // Regular CSS custom property
-              lines.push(`\t${v.name}: ${v.value || v.defaultValue};`);
+              lines.push(`\t${v.name}: ${v.value ?? v.defaultValue};`);
             }
           }
           return lines.join('\n');

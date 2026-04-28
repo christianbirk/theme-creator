@@ -586,6 +586,57 @@ applied:
   background resolves to `notset`, and skips `notset` entries in the
   contrast-pair fallback chain so the chain keeps walking.
 
+###### Theme-explicit `notset` vs framework-default `notset`
+
+Dropping the V6 declaration is correct, but it's not enough on its own.
+The customizer also has to tell the difference between two cases:
+
+1. **Theme-explicit `notset`** — the V5 theme writes
+   `$nav-main-border-top: notset;` itself. The user's intent is "no
+   border here." The V6 customizer must show the corresponding control
+   (BorderInput) as **empty**, not as the V6 framework default
+   (`1px solid var(--color-brand-a)`). Otherwise the V6 default
+   silently leaks back in.
+2. **Framework-default `notset`, theme silent** — the V5 framework
+   default for a variable is `notset` and the theme says nothing about
+   it. The user has expressed no opinion on this variable. The V6
+   customizer keeps its own V6 default, exactly like before.
+
+The discrimination happens in `applyMapping`:
+
+* It snapshots `themeOnlyKeys = new Set(Object.keys(scssVariables))`
+  **before** merging in `V5_BASE_DEFAULTS`.
+* When a `notset` is detected during the mapping pass, the helper
+  `recordIfThemeNotset(mapping)` only adds the V6 var name to the
+  returned `cleared` array if `mapping.scssVariable` is in
+  `themeOnlyKeys` (i.e. the theme actually mentioned it).
+
+`applyMapping` returns `{ mapped, cleared: string[] }`. The legacy
+import modal threads `cleared` through to
+`handleLegacyImportComplete` in `client/src/pages/theme-customizer.tsx`,
+which overwrites the customizer's V6 default with `''` for those
+variables. Empty values are then suppressed everywhere downstream:
+
+* the live `PreviewPane` skips them when emitting `--name: !important;`
+  declarations (an empty value would produce invalid CSS);
+* the server-side `generateCss` (`server/routes.ts`) skips them in
+  both the `:root` block and the SCSS prelude used for baseScss
+  compilation (avoids `--name: ;` and `$name: ;` parse errors);
+* the export-side `generateCssCustomProperties`
+  (`client/src/pages/theme-customizer.tsx`) skips them in the
+  generated `_variables.scss` so the cleared state round-trips.
+
+`applyNavMainContrastPairs` is the one place where a cleared variable
+can be re-added to `mapped` (and `mapped` wins over `cleared`). That's
+intentional: V5's compile-time `@if (lightness > $contrast-ratio)`
+forces the alternate color on dark backgrounds regardless of the
+resting `$nav-main-link-color` value. Honoring `cleared` here would
+diverge from the actual V5 compiled output. See
+`client/src/lib/legacy-import-contrast.ts` for the in-file note.
+
+Locked in by Fixtures J & K in
+`scripts/verify-v5-base-fallback.ts`.
+
 ---
 
 ## 7. Build & deploy pipeline

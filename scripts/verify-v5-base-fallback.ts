@@ -90,7 +90,7 @@ expect(
 console.log('\nFixture A — blank theme (no overrides)');
 {
   const blankTheme: ParsedScssVariables = {};
-  const out = applyMapping(blankTheme, mappings);
+  const out = applyMapping(blankTheme, mappings).mapped;
 
   const navBorderTop = findVar(out, '--nav-main-border-top');
   // Expect the multi-token shorthand `0 solid <hex-or-var>`. The hex `#ddd`
@@ -122,7 +122,7 @@ console.log('\nFixture B — theme overrides $nav-main-border-top');
   const overridden: ParsedScssVariables = {
     '$nav-main-border-top': '4px dashed #ff00aa',
   };
-  const out = applyMapping(overridden, mappings);
+  const out = applyMapping(overridden, mappings).mapped;
   const v = findVar(out, '--nav-main-border-top');
   expect(
     v !== undefined && v.startsWith('4px dashed '),
@@ -143,7 +143,7 @@ console.log('\nFixture C — theme overrides only the referenced colour');
   const partial: ParsedScssVariables = {
     '$color-gray-d': '#112233',
   };
-  const out = applyMapping(partial, mappings);
+  const out = applyMapping(partial, mappings).mapped;
   const v = findVar(out, '--nav-main-border-top');
   expect(
     v !== undefined && v.startsWith('0 solid '),
@@ -173,7 +173,7 @@ console.log('\nFixture D — variable absent from both theme and framework');
       note: '',
     },
   ];
-  const out = applyMapping({}, fakeMappings);
+  const out = applyMapping({}, fakeMappings).mapped;
   expect(
     findVar(out, '--made-up-css-var') === undefined,
     'truly absent variable is skipped (no empty value emitted)',
@@ -214,7 +214,7 @@ console.log('\nFixture F — V5 `notset` sentinel drops the V6 declaration');
     'snapshot has $nav-main-link-text-transform = notset',
   );
 
-  const out = applyMapping({}, mappings);
+  const out = applyMapping({}, mappings).mapped;
   expect(
     findVar(out, '--breadcrumb-link-color') === undefined,
     "blank theme: --breadcrumb-link-color is dropped (V5 framework says 'notset')",
@@ -242,7 +242,7 @@ console.log('\nFixture G — theme explicitly sets a variable to `notset`');
     // The framework defines $color-a as a real hex; the theme clears it.
     '$color-a': 'notset',
   };
-  const out = applyMapping(themeNotset, mappings);
+  const out = applyMapping(themeNotset, mappings).mapped;
   expect(
     findVar(out, '--color-brand-a') === undefined,
     'theme `notset` override drops --color-brand-a',
@@ -261,7 +261,7 @@ console.log('\nFixture H — quoted `notset` variants also drop the declaration'
   const themeQuoted: ParsedScssVariables = {
     '$color-a': '"notset"',
   };
-  const out = applyMapping(themeQuoted, mappings);
+  const out = applyMapping(themeQuoted, mappings).mapped;
   expect(
     findVar(out, '--color-brand-a') === undefined,
     'double-quoted "notset" theme override also drops --color-brand-a',
@@ -277,7 +277,7 @@ console.log('\nFixture H2 — multi-layered quoting `"\'notset\'"` is also dropp
   const themeDoubleQuoted: ParsedScssVariables = {
     '$color-a': `"'notset'"`,
   };
-  const out = applyMapping(themeDoubleQuoted, mappings);
+  const out = applyMapping(themeDoubleQuoted, mappings).mapped;
   expect(
     findVar(out, '--color-brand-a') === undefined,
     'multi-layered "\'notset\'" theme override drops --color-brand-a',
@@ -293,10 +293,66 @@ console.log('\nFixture I — chained reference resolving to `notset` is dropped'
     '$color-a': '$some-other-var',
     '$some-other-var': 'notset',
   };
-  const out = applyMapping(themeChain, mappings);
+  const out = applyMapping(themeChain, mappings).mapped;
   expect(
     findVar(out, '--color-brand-a') === undefined,
     'chain that resolves to `notset` is dropped',
+  );
+}
+
+// === Fixture J — `cleared` list surfaces theme-explicit notset only ==========
+// The user-visible bug this fixes: when a V5 theme writes
+// `$nav-main-border-top: notset;`, the V6 customizer used to keep its
+// own V6 default (e.g. `1px solid var(--color-brand-a)`) because the
+// converter just dropped the variable. The customizer needs to know
+// the theme *explicitly cleared* this var (vs. the framework default
+// being notset and the theme staying silent) so it can blank out the
+// V6 default control instead. `applyMapping` returns this signal in
+// `cleared`.
+console.log('\nFixture J — `cleared` list distinguishes theme-explicit notset');
+{
+  const theme: ParsedScssVariables = {
+    '$nav-main-border-top': 'notset',
+    '$nav-main-border-bottom': 'notset',
+  };
+  const { mapped, cleared } = applyMapping(theme, mappings);
+
+  expect(
+    cleared.includes('--nav-main-border-top'),
+    'cleared contains --nav-main-border-top (theme said notset)',
+  );
+  expect(
+    cleared.includes('--nav-main-border-bottom'),
+    'cleared contains --nav-main-border-bottom (theme said notset)',
+  );
+  expect(
+    findVar(mapped, '--nav-main-border-top') === undefined,
+    'mapped does NOT contain --nav-main-border-top (still dropped from output)',
+  );
+
+  // Negative case: framework default for $breadcrumb-link-color is
+  // notset, but THIS theme is silent on it. It must NOT show up in
+  // cleared (silent → V6 default still applies, current behavior).
+  expect(
+    !cleared.includes('--breadcrumb-link-color'),
+    'cleared does NOT contain --breadcrumb-link-color (theme silent, framework default is notset)',
+  );
+}
+
+// === Fixture K — chained theme-side notset also surfaces in `cleared` =======
+// `$foo: $bar; $bar: notset;` where both keys are in the theme. Both
+// V6 vars whose source is a theme key resolving to notset must be
+// reported as cleared so the customizer can blank them.
+console.log('\nFixture K — chained theme-side notset surfaces in `cleared`');
+{
+  const theme: ParsedScssVariables = {
+    '$color-a': '$some-other-var',
+    '$some-other-var': 'notset',
+  };
+  const { cleared } = applyMapping(theme, mappings);
+  expect(
+    cleared.includes('--color-brand-a'),
+    'cleared contains --color-brand-a (theme key chained to notset)',
   );
 }
 

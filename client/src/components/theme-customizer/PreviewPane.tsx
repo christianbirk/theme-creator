@@ -247,12 +247,20 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     return luminance !== null && luminance > 0.179;
   }, [getLuminance]);
 
-  // Generate CSS content with !important to override existing styles
+  // Generate CSS content with !important to override existing styles.
+  // Skip variables whose value is empty — these are intentionally cleared
+  // (e.g. via V5 → V6 conversion of a `notset` declaration). Emitting
+  // `--name: !important;` would be an invalid declaration; dropping the
+  // line lets the cascade fall back to whatever default is upstream,
+  // which is what the cleared/empty-control state is meant to represent.
   const cssVariablesImportant = useMemo(() => {
-    return variables.map(v => {
-      const resolvedValue = resolveVarReferences(v.value);
-      return `${v.name}: ${resolvedValue} !important;`;
-    }).join('\n        ');
+    return variables
+      .filter(v => v.value !== '')
+      .map(v => {
+        const resolvedValue = resolveVarReferences(v.value);
+        return `${v.name}: ${resolvedValue} !important;`;
+      })
+      .join('\n        ');
   }, [variables, resolveVarReferences]);
 
   // Generate surface overrides for .bg-color-* classes with luminance-aware foreground colors

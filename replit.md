@@ -37,6 +37,19 @@ Preferred communication style: Simple, everyday language.
 - `FontPicker`, `SizeInput`, `NumberInput`, `StringInput` - Type-specific input controls
 - `ExportModal` - CSS export with copy/download functionality
 - `ActionBar` - Reset and export action buttons with modification counter
+- `LegacyImportModal` - V5 → V6 conversion. `applyMapping` returns
+  `{ mapped, cleared: string[] }`; `cleared` lists V6 vars that were
+  explicitly set to `notset` *by the theme* (not the V5 framework
+  default). `handleLegacyImportComplete` overwrites those vars with `''`
+  so the V6 default doesn't silently leak back in. Empty values are
+  suppressed by `PreviewPane`, server-side `generateCss`, and the
+  export-side `generateCssCustomProperties` so the cleared state round-
+  trips through preview and export. The contrast-pair pass
+  (`applyNavMainContrastPairs`) is allowed to re-add a cleared var via
+  `mapped`, which mirrors V5's compile-time `@if` override on dark
+  backgrounds. See `docs/theme-source-conventions.md` §6 "Theme-explicit
+  `notset` vs framework-default `notset`" for the contract; locked in by
+  Fixtures J & K in `scripts/verify-v5-base-fallback.ts`.
 - `CustomCssManager` - Manages user-supplied SCSS files. Each file has an
   optional `enabled` flag (treated as `true` when undefined). When set to
   `false`, the file is still written to `theme/custom/` in the export but

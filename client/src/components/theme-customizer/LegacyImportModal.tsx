@@ -32,6 +32,14 @@ export interface ImportedFontFile {
 
 interface ImportResult {
   mappedVariables: { name: string; value: string }[];
+  /**
+   * V6 variable names that the V5 theme explicitly cleared via the
+   * `notset` sentinel. The consumer should overwrite its own V6
+   * defaults for these with empty values so the user sees them as
+   * intentionally unset (e.g. an empty Border control) rather than
+   * leftover V6 defaults.
+   */
+  clearedVariables: string[];
   unmappedScssCount: number;
   stylesXml: string | null;
   preservedFolders: PreservedFolders;
@@ -220,7 +228,10 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       setProgress(60);
       
       const mappings = parseMappingCsv();
-      const mappedVariables = applyMapping(scssVariables, mappings);
+      const { mapped: mappedVariables, cleared: clearedVariables } = applyMapping(
+        scssVariables,
+        mappings,
+      );
       
       const totalScssVars = Object.keys(scssVariables).length;
       const unmappedScssCount = totalScssVars - mappedVariables.length;
@@ -389,6 +400,7 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       
       const result: ImportResult = {
         mappedVariables,
+        clearedVariables,
         unmappedScssCount,
         stylesXml,
         preservedFolders,

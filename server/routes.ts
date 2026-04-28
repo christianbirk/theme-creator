@@ -309,7 +309,13 @@ function escapeXml(str: string): string {
 }
 
 function generateCss(variables: CSSVariable[], baseScss?: string): string {
-  const cssVarsBlock = variables
+  // Skip variables whose value the user has intentionally cleared (e.g. via
+  // V5 → V6 conversion of a `notset` declaration). Emitting `--name: ;`
+  // would be an invalid CSS declaration that some parsers reject; dropping
+  // the line lets the cascade fall back to whatever default is upstream,
+  // which is what the empty-control state is meant to represent.
+  const declaredVariables = variables.filter(v => v.value !== '');
+  const cssVarsBlock = declaredVariables
     .map(v => `  ${v.name}: ${v.value};`)
     .join('\n');
 
@@ -328,7 +334,10 @@ ${cssVarsBlock}
 
   if (baseScss) {
     try {
-      const variableDeclarations = variables
+      // Same rationale as the cssVarsBlock filter above: an empty value
+      // (`$foo: ;`) is a SCSS parse error and would fail the entire
+      // baseScss compilation, so skip those declarations.
+      const variableDeclarations = declaredVariables
         .map(v => `$${v.name.replace('--', '')}: ${v.value};`)
         .join('\n');
 

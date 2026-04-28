@@ -172,6 +172,16 @@ export function applyNavMainContrastPairs(
     overrides.set(pair.cssVariable, normalizeNavMainOverride(value));
   }
 
+  // NOTE on interaction with the `cleared` list returned by applyMapping:
+  // a theme that writes e.g. `$nav-main-link-color: notset` will cause the
+  // upstream pass to add `--nav-main-link-color` to `cleared`. If we're
+  // also in a dark-bg branch here, the contrast pair will *re-add* the
+  // variable to `mapped` with the alternate color. That's intentional and
+  // semantically correct: V5's compiled CSS uses `@if` to pick the
+  // alternate color on dark bg regardless of `$nav-main-link-color`'s
+  // value, so the V6 conversion needs to bake in that same alternate.
+  // `mapped` wins over `cleared` in the consumer (theme-customizer.tsx
+  // handleLegacyImportComplete), which mirrors that V5 behavior.
   const seen = new Set<string>();
   const result = mappedVariables.map((v) => {
     if (overrides.has(v.name)) {
