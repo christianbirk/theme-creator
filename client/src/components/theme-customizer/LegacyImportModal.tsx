@@ -373,16 +373,35 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
     
     setStep('processing');
     setProgress(0);
-    setStatusMessage('Reading folder...');
+    setStatusMessage(`Reading folder (0 of ${files.length} files)...`);
     setValidationErrors([]);
     
     try {
       const zip = new JSZip();
-      for (let i = 0; i < files.length; i++) {
+      const total = files.length;
+      // Yield to the browser every few files so the progress bar can paint.
+      // requestAnimationFrame guarantees a paint cycle (setTimeout 0 may be
+      // batched away by React on fast loops with small files).
+      const YIELD_EVERY = 3;
+      const yieldToBrowser = () =>
+        new Promise<void>(resolve => {
+          if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => resolve());
+          } else {
+            setTimeout(resolve, 16);
+          }
+        });
+      for (let i = 0; i < total; i++) {
         const file = files[i];
         const relPath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
         const data = await file.arrayBuffer();
         zip.file(relPath, data);
+        const done = i + 1;
+        setProgress(Math.round((done / total) * 100));
+        setStatusMessage(`Reading folder (${done} of ${total} files)...`);
+        if (done % YIELD_EVERY === 0 || done === total) {
+          await yieldToBrowser();
+        }
       }
       processZip(zip);
     } catch (err) {
