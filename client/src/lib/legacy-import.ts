@@ -1,19 +1,22 @@
 import mappingCsvContent from '@assets/mapping-file_1768311744358.csv?raw';
 import {
   ParsedScssVariables,
-  extractHexValue,
-  resolveVariableReference,
+  wrapScssArithmeticInCalc,
 } from './legacy-import-utils';
-import { applyNavMainContrastPairs } from './legacy-import-contrast';
+import {
+  applyMapping,
+  type ScssVariableMapping,
+} from './legacy-import-apply';
 
 export type { ParsedScssVariables } from './legacy-import-utils';
+export { parseScssFile } from './legacy-import-utils';
 export { sassLightness, applyNavMainContrastPairs } from './legacy-import-contrast';
-
-export interface ScssVariableMapping {
-  cssVariable: string;
-  scssVariable: string;
-  note: string;
-}
+export {
+  applyMapping,
+  convertValueScssVarsToCss,
+  V5_BASE_DEFAULTS,
+  type ScssVariableMapping,
+} from './legacy-import-apply';
 
 export interface LegacyImportResult {
   mappedVariables: { name: string; value: string }[];
@@ -55,226 +58,9 @@ export function parseMappingCsv(): ScssVariableMapping[] {
   return mappings;
 }
 
-export function parseScssFile(content: string): ParsedScssVariables {
-  const variables: ParsedScssVariables = {};
-  const lines = content.split('\n');
-  
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('//') || !trimmed.includes(':')) continue;
-    
-    const match = trimmed.match(/^\$([a-zA-Z0-9_-]+)\s*:\s*(.+?);?\s*(?:\/\/.*)?$/);
-    if (match) {
-      const [, name, value] = match;
-      const cleanValue = value.replace(/!default\s*$/, '').replace(/;$/, '').trim();
-      variables[`$${name}`] = cleanValue;
-    }
-  }
-  
-  return variables;
-}
-
-/**
- * Convert SCSS arithmetic expressions to CSS calc() expressions.
- * SCSS allows bare math like `24px - 4px` or `$var * 1.5`, but CSS requires calc().
- * Also handles parenthesized sub-expressions like `24px 0 (24px - 4px)`.
- */
-function wrapScssArithmeticInCalc(value: string): string {
-  if (!value || value.startsWith('calc(') || value.startsWith('var(')) return value;
-
-  let result = value;
-
-  const isCalcOperand = (s: string) => /[\d.]/.test(s) || s.startsWith('var(');
-
-  result = result.replace(/\(([^()]+)\)/g, (match, inner) => {
-    const trimmed = inner.trim();
-    if (/(?:[\d.]+[a-z%]*|var\([^)]+\))\s*[+\-*/]\s*(?:[\d.]+|var\()/.test(trimmed) && !trimmed.startsWith('calc(')) {
-      return `calc(${trimmed})`;
-    }
-    return match;
-  });
-
-  if (!/\bcalc\(/.test(result)) {
-    const parts = result.split(/\s+/);
-    if (parts.length >= 3) {
-      const rebuilt: string[] = [];
-      let i = 0;
-      while (i < parts.length) {
-        if (i + 2 < parts.length && /^[+\-*/]$/.test(parts[i + 1]) && 
-            isCalcOperand(parts[i]) && isCalcOperand(parts[i + 2])) {
-          let exprParts = [parts[i], parts[i + 1], parts[i + 2]];
-          i += 3;
-          while (i + 1 < parts.length && /^[+\-*/]$/.test(parts[i]) && isCalcOperand(parts[i + 1])) {
-            exprParts.push(parts[i], parts[i + 1]);
-            i += 2;
-          }
-          rebuilt.push(`calc(${exprParts.join(' ')})`);
-        } else {
-          rebuilt.push(parts[i]);
-          i++;
-        }
-      }
-      result = rebuilt.join(' ');
-    }
-  }
-
-  return result;
-}
-
-/**
- * Convert SCSS variable references in a value to CSS variable references
- * Used for values that couldn't be resolved to literals
- */
-function convertValueScssVarsToCss(value: string, scssToCssMap: Map<string, string>): string {
-  // Match all SCSS variable references in the value
-  return value.replace(/\$[a-zA-Z0-9_-]+/g, (scssVar) => {
-    const cssVar = scssToCssMap.get(scssVar);
-    if (cssVar) {
-      return `var(${cssVar})`;
-    }
-    // No mapping found, leave as-is
-    return scssVar;
-  });
-}
-
-export function applyMapping(
-  scssVariables: ParsedScssVariables,
-  mappings: ScssVariableMapping[]
-): { name: string; value: string }[] {
-  const result: { name: string; value: string }[] = [];
-  
-  // Build a map from SCSS variable names to CSS variable names for reference conversion
-  // Use the FIRST match found (most direct/generic mapping) rather than the last
-  // e.g., $color-a should map to --color-brand-a, not --label-color-bg-dark
-  const scssToCssMap: Map<string, string> = new Map();
-  for (const mapping of mappings) {
-    if (!scssToCssMap.has(mapping.scssVariable)) {
-      scssToCssMap.set(mapping.scssVariable, mapping.cssVariable);
-    }
-  }
-  
-  // First pass: collect all color variables (--color-brand-*) and their HEX values
-  // This allows us to replace hardcoded HEX values with variable references
-  const hexToColorVar: Map<string, string> = new Map();
-  for (const mapping of mappings) {
-    if (mapping.cssVariable.startsWith('--color-brand-')) {
-      let rawValue = scssVariables[mapping.scssVariable];
-      if (!rawValue) continue;
-      
-      rawValue = resolveVariableReference(rawValue, scssVariables);
-      const hexValue = extractHexValue(rawValue);
-      if (hexValue && hexValue.startsWith('#')) {
-        // Normalize to lowercase for comparison
-        hexToColorVar.set(hexValue.toLowerCase(), mapping.cssVariable);
-      }
-    }
-  }
-  
-  for (const mapping of mappings) {
-    let rawValue = scssVariables[mapping.scssVariable];
-    
-    if (!rawValue) continue;
-    
-    // Skip variables containing "span" - these are internal/deprecated
-    if (mapping.cssVariable.toLowerCase().includes('span')) {
-      continue;
-    }
-    
-    // Try to resolve to a literal value first
-    rawValue = resolveVariableReference(rawValue, scssVariables);
-    
-    let finalValue = rawValue;
-    
-    // If the value still contains SCSS variable references, convert them to CSS variables
-    if (finalValue.includes('$')) {
-      finalValue = convertValueScssVarsToCss(finalValue, scssToCssMap);
-    }
-    
-    if (mapping.note.toLowerCase().includes('take only hex value')) {
-      finalValue = extractHexValue(rawValue);
-    }
-    
-    // Convert arrow appearance / link style values
-    if (mapping.note.toLowerCase().includes('arrow appearance') || 
-        mapping.cssVariable.includes('link-style')) {
-      const cleanValue = rawValue.toLowerCase().replace(/^['"]|['"]$/g, '');
-      if (cleanValue === 'left' || cleanValue === 'right') {
-        finalValue = 'Left';
-      } else if (cleanValue === 'underline') {
-        finalValue = 'Underline';
-      }
-    }
-    
-    if (mapping.note.toLowerCase().includes("if 'true' use") || 
-        mapping.note.toLowerCase().includes('if true use')) {
-      // Strip quotes from boolean values
-      const cleanValue = rawValue.toLowerCase().replace(/^['"]|['"]$/g, '');
-      if (cleanValue === 'true') {
-        const useMatch = mapping.note.match(/use\s+(--[a-zA-Z0-9-]+)/i);
-        if (useMatch) {
-          finalValue = `var(${useMatch[1]})`;
-        }
-      } else if (cleanValue === 'false') {
-        // If false, leave empty (inherit from default)
-        finalValue = 'inherit';
-      }
-    }
-    
-    // For non-color variables, check if the HEX value matches a color variable
-    // and use the variable reference instead of hardcoded HEX
-    if (!mapping.cssVariable.startsWith('--color-brand-')) {
-      const hexMatch = finalValue.match(/#[a-fA-F0-9]{3,8}/);
-      if (hexMatch) {
-        const normalizedHex = hexMatch[0].toLowerCase();
-        const colorVar = hexToColorVar.get(normalizedHex);
-        if (colorVar) {
-          // Replace the HEX value with a variable reference
-          finalValue = finalValue.replace(hexMatch[0], `var(${colorVar})`);
-        }
-      }
-    }
-    
-    // Convert color keywords to CSS variable references
-    const colorKeywordMap: Record<string, string> = {
-      'white': 'var(--color-neutral-f)',
-    };
-    const cleanColorKeyword = finalValue.toLowerCase().replace(/^['"]|['"]$/g, '');
-    if (colorKeywordMap[cleanColorKeyword]) {
-      finalValue = colorKeywordMap[cleanColorKeyword];
-    }
-    
-    // Convert font size keywords to CSS variable references
-    const fontSizeMap: Record<string, string> = {
-      'x-small': 'var(--font-xsmall)',
-      'small': 'var(--font-small)',
-      'normal': 'var(--font-normal)',
-      'x-normal': 'var(--font-xnormal)',
-      'medium': 'var(--font-medium)',
-      'x-medium': 'var(--font-xmedium)',
-      'large': 'var(--font-large)',
-      'x-large': 'var(--font-xlarge)',
-      'xx-large': 'var(--font-xxlarge)',
-      'xxx-large': 'var(--font-xxxlarge)',
-    };
-    // Strip quotes and check for font size keyword match
-    const cleanFontSize = finalValue.toLowerCase().replace(/^['"]|['"]$/g, '');
-    if (fontSizeMap[cleanFontSize]) {
-      finalValue = fontSizeMap[cleanFontSize];
-    }
-    
-    finalValue = wrapScssArithmeticInCalc(finalValue);
-    
-    result.push({
-      name: mapping.cssVariable,
-      value: finalValue
-    });
-  }
-  
-  // Resolve V5's compile-time contrast `@if` for nav-main link/underline once
-  // here, against the V5 sources, so V6 ends up with the visually-correct
-  // value baked in. See `applyNavMainContrastPairs` for the full rationale.
-  return applyNavMainContrastPairs(result, scssVariables);
-}
+// `parseScssFile` is re-exported from `./legacy-import-utils` at the top
+// of this module so it can be used from both the in-app importer and the
+// node-only V5 base-defaults snapshot generator script.
 
 export function mergeMappedVariables(
   existingVariables: { name: string; value: string; defaultValue: string }[],

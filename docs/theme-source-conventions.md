@@ -525,6 +525,48 @@ in V6 land, so editing `--nav-main-background-color` later in the customizer
 does **not** auto-recompute the paired link/underline colors. A live "paired
 token" affordance is a separate, future feature.
 
+#### V5 base-defaults fallback (theme silence ≠ no value)
+
+A V5 theme is allowed to be **silent** on any framework variable — the
+upstream Sass build resolves silent variables to the `!default` value
+declared in `GoBasic/baseStyles/css/variables/**`. The customizer, which
+parses SCSS without invoking Sass, has to replicate that semantics or it
+silently produces empty V6 values for anything the chosen theme didn't
+restate.
+
+The motivating example is the EM blank theme:
+
+```scss
+// beru-org/Assets:GoBasic/baseStyles/css/variables/_navigation.scss
+$nav-main-border-top: 0 solid $color-gray-d !default;
+// beru-org/Assets:GoBasic/baseStyles/css/variables/_colors.scss
+$color-gray-d:        #ddd                  !default;
+// blank theme overrides neither
+```
+
+A naive parse of the blank theme finds no `$nav-main-border-top`, so the
+V6 output for `--nav-main-border-top` would be empty. The framework
+default is what V5 actually shipped, and V6 must ship the same.
+
+**Rule:** the converter merges every `!default` from the V5 baseStyles
+framework UNDER the user's chosen V5 theme. Theme entries always win on
+key collision; framework defaults only fill silence. Implementation:
+
+* Snapshot lives in `client/src/lib/v5-base-defaults.json` (930 entries
+  at time of writing — every `$var: value !default;` in
+  `beru-org/Assets:GoBasic/baseStyles/css/variables/**`).
+* Regenerate with
+  `GITHUB_TOKEN=… npx tsx scripts/fetch-v5-base-defaults.ts` whenever
+  the upstream framework changes.
+* The merge happens once at the top of `applyMapping` in
+  `client/src/lib/legacy-import-apply.ts`:
+  `{ ...V5_BASE_DEFAULTS, ...themeVariables }`.
+* `applyNavMainContrastPairs` (above) sees the merged map too, so the
+  contrast-pair resolution also benefits from framework fallbacks.
+* If a variable is genuinely absent from BOTH the theme and the
+  framework, the converter still skips it — no junk emitted.
+* Locked in by `scripts/verify-v5-base-fallback.ts`.
+
 ---
 
 ## 7. Build & deploy pipeline
