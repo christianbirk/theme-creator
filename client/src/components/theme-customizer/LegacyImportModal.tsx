@@ -90,6 +90,14 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         return lower.length > 0;
       });
 
+      // Diagnostic: surface what JSZip actually saw so we can debug folder
+      // imports that mysteriously fail validation in real browsers.
+      console.log(
+        '[LegacyImport] zip entries:', entries.length,
+        'relevant:', relevantEntries.length,
+        'first paths:', relevantEntries.slice(0, 12),
+      );
+
       setStatusMessage('Validating structure...');
       setProgress(20);
 
@@ -143,9 +151,16 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
           // Both exist somewhere but never as siblings.
           errors.push('Could not find a folder containing both styles.xml and css/ together');
         }
+        // Always include diagnostics so the user (and we) can tell what
+        // actually arrived from the picker.
+        errors.push(`Read ${entries.length} entries (${relevantEntries.length} after filtering metadata).`);
+        if (relevantEntries.length > 0) {
+          const samplePaths = relevantEntries.slice(0, 5).join(' | ');
+          errors.push(`First entries: ${samplePaths}`);
+        }
         const preview = Array.from(topLevels).slice(0, 8).join(', ');
         if (preview) {
-          errors.push(`Top-level entries found: ${preview}${topLevels.size > 8 ? ', …' : ''}`);
+          errors.push(`Top-level folders: ${preview}${topLevels.size > 8 ? ', …' : ''}`);
         }
         errors.push('Tip: pick the folder that directly contains styles.xml and css/.');
         setValidationErrors(errors);
