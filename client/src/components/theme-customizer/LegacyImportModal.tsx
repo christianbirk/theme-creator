@@ -78,54 +78,108 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       setStatusMessage('Analyzing files...');
       setProgress(10);
 
-      let rootPrefix = '';
       const entries = Object.keys(zip.files);
-      // Filter out __MACOSX and .DS_Store entries for detection
-      const relevantEntries = entries.filter(e => 
-        !e.startsWith('__MACOSX') && !e.includes('.DS_Store')
-      );
-      const firstEntry = relevantEntries.find(e => !e.endsWith('/'));
-      if (firstEntry && firstEntry.includes('/')) {
-        const parts = firstEntry.split('/');
-        if (parts.length > 1) {
-          const potentialRoot = parts[0] + '/';
-          // Check if all relevant entries are under the potential root
-          const allUnderRoot = relevantEntries.every(e => 
-            e.startsWith(potentialRoot) || e === parts[0] || e === potentialRoot
-          );
-          if (allUnderRoot) {
-            rootPrefix = potentialRoot;
-          }
-        }
-      }
-      
+      // Filter out macOS metadata that should never be considered theme files.
+      const relevantEntries = entries.filter(e => {
+        const lower = e.toLowerCase();
+        if (e.startsWith('__MACOSX')) return false;
+        // .DS_Store and AppleDouble (._*) companion files
+        const fileName = e.split('/').filter(Boolean).pop() || '';
+        if (fileName === '.DS_Store') return false;
+        if (fileName.startsWith('._')) return false;
+        return lower.length > 0;
+      });
+
       setStatusMessage('Validating structure...');
       setProgress(20);
-      
-      // Case-insensitive check for styles.xml
-      const hasStyles = relevantEntries.some(e => {
-        const relativePath = rootPrefix ? e.replace(rootPrefix, '') : e;
-        return relativePath.toLowerCase() === 'styles.xml';
-      });
-      // Case-insensitive check for css folder
-      const hasCss = relevantEntries.some(e => {
-        const relativePath = rootPrefix ? e.replace(rootPrefix, '') : e;
-        return relativePath.toLowerCase().startsWith('css/');
-      });
-      
-      const errors: string[] = [];
-      if (!hasStyles) {
-        errors.push('Missing styles.xml file');
+
+      // Helper: number of path segments (depth) for ranking candidate roots.
+      const depthOf = (prefix: string): number =>
+        prefix === '' ? 0 : prefix.split('/').filter(Boolean).length;
+
+      // Locate every directory that contains a styles.xml (case-insensitive).
+      const stylesDirs = new Set<string>();
+      for (const path of relevantEntries) {
+        const segments = path.split('/');
+        const lastSegment = segments[segments.length - 1];
+        if (lastSegment.toLowerCase() === 'styles.xml') {
+          const dir = segments.slice(0, -1).join('/');
+          stylesDirs.add(dir ? dir + '/' : '');
+        }
       }
-      if (!hasCss) {
-        errors.push('Missing css/ folder');
+
+      // Locate every directory that has an immediate css/ subfolder.
+      const cssDirs = new Set<string>();
+      for (const path of relevantEntries) {
+        const lower = path.toLowerCase();
+        const idx = lower.indexOf('css/');
+        if (idx === -1) continue;
+        // The css/ must appear as a full path segment (start of path or right
+        // after a slash) and be followed by something (not just "css/" alone).
+        if (idx !== 0 && lower[idx - 1] !== '/') continue;
+        if (lower.length <= idx + 'css/'.length) continue;
+        const dirPrefix = path.slice(0, idx); // preserves original case
+        cssDirs.add(dirPrefix);
       }
-      
-      if (errors.length > 0) {
+
+      // A directory is a valid theme root only if it contains BOTH styles.xml
+      // and a css/ folder side by side.
+      const candidateRoots = Array.from(stylesDirs).filter(d => cssDirs.has(d));
+
+      // Independent diagnostics so error messages don't lie.
+      const hasStyles = stylesDirs.size > 0;
+      const hasCss = cssDirs.size > 0;
+
+      if (candidateRoots.length === 0) {
+        const topLevels = new Set<string>();
+        for (const e of relevantEntries) {
+          const seg = e.split('/').filter(Boolean)[0];
+          if (seg) topLevels.add(seg);
+        }
+        const errors: string[] = [];
+        if (!hasStyles) errors.push('Missing styles.xml file');
+        if (!hasCss) errors.push('Missing css/ folder');
+        if (hasStyles && hasCss) {
+          // Both exist somewhere but never as siblings.
+          errors.push('Could not find a folder containing both styles.xml and css/ together');
+        }
+        const preview = Array.from(topLevels).slice(0, 8).join(', ');
+        if (preview) {
+          errors.push(`Top-level entries found: ${preview}${topLevels.size > 8 ? ', …' : ''}`);
+        }
+        errors.push('Tip: pick the folder that directly contains styles.xml and css/.');
         setValidationErrors(errors);
         setStep('upload');
         return;
       }
+
+      // Rank by true depth (segment count), then by string length as a stable
+      // tie-breaker. Deepest = most-specific theme folder.
+      candidateRoots.sort((a, b) => {
+        const depthDiff = depthOf(b) - depthOf(a);
+        if (depthDiff !== 0) return depthDiff;
+        return b.length - a.length;
+      });
+
+      // If two or more candidates tie at the same maximum depth, the archive
+      // contains multiple themes side by side and we can't pick one safely.
+      const topDepth = depthOf(candidateRoots[0]);
+      const tied = candidateRoots.filter(r => depthOf(r) === topDepth);
+      if (tied.length > 1) {
+        const list = tied
+          .map(r => r === '' ? '(root)' : r.replace(/\/$/, ''))
+          .slice(0, 6)
+          .join(', ');
+        setValidationErrors([
+          'Multiple themes detected in the selected folder',
+          `Found styles.xml + css/ in: ${list}${tied.length > 6 ? ', …' : ''}`,
+          'Tip: pick the specific theme folder you want to import.',
+        ]);
+        setStep('upload');
+        return;
+      }
+
+      const rootPrefix = candidateRoots[0];
       
       setStatusMessage('Extracting SCSS variables...');
       setProgress(40);
