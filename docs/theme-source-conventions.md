@@ -492,6 +492,39 @@ The customizer's "Convert to V6" action must:
 8. Add `--theme-version: 6;` as the first declaration inside `:root`.
 9. Switch theme.scss imports to the V6 form (§3.1).
 
+#### Contrast-pair resolution (one-shot, at conversion time)
+
+V5 picked some surface colors at compile time using a Sass conditional:
+
+```scss
+@if (lightness($nav-main-background-color) > $contrast-ratio) {
+  color: $nav-main-link-color !important;
+} @else {
+  color: $color-alternate !important;
+}
+```
+
+`$contrast-ratio` defaults to `55`, and `$color-alternate` defaults to white.
+V6 uses flat runtime CSS variables and has no equivalent — copying
+`$nav-main-link-color` straight through makes links invisible whenever the
+theme paints the nav background with the brand color (the EM theme is the
+trigger case).
+
+The converter resolves this conditional **once during V5 → V6 import**, in
+`applyNavMainContrastPairs` (`client/src/lib/legacy-import.ts`), and writes
+the visually-correct value into the V6 token. The currently-resolved pairs
+are:
+
+| V6 token                          | Light bg (`> 55`)               | Dark bg (`≤ 55`)                              |
+| --------------------------------- | ------------------------------- | --------------------------------------------- |
+| `--nav-main-link-color`           | `$nav-main-link-color`          | `$color-alternate` (default: white)           |
+| `--nav-main-active-state-color`   | `$nav-main-active-state-color`  | `$nav-main-active-state-color-alternate`      |
+
+This is **explicitly one-shot** — once the theme is in V6 it lives entirely
+in V6 land, so editing `--nav-main-background-color` later in the customizer
+does **not** auto-recompute the paired link/underline colors. A live "paired
+token" affordance is a separate, future feature.
+
 ---
 
 ## 7. Build & deploy pipeline

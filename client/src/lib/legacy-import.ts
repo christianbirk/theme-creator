@@ -1,13 +1,18 @@
 import mappingCsvContent from '@assets/mapping-file_1768311744358.csv?raw';
+import {
+  ParsedScssVariables,
+  extractHexValue,
+  resolveVariableReference,
+} from './legacy-import-utils';
+import { applyNavMainContrastPairs } from './legacy-import-contrast';
+
+export type { ParsedScssVariables } from './legacy-import-utils';
+export { sassLightness, applyNavMainContrastPairs } from './legacy-import-contrast';
 
 export interface ScssVariableMapping {
   cssVariable: string;
   scssVariable: string;
   note: string;
-}
-
-export interface ParsedScssVariables {
-  [variableName: string]: string;
 }
 
 export interface LegacyImportResult {
@@ -69,21 +74,6 @@ export function parseScssFile(content: string): ParsedScssVariables {
   return variables;
 }
 
-function extractHexValue(value: string): string {
-  const hexMatch = value.match(/#[a-fA-F0-9]{3,8}/);
-  return hexMatch ? hexMatch[0] : value;
-}
-
-// Predefined SCSS variables with fixed values
-const PREDEFINED_SCSS_VALUES: Record<string, string> = {
-  '$space-4': '4px',
-  '$space-8': '8px',
-  '$space-12': '12px',
-  '$space-16': '16px',
-  '$space-24': '24px',
-  '$space-32': '32px',
-};
-
 /**
  * Convert SCSS arithmetic expressions to CSS calc() expressions.
  * SCSS allows bare math like `24px - 4px` or `$var * 1.5`, but CSS requires calc().
@@ -129,31 +119,6 @@ function wrapScssArithmeticInCalc(value: string): string {
   }
 
   return result;
-}
-
-/**
- * Replace all predefined SCSS variables in a value with their fixed values
- * Handles compound values like "$space-12 0" -> "12px 0"
- */
-function replacePredefinedVariables(value: string): string {
-  return value.replace(/\$[a-zA-Z0-9_-]+/g, (scssVar) => {
-    const predefined = PREDEFINED_SCSS_VALUES[scssVar];
-    return predefined || scssVar;
-  });
-}
-
-function resolveVariableReference(value: string, allVariables: ParsedScssVariables): string {
-  // First, replace any predefined variables in the value
-  value = replacePredefinedVariables(value);
-  
-  // If the value is a single SCSS variable reference, try to resolve it
-  if (value.startsWith('$') && !value.includes(' ')) {
-    const refValue = allVariables[value];
-    if (refValue) {
-      return resolveVariableReference(refValue, allVariables);
-    }
-  }
-  return value;
 }
 
 /**
@@ -305,7 +270,10 @@ export function applyMapping(
     });
   }
   
-  return result;
+  // Resolve V5's compile-time contrast `@if` for nav-main link/underline once
+  // here, against the V5 sources, so V6 ends up with the visually-correct
+  // value baked in. See `applyNavMainContrastPairs` for the full rationale.
+  return applyNavMainContrastPairs(result, scssVariables);
 }
 
 export function mergeMappedVariables(
