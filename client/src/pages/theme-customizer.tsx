@@ -845,6 +845,7 @@ export default function ThemeCustomizer() {
                   previewHtml="" 
                   customCssFiles={scssFiles} 
                   fontCss={fontCssForPreview}
+                  baseScss={baseScss}
                   inspectorMode={inspectorMode}
                   onElementSelect={(element) => {
                     setSelectedElement(element);

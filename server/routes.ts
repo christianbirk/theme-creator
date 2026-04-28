@@ -3,6 +3,7 @@ import { type Server } from "http";
 import * as sass from 'sass';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Worker } from 'node:worker_threads';
 import type { CssClass, CssClassGroup, CssClassesData } from "@shared/schema";
 
 interface CSSVariable {
@@ -446,6 +447,119 @@ function escapeForStyleTag(css: string): string {
     .replace(/-->/g, '--\\>');
 }
 
+// Run sass.compileString inside a worker thread with a hard wall-clock
+// timeout so a malicious or pathological SCSS payload (e.g. a giant
+// @for loop) cannot block the main event loop. Returns null on timeout
+// or any failure; the caller falls back to the cached template.
+const SASS_WORKER_SOURCE = `
+const { parentPort, workerData } = require('node:worker_threads');
+try {
+  const sass = require('sass');
+  const result = sass.compileString(workerData.source, { style: 'expanded' });
+  parentPort.postMessage({ ok: true, css: result.css });
+} catch (e) {
+  parentPort.postMessage({ ok: false, error: (e && e.message) ? e.message : String(e) });
+}
+`;
+
+const SASS_COMPILE_TIMEOUT_MS = 3000;
+
+function compileSassInWorker(source: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    let worker: Worker;
+    try {
+      worker = new Worker(SASS_WORKER_SOURCE, { eval: true, workerData: { source } });
+    } catch (err) {
+      console.error('[theme-swap] worker spawn failed:', (err as Error).message);
+      resolve(null);
+      return;
+    }
+    let settled = false;
+    const settle = (val: string | null) => {
+      if (settled) return;
+      settled = true;
+      worker.terminate().catch(() => {});
+      resolve(val);
+    };
+    const timer = setTimeout(() => settle(null), SASS_COMPILE_TIMEOUT_MS);
+    worker.once('message', (msg: { ok?: boolean; css?: string; error?: string }) => {
+      clearTimeout(timer);
+      if (msg && msg.ok && typeof msg.css === 'string') {
+        settle(msg.css);
+      } else {
+        if (msg && msg.error) {
+          console.error('[theme-swap] sass compile failed:', msg.error.split('\n')[0]);
+        }
+        settle(null);
+      }
+    });
+    worker.once('error', (err) => {
+      clearTimeout(timer);
+      console.error('[theme-swap] worker errored:', err.message);
+      settle(null);
+    });
+  });
+}
+
+// Tighter caps than a single user could realistically need (the sample
+// theme that ships with the customizer is ~12 KB / 205 vars). These are
+// abuse guards on /api/fetch-preview, which accepts arbitrary SCSS in
+// the request body.
+const MAX_BASE_SCSS_BYTES = 200 * 1024;
+const MAX_THEME_VARIABLES = 500;
+
+// Compile the user's currently-edited theme into a self-contained CSS
+// string that can be inlined as a swap substitute. Returns null if the
+// inputs are missing/invalid or if the compiled output is unsuitable
+// (e.g. its rules don't reference var(--color-brand-*), in which case
+// the substitute would render exactly like the offending site).
+async function compileUserTheme(
+  rawVariables: unknown,
+  rawBaseScss: unknown,
+): Promise<string | null> {
+  if (typeof rawBaseScss !== 'string' || rawBaseScss.trim().length === 0) return null;
+  if (rawBaseScss.length > MAX_BASE_SCSS_BYTES) return null;
+  if (!Array.isArray(rawVariables)) return null;
+  if (rawVariables.length > MAX_THEME_VARIABLES) return null;
+
+  const variables: { name: string; value: string }[] = [];
+  for (const v of rawVariables) {
+    if (
+      v &&
+      typeof v === 'object' &&
+      typeof (v as { name?: unknown }).name === 'string' &&
+      typeof (v as { value?: unknown }).value === 'string' &&
+      /^--[a-zA-Z0-9_-]+$/.test((v as { name: string }).name) &&
+      (v as { value: string }).value.trim().length > 0 &&
+      (v as { value: string }).value.length < 2000
+    ) {
+      variables.push({
+        name: (v as { name: string }).name,
+        value: (v as { value: string }).value.trim(),
+      });
+    }
+  }
+  if (variables.length === 0) return null;
+
+  // Same compile prelude as POST /api/compile-theme so this matches
+  // the exact CSS the user gets when they export.
+  const sassDecls = variables
+    .map((v) => `$${v.name.replace('--', '')}: ${v.value};`)
+    .join('\n');
+  const compiledCss = await compileSassInWorker(sassDecls + '\n\n' + rawBaseScss);
+  if (compiledCss === null) return null;
+
+  // Sanity: if baseScss didn't compile to var()-using rules, swapping
+  // wouldn't help — bail out so we fall back to the cached template.
+  if (!/var\(\s*--color-brand-[a-g]\b/i.test(compiledCss)) return null;
+
+  const rootBlock =
+    ':root {\n' +
+    variables.map((v) => `  ${v.name}: ${v.value};`).join('\n') +
+    '\n}\n';
+  return rootBlock + '\n' + compiledCss;
+}
+
 // Discover and cache a complete V6 theme CSS that DOES use
 // var(--color-brand-*). Used to substitute the stylesheet of any
 // previewed site whose own theme.min.css was Sass-compiled with the
@@ -604,23 +718,66 @@ export async function registerRoutes(
         return res.status(403).json({ error: 'Access to internal/private addresses is not allowed' });
       }
 
-      // Fetch the HTML
+      // Fetch the HTML, validating every redirect hop against the SSRF
+      // blocklist so a public URL cannot 302 to an internal target.
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       try {
-        const response = await fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; Theme-Customizer-Preview/1.0)',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-          },
-          signal: controller.signal,
-          redirect: 'follow',
-        });
+        let currentUrl = url;
+        let response: Response | null = null;
+        const maxHops = 5;
+        let redirectError: { status: number; body: { error: string } } | null = null;
+        for (let hop = 0; hop <= maxHops; hop++) {
+          let parsedHop: URL;
+          try {
+            parsedHop = new URL(currentUrl);
+          } catch {
+            redirectError = { status: 400, body: { error: 'Invalid redirect target URL' } };
+            break;
+          }
+          if (!['http:', 'https:'].includes(parsedHop.protocol)) {
+            redirectError = { status: 400, body: { error: 'Redirect to non-HTTP(S) URL not allowed' } };
+            break;
+          }
+          if (isBlockedHostname(parsedHop.hostname.toLowerCase())) {
+            redirectError = { status: 403, body: { error: 'Redirect to internal/private address not allowed' } };
+            break;
+          }
+          response = await fetch(currentUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; Theme-Customizer-Preview/1.0)',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.5',
+            },
+            signal: controller.signal,
+            redirect: 'manual',
+          });
+          if (response.status >= 300 && response.status < 400) {
+            const loc = response.headers.get('location');
+            if (!loc || hop === maxHops) {
+              redirectError = { status: 502, body: { error: 'Too many redirects' } };
+              break;
+            }
+            try {
+              currentUrl = new URL(loc, currentUrl).toString();
+            } catch {
+              redirectError = { status: 502, body: { error: 'Invalid redirect Location header' } };
+              break;
+            }
+            continue;
+          }
+          break;
+        }
 
         clearTimeout(timeoutId);
 
+        if (redirectError) {
+          return res.status(redirectError.status).json(redirectError.body);
+        }
+        if (!response) {
+          return res.status(502).json({ error: 'Failed to fetch URL' });
+        }
         if (!response.ok) {
           return res.status(response.status).json({ 
             error: `Failed to fetch: ${response.statusText}` 
@@ -936,9 +1093,21 @@ window.addEventListener('load', function() {
         // bundle, in case there are several) and inlining the blank
         // theme CSS as a <style> in <head>.
         let themeSwapped = false;
+        let themeSwapSource: 'user-theme' | 'fallback-template' | null = null;
         if (themeCompatibility === 'compiled-no-vars') {
-          const blankCss = await getBlankThemeCss();
-          if (blankCss) {
+          // Prefer the user's currently-edited theme as the substitute.
+          // That's the whole point of the swap — when the previewed site
+          // baked its brand colors in at compile time, we replace its
+          // stylesheet with the theme they're editing here so their
+          // changes actually show through. Falls back to the cached
+          // canonical V6 template only when the user hasn't loaded a
+          // baseScss yet, or when their theme can't be compiled.
+          const userCss = await compileUserTheme(req.body?.variables, req.body?.baseScss);
+          const swapCss = userCss ?? (await getBlankThemeCss());
+          const swapSource: 'user-theme' | 'fallback-template' = userCss
+            ? 'user-theme'
+            : 'fallback-template';
+          if (swapCss) {
             const before = html;
             // Strip every <link rel="stylesheet"> whose absolute href
             // looks like a baseStyles theme bundle. Same predicate as
@@ -957,8 +1126,8 @@ window.addEventListener('load', function() {
               // Escape any "</style", "<!--", "-->" sequences inside the
               // upstream CSS so they cannot break out of the <style> tag
               // and execute as HTML/JS inside the iframe document.
-              const safeBlankCss = escapeForStyleTag(blankCss);
-              const styleTag = `\n<style id="theme-customizer-blank-theme">${safeBlankCss}</style>\n`;
+              const safeSwapCss = escapeForStyleTag(swapCss);
+              const styleTag = `\n<style id="theme-customizer-blank-theme" data-source="${swapSource}">${safeSwapCss}</style>\n`;
               if (/<\/head>/i.test(html)) {
                 html = html.replace(/<\/head>/i, styleTag + '</head>');
               } else if (/<head[^>]*>/i.test(html)) {
@@ -967,6 +1136,7 @@ window.addEventListener('load', function() {
                 html = styleTag + html;
               }
               themeSwapped = true;
+              themeSwapSource = swapSource;
             }
           }
         }
@@ -979,6 +1149,7 @@ window.addEventListener('load', function() {
           themeCompatibility,
           themeStylesheetUrl,
           themeSwapped,
+          themeSwapSource,
         });
       } catch (fetchErr: any) {
         clearTimeout(timeoutId);

@@ -17,6 +17,11 @@ interface PreviewPaneProps {
   previewHtml: string;
   customCssFiles?: ScssFile[];
   fontCss?: string;
+  // Source SCSS of the theme being edited. When the previewed site
+  // bakes its brand colors in at compile time (compiled-no-vars), the
+  // server uses this — compiled with the current variables — as the
+  // substitute stylesheet so the page actually shows the user's theme.
+  baseScss?: string;
   onElementSelect?: (element: SelectedElement | null) => void;
   inspectorMode?: boolean;
 }
@@ -72,7 +77,7 @@ const loadingHtml = `
 </html>
 `;
 
-export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontCss = '', onElementSelect, inspectorMode = false }: PreviewPaneProps) {
+export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontCss = '', baseScss = '', onElementSelect, inspectorMode = false }: PreviewPaneProps) {
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [templateHtml, setTemplateHtml] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,9 +94,18 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
   const [themeCompatibility, setThemeCompatibility] =
     useState<'compatible' | 'compiled-no-vars' | 'unknown'>('unknown');
   const [themeSwapped, setThemeSwapped] = useState(false);
+  const [themeSwapSource, setThemeSwapSource] =
+    useState<'user-theme' | 'fallback-template' | null>(null);
   const [compatBannerDismissed, setCompatBannerDismissed] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const customCssRef = useRef<string>('');
+  // Mirror variables / baseScss into refs so loadTemplate can read the
+  // latest values without becoming a new function on every edit (which
+  // would re-trigger the mount-effect that loads the default URL).
+  const variablesRef = useRef(variables);
+  const baseScssRef = useRef(baseScss);
+  useEffect(() => { variablesRef.current = variables; }, [variables]);
+  useEffect(() => { baseScssRef.current = baseScss; }, [baseScss]);
   const { toast } = useToast();
 
   // Load template HTML
@@ -102,7 +116,13 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       const response = await fetch('/api/fetch-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
+        // Send the user's currently-edited theme so the server can use
+        // it as the swap substitute for compiled-no-vars sites.
+        body: JSON.stringify({
+          url,
+          variables: variablesRef.current.map((v) => ({ name: v.name, value: v.value })),
+          baseScss: baseScssRef.current,
+        }),
       });
       const data = await response.json();
       if (response.ok && data.html) {
@@ -116,6 +136,11 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
             : 'unknown',
         );
         setThemeSwapped(Boolean(data.themeSwapped));
+        setThemeSwapSource(
+          data.themeSwapSource === 'user-theme' || data.themeSwapSource === 'fallback-template'
+            ? data.themeSwapSource
+            : null,
+        );
         // Surface a fresh banner whenever a new URL is loaded.
         setCompatBannerDismissed(false);
         toast({
@@ -1212,12 +1237,14 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
           className="flex items-start gap-2 px-3 py-2 border-b bg-sky-50 text-sky-900 dark:bg-sky-950/40 dark:text-sky-200 text-sm"
           role="status"
           data-testid="banner-theme-swapped"
+          data-source={themeSwapSource ?? ''}
         >
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <div className="flex-1">
             <strong className="font-medium">Theme swapped.</strong>{' '}
-            This site's own stylesheet had the brand colors baked in, so the customizer replaced it with a generic V6 theme.
-            Your variable changes now show through here, but the page may look different from the live site.
+            {themeSwapSource === 'user-theme'
+              ? "This site's own stylesheet had its brand colors baked in, so the customizer replaced it with the theme you're currently editing. The page may look different from the live site."
+              : "This site's own stylesheet had its brand colors baked in, so the customizer replaced it with a reference V6 theme. Load a base theme into the editor to apply your own theme here instead."}
           </div>
           <button
             type="button"

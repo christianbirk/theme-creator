@@ -13,14 +13,18 @@ interface PreviewResp {
   html: string;
   themeCompatibility: 'compatible' | 'compiled-no-vars' | 'unknown';
   themeSwapped?: boolean;
+  themeSwapSource?: 'user-theme' | 'fallback-template' | null;
   error?: string;
 }
 
-async function fetchPreview(url: string): Promise<PreviewResp> {
+async function fetchPreview(
+  url: string,
+  extras: Record<string, unknown> = {},
+): Promise<PreviewResp> {
   const resp = await fetch(`${BASE}/api/fetch-preview`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, ...extras }),
   });
   return await resp.json();
 }
@@ -44,9 +48,10 @@ async function run() {
     !muni.html.includes('id="theme-customizer-blank-theme"'),
   );
 
-  // 2. Real-world compiled-no-vars site — swap MUST run, original
+  // 2. Real-world compiled-no-vars site WITHOUT a user theme attached
+  //    — swap MUST run from the cached fallback template, the original
   //    theme.min.css link MUST be gone, blank-theme style block MUST
-  //    be present.
+  //    be present, and the source MUST be reported as 'fallback-template'.
   const vest = await fetchPreview('https://vesthimmerland.dk/');
   check(
     'vest: verdict=compiled-no-vars',
@@ -54,8 +59,13 @@ async function run() {
     `got ${vest.themeCompatibility}`,
   );
   check('vest: themeSwapped is true', vest.themeSwapped === true);
+  check(
+    'vest: swap source = fallback-template (no baseScss sent)',
+    vest.themeSwapSource === 'fallback-template',
+    `got ${vest.themeSwapSource}`,
+  );
   const styleMatch = vest.html.match(
-    /<style id="theme-customizer-blank-theme">([\s\S]*?)<\/style>/,
+    /<style id="theme-customizer-blank-theme"[^>]*>([\s\S]*?)<\/style>/,
   );
   check('vest: blank-theme <style> injected', !!styleMatch);
   check(
@@ -72,7 +82,52 @@ async function run() {
     check('vest: inlined CSS contains no raw -->', !inlined.includes('-->'));
   }
 
-  // 3. SSRF: blocked URLs must be rejected before we ever fetch them,
+  // 3. Real-world compiled-no-vars site WITH a user theme attached —
+  //    swap MUST use the user theme, source MUST be 'user-theme', and
+  //    the inlined CSS MUST contain rules straight out of the supplied
+  //    baseScss (compiled with the supplied variable values).
+  const userBaseScss =
+    'body { color: var(--color-brand-a); background: var(--color-brand-b); }\n' +
+    '.theme-swap-user-marker { color: var(--color-brand-c); }';
+  const userVars = [
+    { name: '--color-brand-a', value: '#ff0011' },
+    { name: '--color-brand-b', value: '#22ff33' },
+    { name: '--color-brand-c', value: '#4455ff' },
+  ];
+  const vestUser = await fetchPreview('https://vesthimmerland.dk/', {
+    variables: userVars,
+    baseScss: userBaseScss,
+  });
+  check(
+    'vest+user: swap source = user-theme',
+    vestUser.themeSwapSource === 'user-theme',
+    `got ${vestUser.themeSwapSource}`,
+  );
+  check('vest+user: themeSwapped is true', vestUser.themeSwapped === true);
+  const userStyleMatch = vestUser.html.match(
+    /<style id="theme-customizer-blank-theme" data-source="user-theme">([\s\S]*?)<\/style>/,
+  );
+  check('vest+user: data-source="user-theme" attribute present', !!userStyleMatch);
+  if (userStyleMatch) {
+    const inlinedUser = userStyleMatch[1];
+    check(
+      'vest+user: rule from baseScss made it through (.theme-swap-user-marker)',
+      inlinedUser.includes('.theme-swap-user-marker'),
+    );
+    check(
+      'vest+user: user-supplied --color-brand-a value baked into :root',
+      /--color-brand-a:\s*#ff0011/i.test(inlinedUser),
+    );
+    check(
+      'vest+user: substitute does NOT contain the muni reference theme',
+      // The muni theme has hundreds of rules; ours has 2. A simple size
+      // ceiling is the cleanest disambiguator.
+      inlinedUser.length < 5000,
+      `inlined CSS length=${inlinedUser.length}`,
+    );
+  }
+
+  // 4. SSRF: blocked URLs must be rejected before we ever fetch them,
   //    confirming the validation in the swap-source path is consistent
   //    with the probe.
   const ssrfBad = await fetchPreview('http://127.0.0.1:5000/');
