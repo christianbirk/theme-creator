@@ -511,7 +511,8 @@ theme paints the nav background with the brand color (the EM theme is the
 trigger case).
 
 The converter resolves this conditional **once during V5 → V6 import**, in
-`applyNavMainContrastPairs` (`client/src/lib/legacy-import.ts`), and writes
+`applyNavMainContrastPairs` (`client/src/lib/legacy-import-contrast.ts`,
+re-exported from `legacy-import.ts` for back-compat), and writes
 the visually-correct value into the V6 token. The currently-resolved pairs
 are:
 
