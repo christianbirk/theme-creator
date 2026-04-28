@@ -20,12 +20,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FilePlus, Trash2, Edit2, FileCode } from 'lucide-react';
+import { FilePlus, Trash2, Edit2, FileCode, Power, PowerOff } from 'lucide-react';
 
 export interface ScssFile {
   id: string;
   name: string;
   content: string;
+  /**
+   * When `false`, the file is preserved in the exported zip but its
+   * `@import` line in `theme.scss` is emitted as a comment, and its
+   * contents are skipped in the live preview. Treated as `true` when
+   * `undefined` so existing themes keep their old behavior.
+   *
+   * V5 → V6 imports default to `false` so converted themes don't pull in
+   * legacy custom CSS until the user opts back in.
+   */
+  enabled?: boolean;
 }
 
 interface CustomCssManagerProps {
@@ -116,6 +126,12 @@ export function CustomCssManager({ files, onFilesChange }: CustomCssManagerProps
     );
   }, [selectedFileId, files, onFilesChange]);
 
+  const handleToggleEnabled = useCallback((fileId: string) => {
+    onFilesChange(
+      files.map(f => f.id === fileId ? { ...f, enabled: f.enabled === false } : f)
+    );
+  }, [files, onFilesChange]);
+
   return (
     <div className="flex h-full">
       <div className="w-64 border-r flex flex-col">
@@ -134,7 +150,9 @@ export function CustomCssManager({ files, onFilesChange }: CustomCssManagerProps
         
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
-            {files.map((file) => (
+            {files.map((file) => {
+              const isDisabled = file.enabled === false;
+              return (
               <div
                 key={file.id}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer group ${
@@ -145,12 +163,29 @@ export function CustomCssManager({ files, onFilesChange }: CustomCssManagerProps
                 onClick={() => setSelectedFileId(file.id)}
                 data-testid={`file-item-${file.id}`}
               >
-                <FileCode className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="flex-1 text-sm truncate">{file.name}</span>
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <FileCode className={`h-4 w-4 shrink-0 ${isDisabled ? 'text-muted-foreground/50' : 'text-muted-foreground'}`} />
+                <span
+                  className={`flex-1 text-sm truncate ${isDisabled ? 'text-muted-foreground/70 line-through' : ''}`}
+                  title={isDisabled ? `${file.name} (import commented out)` : file.name}
+                >
+                  {file.name}
+                </span>
+                <div className="flex items-center gap-0.5">
                   <div
                     role="button"
-                    className="h-6 w-6 flex items-center justify-center rounded hover:bg-background/50 cursor-pointer"
+                    aria-pressed={!isDisabled}
+                    className={`h-6 w-6 flex items-center justify-center rounded hover:bg-background/50 cursor-pointer transition-opacity ${
+                      isDisabled ? 'opacity-100 text-muted-foreground' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                    onClick={(e) => { e.stopPropagation(); handleToggleEnabled(file.id); }}
+                    title={isDisabled ? 'Enable this file (uncomment its @import)' : 'Disable this file (comment out its @import)'}
+                    data-testid={`button-toggle-enabled-${file.id}`}
+                  >
+                    {isDisabled ? <PowerOff className="h-3 w-3" /> : <Power className="h-3 w-3" />}
+                  </div>
+                  <div
+                    role="button"
+                    className="h-6 w-6 flex items-center justify-center rounded hover:bg-background/50 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => { e.stopPropagation(); handleRenameFile(file.id, file.name); }}
                     data-testid={`button-rename-${file.id}`}
                   >
@@ -158,7 +193,7 @@ export function CustomCssManager({ files, onFilesChange }: CustomCssManagerProps
                   </div>
                   <div
                     role="button"
-                    className="h-6 w-6 flex items-center justify-center rounded hover:bg-background/50 text-destructive cursor-pointer"
+                    className="h-6 w-6 flex items-center justify-center rounded hover:bg-background/50 text-destructive cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }}
                     data-testid={`button-delete-${file.id}`}
                   >
@@ -166,7 +201,8 @@ export function CustomCssManager({ files, onFilesChange }: CustomCssManagerProps
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
             
             {files.length === 0 && (
               <div className="px-2 py-8 text-center text-sm text-muted-foreground">
@@ -182,9 +218,40 @@ export function CustomCssManager({ files, onFilesChange }: CustomCssManagerProps
       <div className="flex-1 flex flex-col">
         {selectedFile ? (
           <>
-            <div className="p-3 border-b">
-              <h3 className="font-medium text-sm">{selectedFile.name}</h3>
+            <div className="p-3 border-b flex items-center justify-between gap-3">
+              <h3 className="font-medium text-sm truncate">{selectedFile.name}</h3>
+              <Button
+                variant={selectedFile.enabled === false ? 'outline' : 'ghost'}
+                size="sm"
+                onClick={() => handleToggleEnabled(selectedFile.id)}
+                data-testid={`button-toggle-enabled-header-${selectedFile.id}`}
+                className="shrink-0 h-7"
+              >
+                {selectedFile.enabled === false ? (
+                  <>
+                    <PowerOff className="h-3.5 w-3.5 mr-1.5" />
+                    Disabled
+                  </>
+                ) : (
+                  <>
+                    <Power className="h-3.5 w-3.5 mr-1.5" />
+                    Enabled
+                  </>
+                )}
+              </Button>
             </div>
+            {selectedFile.enabled === false && (
+              <div
+                className="px-3 py-2 text-xs bg-muted/50 border-b text-muted-foreground"
+                data-testid={`notice-disabled-${selectedFile.id}`}
+              >
+                This file is disabled. The exported theme will include the file in
+                <code className="mx-1 text-foreground">custom/</code>
+                but its <code className="text-foreground">@import</code> in
+                <code className="mx-1 text-foreground">theme.scss</code>
+                will be commented out, and the live preview skips it.
+              </div>
+            )}
             <div className="flex-1 min-h-0 p-3">
               <SimpleCodeEditor
                 value={selectedFile.content}

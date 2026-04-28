@@ -622,10 +622,15 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     }).join('\n');
   }, [variableMap, isLightColor, resolveVarReferences]);
 
-  // Combine all custom CSS file contents for injection
+  // Combine all custom CSS file contents for injection. Skip files marked
+  // `enabled === false` — they're preserved in the export zip with a
+  // commented-out @import line and intentionally don't load in the preview.
   const customCssFilesContent = useMemo(() => {
     if (!customCssFiles || customCssFiles.length === 0) return '';
-    return customCssFiles.map(file => `/* ${file.name} */\n${file.content}`).join('\n\n');
+    return customCssFiles
+      .filter(file => file.enabled !== false)
+      .map(file => `/* ${file.name} */\n${file.content}`)
+      .join('\n\n');
   }, [customCssFiles]);
 
   const customCssContent = useMemo(() => {

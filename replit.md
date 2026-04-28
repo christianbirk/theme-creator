@@ -37,6 +37,14 @@ Preferred communication style: Simple, everyday language.
 - `FontPicker`, `SizeInput`, `NumberInput`, `StringInput` - Type-specific input controls
 - `ExportModal` - CSS export with copy/download functionality
 - `ActionBar` - Reset and export action buttons with modification counter
+- `CustomCssManager` - Manages user-supplied SCSS files. Each file has an
+  optional `enabled` flag (treated as `true` when undefined). When set to
+  `false`, the file is still written to `theme/custom/` in the export but
+  its `@import` line in `theme.scss` is emitted as a comment (`// @import …`)
+  and the live preview skips its content. V5 → V6 conversions default
+  imported custom CSS files to `enabled: false`; the per-file toggle in the
+  panel re-enables them. The V6 re-import path parses commented custom
+  imports out of `theme.scss` so the disabled state round-trips.
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js

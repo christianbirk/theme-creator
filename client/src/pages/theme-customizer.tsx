@@ -201,6 +201,21 @@ export default function ThemeCustomizer() {
         }
       }
       
+      // Build a set of custom-import filenames whose @import lines are
+      // commented out in theme.scss so we round-trip the per-file
+      // enabled/disabled state across V6 export → V6 re-import. Matches
+      // both `// @import '../custom/foo.scss';` and `/* @import ... */`.
+      const disabledCustomImports = new Set<string>();
+      if (themeScsFile) {
+        const themeScssContent = await themeScsFile.async('string');
+        const commentedImportRegex =
+          /(?:\/\/|\/\*)\s*@import\s+['"]\.\.\/custom\/([^'"]+)['"]\s*;?/g;
+        let match: RegExpExecArray | null;
+        while ((match = commentedImportRegex.exec(themeScssContent)) !== null) {
+          disabledCustomImports.add(match[1]);
+        }
+      }
+
       // Import custom SCSS files from custom folder
       const customFolder = themeFolder.folder('custom');
       if (customFolder) {
@@ -213,7 +228,8 @@ export default function ThemeCustomizer() {
             importedScssFiles.push({
               id: `imported-${Date.now()}-${fileIndex++}`,
               name: relativePath,
-              content
+              content,
+              ...(disabledCustomImports.has(relativePath) ? { enabled: false } : {}),
             });
           }
         });
@@ -471,7 +487,13 @@ export default function ThemeCustomizer() {
       const importedFiles: ScssFile[] = result.customScssFiles.map((f, index) => ({
         id: `imported-${Date.now()}-${index}`,
         name: f.name,
-        content: f.content
+        content: f.content,
+        // V5 → V6 conversion default: keep custom CSS files in the zip but
+        // emit their @import lines commented out so the legacy CSS doesn't
+        // load until the user opts back in (per-file toggle in the
+        // Custom CSS panel). See `CustomCssManager` for the toggle UI and
+        // `handleExport` below for how the comment marker is emitted.
+        enabled: false,
       }));
       
       setScssFiles(prev => {
@@ -620,11 +642,20 @@ export default function ThemeCustomizer() {
         themeScss += `@import '../../../../../GoBasic/baseStylesV6/css/imports.scss';\n`;
         themeScss += `@import '../../../../../GoBasic/baseStylesV6/css/import-html-publication.scss';`;
 
-        // Custom SCSS file imports (only non-empty)
+        // Custom SCSS file imports (only non-empty). Files marked
+        // `enabled === false` (the default for V5 → V6 conversions) are
+        // still written to `custom/` below, but their @import line is
+        // emitted as a comment so the legacy CSS doesn't load until the
+        // user opts back in. The toggle lives in the Custom CSS panel.
         if (nonEmptyFiles.length > 0) {
           themeScss += '\n\n// Custom SCSS Files';
           for (const file of nonEmptyFiles) {
-            themeScss += `\n@import '../custom/${file.name}';`;
+            const importLine = `@import '../custom/${file.name}';`;
+            if (file.enabled === false) {
+              themeScss += `\n// ${importLine}`;
+            } else {
+              themeScss += `\n${importLine}`;
+            }
           }
         }
 
