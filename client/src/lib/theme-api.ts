@@ -43,11 +43,34 @@ export async function compileTheme(variables: CSSVariable[], baseScss?: string):
       'Content-Type': 'application/json',
     },
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to compile theme');
   }
-  
+
+  const data: CompileThemeResponse = await response.json();
+  return data.css;
+}
+
+/**
+ * Compile a full theme.css for export by stitching the user's variables
+ * and theme.scss content on top of the bundled baseStylesV6 framework.
+ * Returns the same CSS the framework would emit in a real project build.
+ */
+export async function compileFullTheme(
+  variables: { name: string; value: string }[],
+  variablesScss?: string,
+  customScss?: string,
+): Promise<string> {
+  const response = await fetch('/api/compile-full-theme', {
+    method: 'POST',
+    body: JSON.stringify({ variables, variablesScss, customScss }),
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || data.error || 'Failed to compile full theme');
+  }
   const data: CompileThemeResponse = await response.json();
   return data.css;
 }

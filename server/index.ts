@@ -12,15 +12,23 @@ declare module "http" {
   }
 }
 
+// Bump the body-parser limits well past the Express default of 100kb.
+// The /api/compile-full-theme route can receive several megabytes when
+// the user has converted a sizeable legacy theme — the request body
+// includes the full SCSS source they've authored plus all enabled
+// custom SCSS files (which carry inlined blob URLs for fonts). 25MB
+// gives plenty of headroom while still rejecting accidental upload
+// runaway.
 app.use(
   express.json({
+    limit: '25mb',
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
   }),
 );
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: '25mb' }));
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -84,7 +92,7 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = parseInt(process.env.PORT || "3000", 10);
   httpServer.listen(
     {
       port,

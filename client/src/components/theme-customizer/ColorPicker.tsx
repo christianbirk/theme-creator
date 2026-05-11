@@ -43,17 +43,28 @@ interface ColorPickerProps {
   label: string;
   description?: string;
   colorOptions?: CSSVariable[];
+  /**
+   * Full variable set, used as a fallback for resolving var() chains
+   * that point at *derived* variables (e.g. a service button colour
+   * pointing at `var(--button-background-color)`, which itself points
+   * at `var(--color-brand-a)`). Without this the swatch shows the
+   * `#cccccc` placeholder for any value that isn't a direct brand-colour
+   * reference. Optional so existing call sites that only need the base
+   * lookup keep working.
+   */
+  allVariables?: CSSVariable[];
   isBaseColor?: boolean;
   contrastBackground?: string;
 }
 
-export function ColorPicker({ 
-  value, 
-  defaultValue, 
-  onChange, 
-  label, 
+export function ColorPicker({
+  value,
+  defaultValue,
+  onChange,
+  label,
   description,
   colorOptions = [],
+  allVariables = [],
   isBaseColor = false,
   contrastBackground,
 }: ColorPickerProps) {
@@ -121,32 +132,57 @@ export function ColorPicker({
 
   const getResolvedColor = useCallback((val: string): string => {
     if (!val) return '#cccccc';
-    
-    const mixInfo = parseColorMixForPicker(val);
-    if (mixInfo) {
-      const varMatch = mixInfo.baseColor.match(/var\(([^)]+)\)/);
-      if (varMatch && colorOptions.length > 0) {
-        const colorVar = colorOptions.find(c => c.name === varMatch[1]);
-        if (colorVar) return colorVar.value;
+
+    // Chase one var() reference. First try `colorOptions` (the curated
+    // base palette — keeps the original behaviour for direct brand-X
+    // refs intact), then fall back to `allVariables` (the full set —
+    // catches derived chains like service-btn → button-bg → brand-a).
+    const lookup = (varName: string): string | null => {
+      const fromOptions = colorOptions.find((c) => c.name === varName);
+      if (fromOptions) return fromOptions.value;
+      const fromAll = allVariables.find((v) => v.name === varName);
+      if (fromAll) return fromAll.value;
+      return null;
+    };
+
+    // Recursive resolver: bounded to 8 hops so a self-referencing chain
+    // (`--a: var(--a)`) can't pin the picker.
+    const resolve = (input: string, depth: number): string => {
+      if (depth > 8) return '#cccccc';
+      if (!input) return '#cccccc';
+
+      const mixInfo = parseColorMixForPicker(input);
+      if (mixInfo) {
+        const varMatch = mixInfo.baseColor.match(/var\(([^)]+)\)/);
+        if (varMatch) {
+          const next = lookup(varMatch[1].trim());
+          if (next) return resolve(next, depth + 1);
+        } else if (
+          mixInfo.baseColor.startsWith('#') ||
+          mixInfo.baseColor.startsWith('rgb') ||
+          mixInfo.baseColor.startsWith('hsl')
+        ) {
+          return mixInfo.baseColor;
+        }
+        return '#cccccc';
       }
+
+      const varMatch = input.match(/var\(([^)]+)\)/);
+      if (varMatch) {
+        const next = lookup(varMatch[1].trim());
+        if (next) return resolve(next, depth + 1);
+        return '#cccccc';
+      }
+
+      if (input.startsWith('#') || input.startsWith('rgb') || input.startsWith('hsl')) {
+        return input;
+      }
+
       return '#cccccc';
-    }
-    
-    const varMatch = val.match(/var\(([^)]+)\)/);
-    if (varMatch && colorOptions.length > 0) {
-      const varName = varMatch[1];
-      const colorVar = colorOptions.find(c => c.name === varName);
-      if (colorVar) {
-        return colorVar.value;
-      }
-    }
-    
-    if (val.startsWith('#') || val.startsWith('rgb') || val.startsWith('hsl')) {
-      return val;
-    }
-    
-    return '#cccccc';
-  }, [colorOptions]);
+    };
+
+    return resolve(val, 0);
+  }, [colorOptions, allVariables]);
 
   const resolvedColor = useMemo(() => getResolvedColor(value), [value, getResolvedColor]);
 

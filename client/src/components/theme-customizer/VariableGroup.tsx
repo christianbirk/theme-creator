@@ -43,6 +43,7 @@ export function VariableGroup({ category, variables, onVariableChange, onResetCa
             onChange={(value) => onVariableChange(variable.name, value)}
             label={variable.name}
             description={variable.description}
+            allVariables={variables}
           />
         );
       case 'font':

@@ -5,6 +5,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Worker } from 'node:worker_threads';
 import type { CssClass, CssClassGroup, CssClassesData } from "@shared/schema";
+import {
+  refreshBaseStyles,
+  readCacheMeta,
+  effectiveBaseStylesDir,
+} from './base-styles-fetch';
 
 interface CSSVariable {
   name: string;
@@ -122,13 +127,17 @@ function parseScssVariables(content: string): CSSVariable[] {
     const cssMatch = line.match(cssVarRegex);
     if (cssMatch) {
       const name = `--${cssMatch[1]}`;
+      // `--theme-version` is an internal version marker emitted by the
+      // V6 framework; not something the user customizes. Skip it so it
+      // doesn't pollute the design panel.
+      if (name === '--theme-version') continue;
       let value = cssMatch[2].trim();
-      
+
       // Resolve SCSS interpolation like #{$color-brand-a} to actual value
       value = resolveScssInterpolation(value);
-      
+
       const type = detectVariableType(name, value);
-      
+
       variables.push({
         name,
         value,
@@ -140,26 +149,15 @@ function parseScssVariables(content: string): CSSVariable[] {
       });
       continue;
     }
-    
-    // Parse SCSS variable
-    const scssMatch = line.match(scssVarRegex);
-    if (scssMatch) {
-      const name = `--${scssMatch[1]}`;
-      const value = scssMatch[2].trim();
-      const type = detectVariableType(name, value);
-      
-      if (!variables.find(v => v.name === name)) {
-        variables.push({
-          name,
-          value,
-          defaultValue: value,
-          type,
-          category: currentSubSection,
-          mainSection: currentMainSection,
-          subSection: currentSubSection,
-        });
-      }
-    }
+
+    // SCSS variable declarations (e.g. `$color-brand-a: #342BA2;` at the
+    // top of `_variables.scss`) are intentionally ignored as customizer
+    // rows. Their values are still in `scssVarMap` (built in the first
+    // pass above), so any `#{$color-brand-a}` interpolation inside the
+    // `:root` block resolves correctly. Surfacing them here would
+    // duplicate the matching `--color-brand-a` entry that follows in
+    // the `:root` block — a "Color By Scss" section the user doesn't
+    // need.
   }
 
   // Post-process: Move hero typography variables (font-size, line-height) to typography section under "Hero Module" subsection
@@ -517,6 +515,129 @@ function compileSassInWorker(source: string): Promise<string | null> {
 const MAX_BASE_SCSS_BYTES = 200 * 1024;
 const MAX_THEME_VARIABLES = 500;
 
+/**
+ * V6's surface mixin (`@mixin surface-theme($surface, ...)`) substitutes
+ * `$color-a` etc. as SASS variables at compile time, so the compiled
+ * municipality-template CSS we use as the swap base ends up with rules
+ * like `.bg-color-a { --surface: #342ba2 }` — a hardcoded hex literal,
+ * not `var(--color-brand-a)`. That means a user's `:root { --color-brand-a }`
+ * override has nothing to override, and the template's purple keeps
+ * winning on every `bg-color-*` element (including the entire footer).
+ *
+ * Fix it at swap time: parse the template's first `:root` block to learn
+ * which hex corresponds to which brand-color slot, then rewrite every
+ * subsequent occurrence of those hexes into `var(--color-brand-X)` so
+ * the user's overrides drive every surface, not just the `:root`-level
+ * declaration. Idempotent and bounded — only acts on the brand-color
+ * hexes we discover, not arbitrary literals.
+ */
+function rewireTemplateBrandColors(css: string): string {
+  // Walk EVERY top-level `:root { … }` block. The municipality template
+  // ships two: the V6 framework defaults (e.g. `#113f67`) and the
+  // template's own overrides (e.g. `#342ba2`). Later blocks override
+  // earlier ones in the cascade, so we accumulate the mappings in
+  // declaration order and let the last value win — that's the colour
+  // the rest of the CSS was actually compiled against.
+  const rootBlocks = [...css.matchAll(/:root\s*\{([^}]*)\}/g)];
+  if (rootBlocks.length === 0) return css;
+
+  const brandHexBySlot = new Map<string, string>();
+  for (const m of rootBlocks) {
+    const block = m[1];
+    for (const decl of block.matchAll(
+      /--color-brand-([a-g])\s*:\s*(#[0-9a-fA-F]{3,8})\b/g,
+    )) {
+      brandHexBySlot.set(`--color-brand-${decl[1].toLowerCase()}`, decl[2].toLowerCase());
+    }
+  }
+  if (brandHexBySlot.size === 0) return css;
+
+  // Build the rewrite list. We need both the hex → var() rewrite AND a
+  // way to skip the original `:root { ... }` blocks (otherwise we'd
+  // produce `--color-brand-a: var(--color-brand-a)` — a self-reference
+  // that resolves to the variable's initial value).
+  const replacements: { hex: string; cssVar: string }[] = [];
+  brandHexBySlot.forEach((hex, cssVar) => {
+    replacements.push({ hex, cssVar });
+  });
+
+  // Splice the CSS at every `:root { ... }` boundary. Concatenation:
+  //   head [root] mid [root] mid … [root] tail
+  // We rewrite the head/mid/tail segments and leave each :root block
+  // untouched so it keeps declaring the literal value.
+  const segments: { content: string; isRoot: boolean }[] = [];
+  let cursor = 0;
+  for (const m of rootBlocks) {
+    const start = m.index ?? 0;
+    const end = start + m[0].length;
+    if (start > cursor) {
+      segments.push({ content: css.slice(cursor, start), isRoot: false });
+    }
+    segments.push({ content: css.slice(start, end), isRoot: true });
+    cursor = end;
+  }
+  if (cursor < css.length) {
+    segments.push({ content: css.slice(cursor), isRoot: false });
+  }
+
+  const rewriteHexes = (segment: string): string => {
+    let out = segment;
+    for (const { hex, cssVar } of replacements) {
+      // Hex values contain only `#` + alphanumerics — none are regex
+      // meta-chars, so no escape pass needed. `\b` after the literal
+      // ensures we don't match `#3aabba` as a prefix of `#3aabbacc`.
+      const re = new RegExp(`${hex}\\b`, 'gi');
+      out = out.replace(re, `var(${cssVar})`);
+    }
+    return out;
+  };
+
+  return segments
+    .map((s) => (s.isRoot ? s.content : rewriteHexes(s.content)))
+    .join('');
+}
+
+/**
+ * Build a single `:root { --x: y }` block from the user's currently-
+ * edited variables, validated against the same caps + name-pattern guards
+ * the full theme compile uses. Returns null when there are no usable
+ * overrides (so the caller can fall through to a plain framework swap
+ * instead of inlining an empty block). Used by the fetch-preview swap
+ * path — see comment at the call site for why we layer this on top of
+ * the full V6 framework rather than compiling the user's baseScss alone.
+ *
+ * Each variable is emitted with `!important`. The canonical V6 framework
+ * CSS we swap in (fetched from the municipality-template host) ships
+ * with TWO `:root` blocks of its own — the V6 defaults plus the
+ * template's own brand colours. Source-order cascade alone isn't enough
+ * to beat them reliably across browsers and dynamic CSS-variable
+ * lookups, so the user's overrides force the win unconditionally.
+ */
+function compileUserVarsToRootBlock(rawVariables: unknown): string | null {
+  if (!Array.isArray(rawVariables)) return null;
+  if (rawVariables.length === 0) return null;
+  if (rawVariables.length > MAX_THEME_VARIABLES) return null;
+
+  const lines: string[] = [];
+  for (const v of rawVariables) {
+    if (
+      v &&
+      typeof v === 'object' &&
+      typeof (v as { name?: unknown }).name === 'string' &&
+      typeof (v as { value?: unknown }).value === 'string' &&
+      /^--[a-zA-Z0-9_-]+$/.test((v as { name: string }).name) &&
+      (v as { value: string }).value.trim().length > 0 &&
+      (v as { value: string }).value.length < 2000
+    ) {
+      const name = (v as { name: string }).name;
+      const value = (v as { value: string }).value.trim();
+      lines.push(`  ${name}: ${value} !important;`);
+    }
+  }
+  if (lines.length === 0) return null;
+  return `:root {\n${lines.join('\n')}\n}\n`;
+}
+
 // Compile the user's currently-edited theme into a self-contained CSS
 // string that can be inlined as a swap substitute. Returns null if the
 // inputs are missing/invalid or if the compiled output is unsuitable
@@ -594,7 +715,7 @@ async function getBlankThemeCss(): Promise<string | null> {
         if (!href) continue;
         const lower = href[1].toLowerCase();
         if (lower.includes('font-awesome') || lower.includes('fontawesome')) continue;
-        if (!/\/theme(?:\.min)?\.css(?:\?|$)/.test(lower)) continue;
+        if (!/[/.]theme(?:\.min)?\.css(?:\?|$)/.test(lower)) continue;
         themeHref = href[1];
         break;
       }
@@ -682,15 +803,15 @@ export async function registerRoutes(
   app.post('/api/compile-theme', async (req, res) => {
     try {
       const { variables, baseScss } = req.body;
-      
+
       if (!variables || !Array.isArray(variables)) {
         return res.status(400).json({ error: 'Variables array is required' });
       }
 
       const css = generateCss(variables, baseScss);
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         css,
         lineCount: css.split('\n').length
       });
@@ -698,6 +819,109 @@ export async function registerRoutes(
       console.error('Compile theme error:', err);
       res.status(500).json({ error: 'Failed to compile theme' });
     }
+  });
+
+  // Compile a *full* theme.css for export by importing the bundled
+  // baseStylesV6 framework. Unlike `/api/compile-theme` (which is fed
+  // the user's variables-only baseScss and so produces a thin :root
+  // block plus whatever rules baseScss contains), this route stitches
+  // the user's overrides on top of baseStylesV6's `_variables.scss`
+  // and pulls in `_imports.scss` and `_import-html-publication.scss`
+  // so the resulting CSS is the same shape as the framework would
+  // produce in a real project build. The user's `variablesScss` is
+  // injected between the framework defaults and the framework imports
+  // so theme overrides win, exactly as the SCSS @import order would.
+  app.post('/api/compile-full-theme', async (req, res) => {
+    try {
+      const { variables, variablesScss, customScss } = req.body as {
+        variables?: { name: string; value: string }[];
+        variablesScss?: string;
+        customScss?: string;
+      };
+
+      // Prefer the live cache (refreshed via /api/refresh-base-styles)
+      // over the bundled fallback so the customizer compiles against the
+      // newest framework when available.
+      const bundledDir = path.resolve(
+        process.cwd(),
+        'attached_assets/baseStylesV6/baseStylesV6',
+      );
+      const baseStylesRoot = effectiveBaseStylesDir(bundledDir);
+      const baseStylesDir = path.join(baseStylesRoot, 'css');
+      if (!fs.existsSync(baseStylesDir)) {
+        return res.status(500).json({
+          error: 'baseStylesV6 not bundled with the customizer',
+          path: baseStylesDir,
+        });
+      }
+
+      const declaredVars = (variables ?? []).filter(
+        (v) =>
+          v && typeof v.name === 'string' && typeof v.value === 'string' && v.value !== '',
+      );
+      const sassDecls = declaredVars
+        .map((v) => `$${v.name.replace(/^--/, '')}: ${v.value};`)
+        .join('\n');
+
+      // Order matters: framework defaults first, theme overrides next
+      // (so user values win on `!default`-flagged framework variables),
+      // then the framework imports that consume those variables, then
+      // any theme-specific custom SCSS the user wrote.
+      const compileSrc = [
+        sassDecls,
+        `@import '_variables';`,
+        variablesScss ?? '',
+        `@import '_imports';`,
+        `@import '_import-html-publication';`,
+        customScss ?? '',
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      try {
+        const result = sass.compileString(compileSrc, {
+          style: 'expanded',
+          loadPaths: [baseStylesDir],
+        });
+        res.json({
+          success: true,
+          css: result.css,
+          lineCount: result.css.split('\n').length,
+        });
+      } catch (compileErr) {
+        const msg = (compileErr as Error).message ?? String(compileErr);
+        console.error('Full-theme compile error:', msg.split('\n').slice(0, 5).join('\n'));
+        res.status(500).json({
+          error: 'SCSS compilation failed',
+          message: msg.split('\n')[0],
+        });
+      }
+    } catch (err) {
+      console.error('Compile-full-theme error:', err);
+      res.status(500).json({ error: 'Failed to compile full theme' });
+    }
+  });
+
+  // Pull the newest baseStylesV6 from beru-org/Assets via the gh CLI
+  // and write it into a local cache directory. The compile route above
+  // automatically picks up the cache once it exists, so subsequent
+  // theme.css builds use the freshest framework.
+  app.post('/api/refresh-base-styles', async (_req, res) => {
+    try {
+      const meta = await refreshBaseStyles();
+      res.json({ success: true, ...meta });
+    } catch (err) {
+      const msg = (err as Error).message ?? String(err);
+      console.error('Refresh baseStyles error:', msg);
+      res.status(500).json({ error: 'Failed to refresh baseStyles', message: msg });
+    }
+  });
+
+  // Lightweight status check the UI uses to render the "last refreshed"
+  // timestamp next to the refresh button.
+  app.get('/api/base-styles-status', (_req, res) => {
+    const meta = readCacheMeta();
+    res.json({ cached: meta !== null, meta });
   });
 
   app.post('/api/fetch-preview', async (req, res) => {
@@ -991,6 +1215,11 @@ window.addEventListener('load', function() {
         //                           failed; client should not warn
         let themeCompatibility: 'compatible' | 'compiled-no-vars' | 'unknown' = 'unknown';
         let themeStylesheetUrl: string | null = null;
+        // CSS body of the previewed site's `theme.min.css` (truncated at
+        // 4 MB during the probe, but in practice the V6 canonical bundle
+        // weighs ~2 MB). Captured here so it can be reused later as the
+        // swap source for `compatible` sites — see the swap block below.
+        let probedThemeCss: string | null = null;
         try {
           // Two-pass <link> parsing: first grab every <link …> tag, then
           // extract `rel` and `href` independently so attribute order does
@@ -1012,7 +1241,7 @@ window.addEventListener('load', function() {
             const lower = href.toLowerCase();
             if (lower.includes('font-awesome') || lower.includes('fontawesome')) return false;
             // Match the conventional baseStyles output filename.
-            return /\/theme(?:\.min)?\.css(?:\?|$)/.test(lower);
+            return /[/.]theme(?:\.min)?\.css(?:\?|$)/.test(lower);
           });
           // SSRF guard: only fetch the probe URL if it is absolute http/https
           // and points to a publicly routable hostname. This URL came from
@@ -1074,11 +1303,22 @@ window.addEventListener('load', function() {
                   // Partial read — keep whatever we already have.
                 }
                 if (received.length > 0) {
+                  // Stash the CSS body for the swap step below. It's the
+                  // site's actual stylesheet — perfect raw material for
+                  // the rewire pass when the site is `compatible`.
+                  probedThemeCss = received;
                   const definesBrandVar = /--color-brand-[a-g]\s*:/i.test(received);
                   const usesBrandVar = /var\(\s*--color-brand-[a-g]/i.test(received);
                   if (definesBrandVar && usesBrandVar) {
                     themeCompatibility = 'compatible';
                   } else if (!definesBrandVar && !usesBrandVar) {
+                    // Any non-V6 stylesheet (V5, V6 with baked colours,
+                    // any other framework) — swap with the V6 framework
+                    // + user's overrides so the previewed canvas always
+                    // reflects the theme being edited. Selectors that
+                    // don't exist in V5 markup will just no-op; common
+                    // ones (headings, links, buttons) still pick up the
+                    // brand colours, which is the goal.
                     themeCompatibility = 'compiled-no-vars';
                   }
                   // Mixed (defines but doesn't use, or vice versa) stays
@@ -1092,30 +1332,55 @@ window.addEventListener('load', function() {
           console.warn('Theme compatibility probe failed:', compatErr);
         }
 
-        // If the previewed site's theme.min.css has the brand colors
-        // baked in (no var(--color-brand-*) references), the customizer's
-        // injected variables can't change anything visible. To make the
-        // customizer "just work" on those sites, swap their theme
-        // stylesheet for a known-good blank V6 theme that DOES use
-        // variables. We do this by removing every <link> tag whose href
-        // matches the offending stylesheet (or another /theme(.min).css
-        // bundle, in case there are several) and inlining the blank
-        // theme CSS as a <style> in <head>.
+        // Always rewire the previewed site's theme.min.css when we have
+        // one, regardless of whether it's `compatible` or
+        // `compiled-no-vars`. Even compatible V6 sites have compile-time
+        // baked brand-color literals (because the V6 surface mixin uses
+        // SASS substitution — so `.bg-color-a { --surface: #342ba2 }` is
+        // baked at compile time, with no `var(--color-brand-a)` to hang
+        // an override on). Without this rewire the user's `:root`
+        // overrides only reach the `:root` block, leaving every surface
+        // — and therefore the visible page — stuck on the template's
+        // original colours.
+        //
+        // Source choice:
+        //   - `compatible`     → the site's own probed CSS, rewired (so we
+        //                        preserve its design choices but make
+        //                        the user's overrides reach every surface)
+        //   - `compiled-no-vars` → the canonical V6 template, rewired (the
+        //                        site's V5/baked CSS won't fit V6 markup;
+        //                        the canonical template will, and the
+        //                        user's overrides drive its colours)
         let themeSwapped = false;
-        let themeSwapSource: 'user-theme' | 'fallback-template' | null = null;
-        if (themeCompatibility === 'compiled-no-vars') {
-          // Prefer the user's currently-edited theme as the substitute.
-          // That's the whole point of the swap — when the previewed site
-          // baked its brand colors in at compile time, we replace its
-          // stylesheet with the theme they're editing here so their
-          // changes actually show through. Falls back to the cached
-          // canonical V6 template only when the user hasn't loaded a
-          // baseScss yet, or when their theme can't be compiled.
-          const userCss = await compileUserTheme(req.body?.variables, req.body?.baseScss);
-          const swapCss = userCss ?? (await getBlankThemeCss());
-          const swapSource: 'user-theme' | 'fallback-template' = userCss
-            ? 'user-theme'
-            : 'fallback-template';
+        let themeSwapSource:
+          | 'user-theme'
+          | 'fallback-template'
+          | 'site-theme-rewired'
+          | null = null;
+        if (
+          themeCompatibility === 'compiled-no-vars' ||
+          themeCompatibility === 'compatible'
+        ) {
+          let rawBaseCss: string | null;
+          let baseSourceLabel: 'site-theme-rewired' | 'fallback-template';
+          if (themeCompatibility === 'compatible' && probedThemeCss) {
+            rawBaseCss = probedThemeCss;
+            baseSourceLabel = 'site-theme-rewired';
+          } else {
+            rawBaseCss = await getBlankThemeCss();
+            baseSourceLabel = 'fallback-template';
+          }
+          const baseCss = rawBaseCss ? rewireTemplateBrandColors(rawBaseCss) : null;
+          const userVarsCss = compileUserVarsToRootBlock(req.body?.variables);
+          const swapCss =
+            baseCss && userVarsCss
+              ? `${baseCss}\n${userVarsCss}`
+              : (baseCss ?? userVarsCss ?? null);
+          // When the user has variables, surface them as the source —
+          // makes it clear in the UI that their edits are driving the
+          // canvas. Otherwise fall back to the structural label.
+          const swapSource: 'user-theme' | 'fallback-template' | 'site-theme-rewired' =
+            userVarsCss ? 'user-theme' : baseSourceLabel;
           if (swapCss) {
             const before = html;
             // Strip every <link rel="stylesheet"> whose absolute href
@@ -1128,7 +1393,7 @@ window.addEventListener('load', function() {
               if (!href) return tag;
               const lower = href[1].toLowerCase();
               if (lower.includes('font-awesome') || lower.includes('fontawesome')) return tag;
-              if (!/\/theme(?:\.min)?\.css(?:\?|$)/.test(lower)) return tag;
+              if (!/[/.]theme(?:\.min)?\.css(?:\?|$)/.test(lower)) return tag;
               return ''; // drop this <link>
             });
             if (html !== before) {
@@ -1224,21 +1489,35 @@ window.addEventListener('load', function() {
 
   app.get('/api/sample-scss', async (req, res) => {
     try {
-      const samplePath = path.join(process.cwd(), 'server/sample-scss/variables.scss');
-      
-      if (fs.existsSync(samplePath)) {
-        const content = fs.readFileSync(samplePath, 'utf-8');
-        res.json({
-          success: true,
-          content,
-          filename: '_variables.scss'
-        });
-      } else {
-        res.status(404).json({ 
-          error: 'Sample SCSS file not found',
-          path: samplePath 
+      // Prefer the live baseStylesV6 cache so the customizer's
+      // initial variable list reflects whatever the framework
+      // currently ships. Falls back to the bundled sample (which is
+      // likely stale) and finally to a 404 if neither exists.
+      const liveCachePath = path.join(
+        process.cwd(),
+        'server/.basestyles-cache/css/_variables.scss',
+      );
+      const bundledSamplePath = path.join(process.cwd(), 'server/sample-scss/variables.scss');
+      const source = fs.existsSync(liveCachePath)
+        ? liveCachePath
+        : fs.existsSync(bundledSamplePath)
+          ? bundledSamplePath
+          : null;
+
+      if (!source) {
+        return res.status(404).json({
+          error: 'No baseStyles variables found',
+          tried: [liveCachePath, bundledSamplePath],
         });
       }
+
+      const content = fs.readFileSync(source, 'utf-8');
+      res.json({
+        success: true,
+        content,
+        filename: '_variables.scss',
+        source: source === liveCachePath ? 'live-cache' : 'bundled',
+      });
     } catch (err) {
       console.error('Read sample SCSS error:', err);
       res.status(500).json({ error: 'Failed to read sample SCSS file' });

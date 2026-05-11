@@ -77,7 +77,7 @@ function composeColorMix(parts: ColorMixParts): string {
 
 function parseBorderValue(value: string): BorderParts {
   if (!value || value.trim() === '') {
-    return { width: '', style: 'solid', color: '' };
+    return { width: '', style: 'none', color: '' };
   }
 
   const trimmed = value.trim();

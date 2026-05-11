@@ -7,6 +7,11 @@ import type {
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
+// Auto-dismiss duration (ms) for any toast that doesn't pass an explicit
+// `duration`. 2 seconds keeps the UI responsive — long enough to read a
+// short title/description, short enough that toasts don't pile up over a
+// session of frequent imports/exports/refreshes.
+const DEFAULT_TOAST_DURATION = 2000
 
 type ToasterToast = ToastProps & {
   id: string
@@ -152,6 +157,10 @@ function toast({ ...props }: Toast) {
   dispatch({
     type: "ADD_TOAST",
     toast: {
+      // Default auto-dismiss to 2s; individual toast() calls can still
+      // override `duration` (e.g. the longer error toasts that need more
+      // reading time spread out via `duration: 12000`).
+      duration: DEFAULT_TOAST_DURATION,
       ...props,
       id,
       open: true,

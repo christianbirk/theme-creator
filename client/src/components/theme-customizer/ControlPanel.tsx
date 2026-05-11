@@ -32,8 +32,11 @@ type NavigationMode = 'standard' | 'burger';
 // Subsections that belong exclusively to Burger Navigation mode
 const BURGER_ONLY_SUBSECTIONS = ['burger-navigation'];
 
-// Subsections that go to Secondary Navigations (breadcrumb, left-navigation)
-const SECONDARY_NAV_SUBSECTIONS = ['breadcrumb-navigation', 'left-navigation'];
+// Subsections that go to Secondary Navigations (breadcrumb, left-navigation,
+// service-navigation). Service navigation lives logically alongside the
+// breadcrumb / left-nav controls — it's a peripheral navigation
+// element, not part of the main top-bar nav.
+const SECONDARY_NAV_SUBSECTIONS = ['breadcrumb-navigation', 'left-navigation', 'service-navigation'];
 
 // Subsections that get their own parent category
 const SEARCH_SUBSECTIONS = ['search'];
@@ -183,11 +186,18 @@ export function ControlPanel({
     );
   }, [variables]);
 
-  // Base font weight options (--font-base-weight, --font-heading-weight)
-  const baseFontWeightOptions = useMemo(() => {
-    return variables.filter(v => 
-      v.name.match(/^--font-(base|heading)-weight$/)
-    );
+  // Weight reference options. Originally just `--font-base-weight` and
+  // `--font-heading-weight`, but expanded to include every weight-bearing
+  // variable so e.g. an H2 weight picker can reference H1's weight (or
+  // pre-heading-weight, lead-font-weight, etc.). Each call site filters
+  // out the variable being edited to prevent self-reference.
+  const weightReferenceOptions = useMemo(() => {
+    const refNames = new Set<string>([
+      '--font-base-weight',
+      '--font-heading-weight',
+      ...WEIGHT_REFERENCE_VARIABLES,
+    ]);
+    return variables.filter(v => refNames.has(v.name));
   }, [variables]);
 
   // Base line height options (--font-*-line-height)
@@ -460,7 +470,9 @@ export function ControlPanel({
           defaultValue={variable.defaultValue}
           onChange={(value) => onVariableChange(variable.name, value)}
           label={displayName}
-          baseWeightOptions={baseFontWeightOptions}
+          baseWeightOptions={weightReferenceOptions.filter(
+            (v) => v.name !== variable.name,
+          )}
         />
       );
     }
@@ -488,6 +500,7 @@ export function ControlPanel({
             onChange={(value) => onVariableChange(variable.name, value)}
             label={displayName}
             colorOptions={baseColorOptions}
+            allVariables={variables}
             isBaseColor={isBaseColor(variable)}
             contrastBackground={getContrastBackground(variable)}
           />
@@ -547,7 +560,9 @@ export function ControlPanel({
               defaultValue={variable.defaultValue}
               onChange={(value) => onVariableChange(variable.name, value)}
               label={displayName}
-              weightOptions={baseFontWeightOptions}
+              weightOptions={weightReferenceOptions.filter(
+                (v) => v.name !== variable.name,
+              )}
               isBaseFontWeight={false}
             />
           );
@@ -615,14 +630,20 @@ export function ControlPanel({
 
   return (
     <div className="flex flex-col h-full border-r">
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between gap-2 mb-3">
-          {modifiedCount > 0 && (
+      <div className="p-3 border-b">
+        {/* The "X modified" counter only renders when there's something
+            to count — otherwise the wrapper would still claim its
+            mb-3 + line-height worth of vertical space, leaving the
+            search input pushed unnecessarily far down on first load.
+            (A second copy of the counter lives in the bottom footer
+            so the info isn't lost when this top one is hidden.) */}
+        {modifiedCount > 0 && (
+          <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs text-muted-foreground">
               {modifiedCount} modified
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -746,9 +767,15 @@ export function ControlPanel({
                       </Tabs>
                     </div>
                   )}
-                  {/* Check if section has single subsection with same name - render flat */}
-                  {section.subSections.length === 1 && 
-                   section.subSections[0].id === section.id ? (
+                  {/* Single-subsection sections render flat — the
+                      sub-section header would just be a no-op layer
+                      between the section header and its variables.
+                      Originally we only flattened when the lone
+                      sub-section's id matched the parent's (same name),
+                      but that left genuine "one sub-section under a
+                      differently-named parent" cases (e.g. Multi
+                      Section → General) with a useless extra accordion. */}
+                  {section.subSections.length === 1 ? (
                     <div className="px-6 pb-4 space-y-1">
                       {section.subSections[0].variables.map(renderVariableInput)}
                     </div>

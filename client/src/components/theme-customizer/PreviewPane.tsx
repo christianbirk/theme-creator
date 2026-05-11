@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Monitor, Tablet, Smartphone, Loader2, ExternalLink, AlertCircle, AlertTriangle, X } from 'lucide-react';
+import { Monitor, Tablet, Smartphone, Loader2, ExternalLink, AlertCircle, AlertTriangle, X, Home } from 'lucide-react';
 import { CSSVariable } from './types';
 import { ScssFile } from './CustomCssManager';
 import { useToast } from '@/hooks/use-toast';
@@ -208,44 +208,15 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     });
   }, [variableMap]);
 
-  // Parse hex color to RGB
-  const hexToRgb = useCallback((hex: string): { r: number; g: number; b: number } | null => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (result) {
-      return {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      };
-    }
-    const shortResult = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(hex);
-    if (shortResult) {
-      return {
-        r: parseInt(shortResult[1] + shortResult[1], 16),
-        g: parseInt(shortResult[2] + shortResult[2], 16),
-        b: parseInt(shortResult[3] + shortResult[3], 16)
-      };
-    }
-    return null;
-  }, []);
-
-  // Calculate relative luminance (WCAG formula)
-  const getLuminance = useCallback((colorValue: string): number | null => {
-    const resolvedColor = resolveVarReferences(colorValue);
-    const rgb = hexToRgb(resolvedColor);
-    if (!rgb) return null;
-    
-    const { r, g, b } = rgb;
-    const [rs, gs, bs] = [r / 255, g / 255, b / 255].map(c => 
-      c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
-    );
-    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-  }, [resolveVarReferences, hexToRgb]);
-
-  const isLightColor = useCallback((colorValue: string): boolean => {
-    const luminance = getLuminance(colorValue);
-    return luminance !== null && luminance > 0.179;
-  }, [getLuminance]);
+  // (Previously: hexToRgb / getLuminance / isLightColor helpers and a
+  // ~200-line `surfaceOverrides` block that re-implemented baseStylesV6's
+  // .bg-color-* surface tokens with auto-luminance contrast. Removed —
+  // V6's own `misc/classes/_background-colors.scss` already maps
+  // .bg-color-a..g to --text/--heading/--link/--btn-bg/--btn-fg/--surface
+  // for both light and dark variants. Themes with proper -bg-dark
+  // variant variables get the right contrast for free; themes that
+  // don't would have failed in the exported `theme.css` anyway, so the
+  // preview now matches export behavior.)
 
   // Generate CSS content with !important to override existing styles.
   // Skip variables whose value is empty — these are intentionally cleared
@@ -263,416 +234,130 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       .join('\n        ');
   }, [variables, resolveVarReferences]);
 
-  // Generate surface overrides for .bg-color-* classes with luminance-aware foreground colors
-  // Following the SCSS surface-theme mixin pattern with --text, --heading, --link, --btn-bg, etc.
-  const surfaceOverrides = useMemo(() => {
-    const colorMappings = [
-      { class: 'bg-color-a', variable: '--color-brand-a' },
-      { class: 'bg-color-b', variable: '--color-brand-b' },
-      { class: 'bg-color-c', variable: '--color-brand-c' },
-      { class: 'bg-color-d', variable: '--color-brand-d' },
-      { class: 'bg-color-e', variable: '--color-brand-e' },
-      { class: 'bg-color-f', variable: '--color-brand-f' },
-      { class: 'bg-color-g', variable: '--color-brand-g' },
-    ];
-
-    // Dynamic auto-contrast surface tokens - mirrors the SCSS surface-theme mixin
-    // First check Color Combinations section for user-configured values, then fall back to auto-computation
-    const computeSurfaceTokens = (bgColorValue: string, isDarkBg: boolean) => {
-      // Get the neutral palette endpoints (darkest and lightest)
-      const neutralDark = resolveVarReferences(variableMap.get('--color-neutral-a') || '#1a1a1a');
-      const neutralLight = resolveVarReferences(variableMap.get('--color-neutral-f') || '#ffffff');
-      
-      // Get the brand primary color for accents
-      const brandPrimary = resolveVarReferences(variableMap.get('--color-brand-a') || '#0066cc');
-      const isBrandDark = !isLightColor(brandPrimary);
-      
-      // Helper to get user value or fall back to computed
-      const getUserValueOrDefault = (varName: string, defaultValue: string): string => {
-        const userValue = variableMap.get(varName);
-        if (userValue) {
-          return resolveVarReferences(userValue);
-        }
-        return defaultValue;
-      };
-      
-      if (isDarkBg) {
-        // Dark background: use light text, and light button fills
-        // Variable names match SCSS: --font-base-color-bg-dark, --font-heading-color-bg-dark, etc.
-        const text = getUserValueOrDefault('--font-base-color-bg-dark', neutralLight);
-        const heading = getUserValueOrDefault('--font-heading-color-bg-dark', neutralLight);
-        const preHeading = getUserValueOrDefault('--pre-heading-color-bg-dark', neutralLight);
-        const lead = getUserValueOrDefault('--lead-color-bg-dark', neutralLight);
-        const link = getUserValueOrDefault('--link-color-bg-dark', neutralLight);
-        const accent = getUserValueOrDefault('--universal-accent-color-on-bg-dark', neutralLight);
-        // Buttons on dark bg
-        const btnBg = getUserValueOrDefault('--button-background-color-bg-dark', isLightColor(brandPrimary) ? brandPrimary : neutralLight);
-        const btnFg = getUserValueOrDefault('--button-font-color-bg-dark', isLightColor(btnBg) ? neutralDark : neutralLight);
-        const btnOutlineFg = getUserValueOrDefault('--button-outline-font-color-bg-dark', neutralLight);
-        const btnOutlineBorder = getUserValueOrDefault('--button-outline-border-color-bg-dark', neutralLight);
-        // Alternate buttons
-        const btnAltBg = getUserValueOrDefault('--button-alternate-background-color-bg-dark', btnBg);
-        const btnAltFg = getUserValueOrDefault('--button-alternate-font-color-bg-dark', btnFg);
-        // Icons
-        const iconBg = getUserValueOrDefault('--icon-background-color-bg-dark', btnBg);
-        const iconFg = getUserValueOrDefault('--icon-color-bg-dark', btnFg);
-        // Labels
-        const labelBg = getUserValueOrDefault('--label-background-bg-dark', neutralLight);
-        const labelFg = getUserValueOrDefault('--label-color-bg-dark', neutralDark);
-        const labelBorder = getUserValueOrDefault('--label-border-bg-dark', neutralLight);
-        // Borders
-        const boxedBorder = getUserValueOrDefault('--boxed-border-color-bg-dark', 'transparent');
-        const moduleHeadingBorder = getUserValueOrDefault('--module-heading-border-color-bg-dark', neutralLight);
-        return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, btnAltBg, btnAltFg, iconBg, iconFg, labelBg, labelFg, labelBorder, boxedBorder, moduleHeadingBorder };
-      } else {
-        // Light background: use dark text, and brand or dark button fills
-        // Variable names match SCSS: --font-base-color, --pre-heading-color, etc. (no -bg-light suffix)
-        const text = getUserValueOrDefault('--font-base-color', neutralDark);
-        const heading = getUserValueOrDefault('--font-heading-color', neutralDark);
-        const preHeading = getUserValueOrDefault('--pre-heading-color', neutralDark);
-        const lead = getUserValueOrDefault('--lead-color', neutralDark);
-        const link = getUserValueOrDefault('--link-color', brandPrimary);
-        const accent = getUserValueOrDefault('--universal-accent-color', brandPrimary);
-        // Buttons on light bg
-        const btnBg = getUserValueOrDefault('--button-background-color', isBrandDark ? brandPrimary : neutralDark);
-        const btnFg = getUserValueOrDefault('--button-color', isLightColor(btnBg) ? neutralDark : neutralLight);
-        const btnOutlineFg = getUserValueOrDefault('--button-outline-color', neutralDark);
-        const btnOutlineBorder = getUserValueOrDefault('--button-outline-border-color', neutralDark);
-        // Alternate buttons
-        const btnAltBg = getUserValueOrDefault('--button-alternate-background-color', btnBg);
-        const btnAltFg = getUserValueOrDefault('--button-alternate-color', btnFg);
-        // Icons
-        const iconBg = getUserValueOrDefault('--icon-background-color', btnBg);
-        const iconFg = getUserValueOrDefault('--icon-color', btnFg);
-        // Labels
-        const labelBg = getUserValueOrDefault('--label-background', neutralDark);
-        const labelFg = getUserValueOrDefault('--label-color', neutralLight);
-        const labelBorder = getUserValueOrDefault('--label-border-color', neutralDark);
-        // Borders
-        const boxedBorder = getUserValueOrDefault('--boxed-border-color', 'transparent');
-        const moduleHeadingBorder = getUserValueOrDefault('--module-heading-border-color', neutralDark);
-        return { text, heading, preHeading, lead, link, accent, btnBg, btnFg, btnOutlineFg, btnOutlineBorder, btnAltBg, btnAltFg, iconBg, iconFg, labelBg, labelFg, labelBorder, boxedBorder, moduleHeadingBorder };
-      }
+  // Per-surface contrast overrides. V6's `surface-theme` SASS mixin
+  // chooses light- vs. dark-mode tokens based on `auto-contrast($surface)`
+  // at compile time — so the compiled stylesheet has ONE branch baked
+  // per surface (whatever the source template's brand colour landed on).
+  // When the user flips brand-a from dark to light (or vice versa) the
+  // surface's `--text` / `--heading` / `--btn-fg` etc. stay on the
+  // original branch, leaving e.g. white text on a light cream surface.
+  // Recompute the contrast in JS, decide which branch each surface
+  // should use given the *current* brand colour, and emit `!important`
+  // overrides that pull every surface token from the correct chain.
+  //
+  // The thresholds and chained fallbacks mirror V6's surface-theme
+  // mixin so the output reads like what V6 would have compiled if the
+  // source brand colour were the user's value.
+  const surfaceContrastOverrides = useMemo(() => {
+    // Lightness from a hex / shorthand-hex string. Returns a value in
+    // [0, 1]. Anything that doesn't parse as a literal hex (e.g. var()
+    // chains, `transparent`) falls back to 0.5 — that means "ambiguous,
+    // don't emit an override" and we skip the surface below.
+    const hexLightness = (raw: string): number | null => {
+      const v = raw.trim().toLowerCase();
+      const m = /^#([0-9a-f]{3,8})$/.exec(v);
+      if (!m) return null;
+      let h = m[1];
+      if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+      if (h.length === 4) h = h.split('').map((c) => c + c).join('');
+      if (h.length !== 6 && h.length !== 8) return null;
+      const r = parseInt(h.slice(0, 2), 16) / 255;
+      const g = parseInt(h.slice(2, 4), 16) / 255;
+      const b = parseInt(h.slice(4, 6), 16) / 255;
+      // Relative luminance (sRGB perceptual). Same coefficients V6's
+      // SASS `_lum` helper uses — keeps our threshold consistent with
+      // what `auto-contrast` would have decided at compile time.
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
-    
-    // Pre-compute light surface tokens for boxed/highlighted modules (always white background)
-    const lightSurfaceTokens = computeSurfaceTokens('#ffffff', false);
-    
-    return colorMappings.map(({ class: className, variable }) => {
-      const colorValue = variableMap.get(variable) || '';
-      const resolvedColor = resolveVarReferences(colorValue);
-      const isDark = !isLightColor(resolvedColor);
-      // Compute surface tokens dynamically based on the actual background color luminance
-      const toneVars = computeSurfaceTokens(resolvedColor, isDark);
-      
-      // Set the surface-level CSS variables that the template's CSS reads from
-      return `
-      .${className} {
-        --surface: var(${variable}) !important;
-        background-color: var(${variable}) !important;
-        
-        /* Surface tokens for ${isDark ? 'dark' : 'light'} background (WCAG compliant) */
-        --text: ${toneVars.text} !important;
-        --heading: ${toneVars.heading} !important;
-        --pre-heading: ${toneVars.preHeading} !important;
-        --lead: ${toneVars.lead} !important;
-        --link: ${toneVars.link} !important;
-        --accent: ${toneVars.accent} !important;
-        --fg: var(--text) !important;
-        
-        /* Button tokens */
-        --btn-bg: ${toneVars.btnBg} !important;
-        --btn-fg: ${toneVars.btnFg} !important;
-        --btn-outline-fg: ${toneVars.btnOutlineFg} !important;
-        --btn-outline-border: ${toneVars.btnOutlineBorder} !important;
-        
-        /* Icon tokens */
-        --icon-bg: ${toneVars.iconBg} !important;
-        --icon-fg: ${toneVars.iconFg} !important;
-        
-        /* Derived tokens */
-        --muted-bg: color-mix(in srgb, var(--fg) 5%, var(--surface)) !important;
-        --border: color-mix(in srgb, var(--fg) 25%, var(--surface)) !important;
-        --btn-bg-hover: color-mix(in srgb, var(--btn-bg) 90%, var(--surface)) !important;
-        
-        /* Apply base text color */
-        color: var(--text) !important;
+
+    // V6's `is-dark` test in SASS is contrast-based, not a fixed
+    // luminance threshold. A 0.45 lightness cutoff approximates it
+    // closely for the colour space V6 themes use (saturated brand
+    // colours and pastels) without bringing in a full WCAG contrast
+    // calc on the client side.
+    const SURFACES = ['a', 'b', 'c', 'd', 'e', 'f', 'g'] as const;
+    const blocks: string[] = [];
+
+    for (const slot of SURFACES) {
+      const variable = variables.find(
+        (v) => v.name === `--color-brand-${slot}`,
+      );
+      if (!variable || !variable.value) continue;
+      const resolved = resolveVarReferences(variable.value);
+      const lum = hexLightness(resolved);
+      // Skip when we can't read a literal hex — leave the framework's
+      // compiled branch alone rather than guess.
+      if (lum === null) continue;
+      const isDark = lum < 0.45;
+
+      // V6's `surface-theme` mixin computes its `--btn-bg` / `--btn-fg`
+      // fallbacks via `auto-contrast()` against the *surface itself*.
+      // We can't run that calc in CSS, but we can match the result with
+      // `--color-neutral-a` (dark contrast) and `--color-neutral-f`
+      // (light contrast) — same neutrals every V6 theme keeps fixed.
+      // Crucially we DON'T fall back to `var(--color-brand-X)` — for
+      // surface X that's a self-reference (brand-a text on brand-a
+      // background = invisible), and that's exactly why earlier the
+      // contrast switch worked for b–g but not a.
+      if (isDark) {
+        // Dark surface: text/headings/links flip to bg-dark variants.
+        // Filled buttons default to a *light* fill with *dark* text.
+        // Outline buttons default to white border + white text.
+        blocks.push(`.bg-color-${slot} {
+  --text: var(--font-base-color-bg-dark, var(--color-neutral-f)) !important;
+  --heading: var(--font-heading-color-bg-dark, var(--text)) !important;
+  --pre-heading: var(--pre-heading-color-bg-dark, var(--text)) !important;
+  --lead: var(--lead-color-bg-dark, var(--text)) !important;
+  --link: var(--link-color-bg-dark, var(--text)) !important;
+  --accent: var(--universal-accent-color-on-bg-dark, var(--text)) !important;
+  --btn-bg: var(--button-background-color-bg-dark, var(--color-neutral-f)) !important;
+  --btn-fg: var(--button-font-color-bg-dark, var(--color-neutral-a)) !important;
+  --btn-outline-bg: var(--button-outline-background-color-bg-dark, transparent) !important;
+  --btn-outline-fg: var(--button-outline-font-color-bg-dark, var(--text)) !important;
+  --btn-outline-border: var(--button-outline-border-color-bg-dark, var(--text)) !important;
+  --btn-alt-bg: var(--button-alternate-background-color-bg-dark, var(--btn-bg)) !important;
+  --btn-alt-fg: var(--button-alternate-font-color-bg-dark, var(--btn-fg)) !important;
+  --icon-bg: var(--icon-background-color-bg-dark, var(--btn-bg)) !important;
+  --icon-fg: var(--icon-color-bg-dark, var(--btn-fg)) !important;
+  --label-bg: var(--label-background-bg-dark, color-mix(in srgb, var(--color-neutral-f) 7.5%, transparent)) !important;
+  --label-fg: var(--label-color-bg-dark, var(--text)) !important;
+  --label-border: var(--label-border-bg-dark, color-mix(in srgb, var(--color-neutral-f) 50%, transparent)) !important;
+  --boxed-border: var(--boxed-border-color-bg-dark, color-mix(in srgb, var(--color-neutral-f) 20%, transparent)) !important;
+  --module-heading-border: var(--module-heading-border-color-bg-dark, var(--text)) !important;
+}`);
+      } else {
+        // Light surface: regular (non-bg-dark) variants. Filled buttons
+        // default to a *dark* fill with *light* text. Links default to
+        // the surface's own text colour (NOT brand-a — that would make
+        // links on a light brand-a surface vanish).
+        blocks.push(`.bg-color-${slot} {
+  --text: var(--font-base-color, var(--color-neutral-a)) !important;
+  --heading: var(--font-heading-color, var(--text)) !important;
+  --pre-heading: var(--pre-heading-color, var(--text)) !important;
+  --lead: var(--lead-color, var(--text)) !important;
+  --link: var(--link-color, var(--text)) !important;
+  --accent: var(--universal-accent-color, var(--text)) !important;
+  --btn-bg: var(--button-background-color, var(--color-neutral-a)) !important;
+  --btn-fg: var(--button-color, var(--color-neutral-f)) !important;
+  --btn-outline-bg: var(--button-outline-background-color, transparent) !important;
+  --btn-outline-fg: var(--button-outline-color, var(--text)) !important;
+  --btn-outline-border: var(--button-outline-border-color, var(--text)) !important;
+  --btn-alt-bg: var(--button-alternate-background-color, var(--btn-bg)) !important;
+  --btn-alt-fg: var(--button-alternate-color, var(--btn-fg)) !important;
+  --icon-bg: var(--icon-background-color, var(--btn-bg)) !important;
+  --icon-fg: var(--icon-color, var(--btn-fg)) !important;
+  --label-bg: var(--label-background, color-mix(in srgb, var(--color-neutral-a) 7.5%, transparent)) !important;
+  --label-fg: var(--label-color, var(--text)) !important;
+  --label-border: var(--label-border-color, color-mix(in srgb, var(--color-neutral-a) 50%, transparent)) !important;
+  --boxed-border: var(--boxed-border-color, color-mix(in srgb, var(--color-neutral-a) 20%, transparent)) !important;
+  --module-heading-border: var(--module-heading-border-color, var(--text)) !important;
+}`);
       }
-      
-      /* Direct element overrides for ${className} - comprehensive selectors */
-      
-      /* Headings - all variations */
-      .${className} h1, .${className} h2, .${className} h3, 
-      .${className} h4, .${className} h5, .${className} h6,
-      .${className} h1 a, .${className} h2 a, .${className} h3 a,
-      .${className} h4 a, .${className} h5 a, .${className} h6 a,
-      .${className} .heading,
-      .${className} .heading a,
-      .${className} .module .heading,
-      .${className} .module .heading a,
-      .${className} .text .heading,
-      .${className} .introduction .heading,
-      .${className} .container .heading {
-        color: ${toneVars.heading} !important;
-      }
-      
-      /* Pre-headings - high specificity to override template styles */
-      .${className} .pre-heading,
-      .${className} .module .pre-heading,
-      .${className} .text .pre-heading,
-      .${className} .introduction .pre-heading,
-      .${className} .container .pre-heading,
-      .${className} [class*="pre-heading"],
-      .${className} span.pre-heading,
-      .${className} p.pre-heading,
-      .${className} div.pre-heading,
-      .${className}.module .pre-heading,
-      .${className} .module > .text > .pre-heading,
-      .${className} .module > .pre-heading {
-        color: ${toneVars.preHeading} !important;
-      }
-      
-      /* Lead text */
-      .${className} .lead,
-      .${className} .module .lead {
-        color: ${toneVars.lead} !important;
-      }
-      
-      /* Links */
-      .${className} a,
-      .${className} a.link-arrow,
-      .${className} .link-arrow {
-        color: ${toneVars.link} !important;
-      }
-      
-      /* Body text */
-      .${className} p,
-      .${className} span:not([class*="btn"]):not([class*="icon"]),
-      .${className} li,
-      .${className} .rich-text,
-      .${className} .rich-text p,
-      .${className} .rich-text li {
-        color: ${toneVars.text} !important;
-      }
-      
-      /* Primary/filled buttons */
-      .${className} .btn,
-      .${className} .btn-self-service,
-      .${className} [class*="btn-icon-"],
-      .${className} .button {
-        background-color: ${toneVars.btnBg} !important;
-        color: ${toneVars.btnFg} !important;
-      }
-      .${className} .btn i,
-      .${className} .btn-self-service i,
-      .${className} [class*="btn-icon-"] i {
-        color: ${toneVars.btnFg} !important;
-      }
-      .${className} .btn:hover, .${className} .btn:focus,
-      .${className} .btn-self-service:hover, .${className} .btn-self-service:focus {
-        background-color: color-mix(in srgb, ${toneVars.btnBg} 90%, var(--surface)) !important;
-        color: ${toneVars.btnFg} !important;
-      }
-      
-      /* Alternate buttons */
-      .${className} .btn-alternate {
-        background-color: ${toneVars.btnAltBg} !important;
-        color: ${toneVars.btnAltFg} !important;
-      }
-      
-      /* Outline buttons */
-      .${className} .btn-outline,
-      .${className} .multi-section .foldAll {
-        color: ${toneVars.btnOutlineFg} !important;
-        box-shadow: inset 0 0 0 var(--button-outline-border-size, 1px) ${toneVars.btnOutlineBorder} !important;
-        background-color: transparent !important;
-      }
-      .${className} .btn-outline i {
-        color: ${toneVars.btnOutlineFg} !important;
-      }
-      .${className} .btn-outline:hover, .${className} .btn-outline:focus {
-        background-color: ${toneVars.btnOutlineBorder} !important;
-        color: ${toneVars.btnFg} !important;
-      }
-      
-      /* Icons */
-      .${className} .media i:before {
-        background-color: ${toneVars.iconBg} !important;
-        color: ${toneVars.iconFg} !important;
-      }
-      
-      /* Small-icon and flex-list icons - transparent bg, text color */
-      .${className}.module.small-icon > .media > a > i:before,
-      .${className}.module.small-icon > .media > i:before,
-      .${className}.module.flex-list > .media > a > i:before,
-      .${className}.module.flex-list > .media > i:before,
-      .${className} .module.small-icon > .media > a > i:before,
-      .${className} .module.small-icon > .media > i:before,
-      .${className} .module.flex-list > .media > a > i:before,
-      .${className} .module.flex-list > .media > i:before {
-        background-color: transparent !important;
-        color: ${toneVars.text} !important;
-      }
-      
-      /* Key numbers */
-      .${className} .key-number > .number {
-        color: ${toneVars.text} !important;
-      }
-      
-      /* Module heading borders */
-      .${className}.module.module-heading > .text > .heading,
-      .${className}.module.module-heading > .introduction > .heading,
-      .${className}.module.module-heading > .container > .heading,
-      .${className} .module.module-heading > .text > .heading,
-      .${className} .module.module-heading > .introduction > .heading,
-      .${className} .module.module-heading > .container > .heading {
-        border-color: ${toneVars.text} !important;
-      }
-      
-      /* Dividers */
-      .${className} .spacer.divider:before,
-      .${className}.spacer.divider:before {
-        background-color: color-mix(in srgb, ${toneVars.text} 25%, var(--surface)) !important;
-      }
-      
-      /* Boxed and Highlighted modules - use white/light surface with contrasting tokens */
-      .${className} .module.boxed,
-      .${className} .module.highlighted {
-        --surface: #ffffff !important;
-        background-color: #ffffff !important;
-        color: ${lightSurfaceTokens.text} !important;
-        
-        /* Light surface tokens */
-        --text: ${lightSurfaceTokens.text} !important;
-        --heading: ${lightSurfaceTokens.heading} !important;
-        --pre-heading: ${lightSurfaceTokens.preHeading} !important;
-        --lead: ${lightSurfaceTokens.lead} !important;
-        --link: ${lightSurfaceTokens.link} !important;
-        --accent: ${lightSurfaceTokens.accent} !important;
-        --fg: var(--text) !important;
-        
-        /* Button tokens for light surface */
-        --btn-bg: ${lightSurfaceTokens.btnBg} !important;
-        --btn-fg: ${lightSurfaceTokens.btnFg} !important;
-        --btn-outline-fg: ${lightSurfaceTokens.btnOutlineFg} !important;
-        --btn-outline-border: ${lightSurfaceTokens.btnOutlineBorder} !important;
-        
-        /* Icon tokens */
-        --icon-bg: ${lightSurfaceTokens.iconBg} !important;
-        --icon-fg: ${lightSurfaceTokens.iconFg} !important;
-        
-        /* Derived tokens */
-        --muted-bg: color-mix(in srgb, var(--fg) 5%, var(--surface)) !important;
-        --border: color-mix(in srgb, var(--fg) 25%, var(--surface)) !important;
-      }
-      
-      /* Boxed/Highlighted headings */
-      .${className} .module.boxed h1, .${className} .module.boxed h2, .${className} .module.boxed h3,
-      .${className} .module.boxed h4, .${className} .module.boxed h5, .${className} .module.boxed h6,
-      .${className} .module.boxed .heading,
-      .${className} .module.highlighted h1, .${className} .module.highlighted h2, .${className} .module.highlighted h3,
-      .${className} .module.highlighted h4, .${className} .module.highlighted h5, .${className} .module.highlighted h6,
-      .${className} .module.highlighted .heading {
-        color: ${lightSurfaceTokens.heading} !important;
-      }
-      
-      /* Boxed/Highlighted pre-headings */
-      .${className} .module.boxed .pre-heading,
-      .${className} .module.highlighted .pre-heading {
-        color: ${lightSurfaceTokens.preHeading} !important;
-      }
-      
-      /* Boxed/Highlighted text */
-      .${className} .module.boxed p,
-      .${className} .module.boxed .rich-text,
-      .${className} .module.highlighted p,
-      .${className} .module.highlighted .rich-text {
-        color: ${lightSurfaceTokens.text} !important;
-      }
-      
-      /* Boxed/Highlighted links */
-      .${className} .module.boxed a,
-      .${className} .module.boxed a.link-arrow,
-      .${className} .module.highlighted a,
-      .${className} .module.highlighted a.link-arrow {
-        color: ${lightSurfaceTokens.link} !important;
-      }
-      
-      /* Boxed/Highlighted buttons */
-      .${className} .module.boxed .btn,
-      .${className} .module.highlighted .btn {
-        background-color: ${lightSurfaceTokens.btnBg} !important;
-        color: ${lightSurfaceTokens.btnFg} !important;
-      }
-      
-      /* Boxed/Highlighted alternate buttons */
-      .${className} .module.boxed .btn-alternate,
-      .${className} .module.highlighted .btn-alternate {
-        background-color: ${lightSurfaceTokens.btnAltBg} !important;
-        color: ${lightSurfaceTokens.btnAltFg} !important;
-      }
-      
-      /* Boxed/Highlighted outline buttons */
-      .${className} .module.boxed .btn-outline,
-      .${className} .module.highlighted .btn-outline {
-        color: ${lightSurfaceTokens.btnOutlineFg} !important;
-        box-shadow: inset 0 0 0 var(--button-outline-border-size, 1px) ${lightSurfaceTokens.btnOutlineBorder} !important;
-        background-color: transparent !important;
-      }
-      
-      /* Boxed/Highlighted icons */
-      .${className} .module.boxed .media i:before,
-      .${className} .module.highlighted .media i:before {
-        background-color: ${lightSurfaceTokens.iconBg} !important;
-        color: ${lightSurfaceTokens.iconFg} !important;
-      }
-      
-      /* Small-icon and flex-list icons in boxed/highlighted - transparent bg, text color */
-      .${className} .module.boxed.small-icon > .media > a > i:before,
-      .${className} .module.boxed.small-icon > .media > i:before,
-      .${className} .module.boxed.flex-list > .media > a > i:before,
-      .${className} .module.boxed.flex-list > .media > i:before,
-      .${className} .module.highlighted.small-icon > .media > a > i:before,
-      .${className} .module.highlighted.small-icon > .media > i:before,
-      .${className} .module.highlighted.flex-list > .media > a > i:before,
-      .${className} .module.highlighted.flex-list > .media > i:before,
-      .${className} .module.boxed .module.small-icon > .media > a > i:before,
-      .${className} .module.boxed .module.small-icon > .media > i:before,
-      .${className} .module.boxed .module.flex-list > .media > a > i:before,
-      .${className} .module.boxed .module.flex-list > .media > i:before,
-      .${className} .module.highlighted .module.small-icon > .media > a > i:before,
-      .${className} .module.highlighted .module.small-icon > .media > i:before,
-      .${className} .module.highlighted .module.flex-list > .media > a > i:before,
-      .${className} .module.highlighted .module.flex-list > .media > i:before {
-        background-color: transparent !important;
-        color: ${lightSurfaceTokens.text} !important;
-      }
-      
-      /* Boxed/Highlighted list items */
-      .${className} .module.boxed .items .item,
-      .${className} .module.boxed .items .item:last-child,
-      .${className} .module.highlighted .items .item,
-      .${className} .module.highlighted .items .item:last-child {
-        border-color: color-mix(in srgb, ${lightSurfaceTokens.text} 25%, #ffffff) !important;
-      }
-      
-      /* Boxed/Highlighted list text */
-      .${className} .module.boxed li,
-      .${className} .module.boxed ul,
-      .${className} .module.boxed ol,
-      .${className} .module.highlighted li,
-      .${className} .module.highlighted ul,
-      .${className} .module.highlighted ol {
-        color: ${lightSurfaceTokens.text} !important;
-      }
-      
-      /* Boxed border color */
-      .${className} .module.boxed {
-        border-color: ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'} !important;
-      }
-    `;
-    }).join('\n');
-  }, [variableMap, isLightColor, resolveVarReferences]);
+    }
+
+    return blocks.join('\n\n');
+  }, [variables, resolveVarReferences]);
+
 
   // Combine all custom CSS file contents for injection. Skip files marked
   // `enabled === false` — they're preserved in the export zip with a
@@ -685,59 +370,63 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
       .join('\n\n');
   }, [customCssFiles]);
 
+  // Collect Google Font URLs to load into the iframe via <link> tags.
+  // We can't use @import here because the customCssContent is appended
+  // to iframeDoc.body (not <head>), and @import in body-level <style>
+  // tags isn't reliably processed by browsers. A dedicated useEffect
+  // (further down) syncs <link rel="stylesheet"> elements in the iframe
+  // <head> based on this list whenever the font variables change.
+  const googleFontUrls = useMemo(() => {
+    const families = new Set<string>();
+    for (const v of variables) {
+      if (v.type !== 'font') continue;
+      const raw = v.value || v.defaultValue;
+      if (!raw || raw.startsWith('var(')) continue;
+      // Take the first comma-delimited family, THEN strip surrounding
+      // quotes. Doing it the other way around leaves the inner quote in
+      // place when the value is `'Plus Jakarta Sans', sans-serif`.
+      const family = raw.split(',')[0].trim().replace(/^['"]|['"]$/g, '').trim();
+      if (family && !family.startsWith('var(')) families.add(family);
+    }
+    return Array.from(families).map(
+      f => `https://fonts.googleapis.com/css2?family=${encodeURIComponent(f).replace(/%20/g, '+')}:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap`
+    );
+  }, [variables]);
+
   const customCssContent = useMemo(() => {
     const css = `
       /* Font-face declarations */
       ${fontCss}
-      
+
       /* Custom CSS files (fonts, etc.) */
       ${customCssFilesContent}
-      
+
       :root, html, body {
         ${cssVariablesImportant}
       }
-      
-      /* Global pre-heading override - ensures template uses our variable */
-      .pre-heading,
-      span.pre-heading,
-      p.pre-heading,
-      div.pre-heading,
-      .module .pre-heading,
-      .text .pre-heading,
-      .introduction .pre-heading,
-      .module > .text > .pre-heading,
-      [class*="pre-heading"] {
-        color: var(--pre-heading-color) !important;
+
+      /* Pin the iframe root to 16px (browser default). V5 themes were
+         all authored against a root of 16px — the \`$font-normal\`
+         variable only ever applied to \`body\`, never \`html\`. So
+         \`1.145rem\` should render at \`1.145 × 16 = 18.32px\` per the
+         math, regardless of what \`--font-normal\` is set to.
+
+         V6's baseStyles rebases the root via
+         \`html { font-size: var(--font-normal) }\`, which would scale
+         all rem values when \`--font-normal ≠ 1rem\`. We override
+         that here so the preview matches the V5 mental model. */
+      html {
+        font-size: 16px !important;
       }
-      
-      /* Dynamic-list inside span columns: template says bg-color-* should be 
-         transparent here but our surface overrides force a background-color. 
-         Re-apply transparent to match the template's intended rule. */
-      [class*=span-] > .dynamic-list[class*=bg-color-],
-      [class*=span-] > .event-list[class*=bg-color-],
-      [class*=span-] > .module-heading[class*=bg-color-],
-      [class*=span-] > .module.module-heading[class*=bg-color-] {
-        background: transparent !important;
-        padding: 0 !important;
-      }
-      
-      /* Navigation border overrides - target main nav only */
-      .nav-main,
-      nav.nav-main,
-      nav.main,
-      .navigation-main,
-      .header-navigation,
-      .main-navigation {
-        border-top: var(--nav-main-border-top) !important;
-        border-bottom: var(--nav-main-border-bottom) !important;
-      }
-      
-      /* Surface overrides for bg-color-* classes */
-      ${surfaceOverrides}
+
+      /* Per-surface contrast overrides — flips light/dark token chains
+         based on the current brand colour's lightness. See the comment
+         on surfaceContrastOverrides above. */
+      ${surfaceContrastOverrides}
     `;
     customCssRef.current = css;
     return css;
-  }, [cssVariablesImportant, surfaceOverrides, customCssFilesContent, fontCss]);
+  }, [cssVariablesImportant, customCssFilesContent, fontCss, surfaceContrastOverrides]);
 
   const navigationScript = useMemo(() => {
     return `<script id="nav-intercept-script">
@@ -784,7 +473,7 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         { id: 'paragraph', name: 'Body Text', selectors: ['p', '.body-text', '.text', '.rich-text'], variables: ['--font-base-family', '--font-base-weight', '--font-base-color', '--font-normal', '--font-normal-line-height'] },
         { id: 'lead', name: 'Lead Text', selectors: ['.lead', '.intro'], variables: ['--lead-font-family', '--lead-font-weight', '--lead-font-size', '--lead-font-line-height', '--lead-color'] },
         { id: 'pre-heading', name: 'Pre-heading', selectors: ['.pre-heading', '.eyebrow', '.overline'], variables: ['--pre-heading-family', '--pre-heading-weight', '--pre-heading-text-transform', '--pre-heading-font-size', '--pre-heading-color'] },
-        { id: 'button-outline', name: 'Outline Button', selectors: ['.btn-outline', '.button-outline', '.btn-bordered'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-outline-border-size', '--button-outline-color', '--button-outline-border-color'] },
+        { id: 'button-outline', name: 'Outline Button', selectors: ['.btn-outline', '.button-outline', '.btn-bordered'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-outline-border-size', '--button-outline-color', '--button-outline-border-color', '--button-outline-hover-color'] },
         { id: 'button-primary', name: 'Primary Button', selectors: ['.btn-primary', '.button-primary'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-background-color', '--button-color'] },
         { id: 'button-secondary', name: 'Secondary Button', selectors: ['.btn-secondary', '.button-secondary'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-secondary-background-color', '--button-secondary-color'] },
         { id: 'button-alternate', name: 'Alternate Button', selectors: ['.btn-alternate', '.button-alternate', '.btn-alt'], variables: ['--button-universal-padding', '--button-universal-text-transform', '--button-universal-font-size', '--button-universal-font-weight', '--button-universal-font-family', '--button-universal-border-radius', '--button-alternate-background-color', '--button-alternate-color'] },
@@ -800,7 +489,6 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         { id: 'hero', name: 'Hero Section', selectors: ['.hero', '.banner', '.jumbotron'], variables: ['--hero-ratio-full-width', '--hero-ratio-desktop', '--hero-ratio-mobile', '--hero-h1-font-size', '--hero-h1-line-height', '--hero-h2-font-size', '--hero-h2-line-height'] },
         { id: 'card', name: 'Card / Box', selectors: ['.card', '.box', '.module', '.boxed', '.highlighted'], variables: ['--universal-border-radius', '--boxed-border-width', '--boxed-border-color', '--highlighted-box-shadow', '--grid-box-padding', '--grid-box-padding-mobile'] },
         { id: 'nav-service', name: 'Service Navigation', selectors: ['.service-navigation', '.nav-service', '.service-nav', '.service-links', 'nav.service', 'nav[aria-label="Service Menu"]'], variables: ['--service-color', '--service-font-weight', '--service-font-family', '--service-font-size', '--service-text-transform'] },
-        { id: 'search', name: 'Search', selectors: ['.search-btn', '.search-button', '.search', '[type="search"]', '.search-form', '.site-search'], variables: ['--search-btn-border-radius', '--search-btn-background-color', '--search-btn-background-color-hover', '--search-text-color', '--search-text-color-hover', '--search-icon-color', '--search-icon-color-hover'] },
         { id: 'breadcrumb', name: 'Breadcrumb', selectors: ['.breadcrumb', '.breadcrumbs', 'nav[aria-label="breadcrumb"]', '.breadcrumb-nav'], variables: ['--breadcrumb-bg-color', '--breadcrumb-padding', '--breadcrumb-link-color', '--breadcrumb-label-color', '--breadcrumb-active-color', '--breadcrumb-divider-color'] },
         { id: 'colors-brand', name: 'Brand Colors', selectors: ['.bg-color-a', '.bg-color-b', '.bg-color-c', '.bg-color-d', '.bg-color-e', '.bg-color-f', '.bg-color-g', '.bg-brand-a', '.bg-brand-b', '.bg-brand-c', '.bg-brand-d', '.bg-brand-e', '.bg-brand-f', '.bg-brand-g'], variables: ['--color-brand-a', '--color-brand-b', '--color-brand-c', '--color-brand-d', '--color-brand-e', '--color-brand-f', '--color-brand-g'] },
         { id: 'colors-neutral', name: 'Neutral Colors', selectors: ['.bg-neutral-a', '.bg-neutral-b', '.bg-neutral-c', '.bg-neutral-d', '.bg-neutral-e', '.bg-neutral-f', '.neutral-bg'], variables: ['--color-neutral-a', '--color-neutral-b', '--color-neutral-c', '--color-neutral-d', '--color-neutral-e', '--color-neutral-f'] },
@@ -856,9 +544,9 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
         'lead': ['--lead-color-bg-dark'],
         'pre-heading': ['--pre-heading-color-bg-dark'],
         'link': ['--link-color-bg-dark'],
-        'button': ['--button-background-color-bg-dark', '--button-font-color-bg-dark', '--button-outline-border-color-bg-dark', '--button-outline-font-color-bg-dark', '--button-alternate-background-color-bg-dark', '--button-alternate-font-color-bg-dark'],
+        'button': ['--button-background-color-bg-dark', '--button-font-color-bg-dark', '--button-outline-border-color-bg-dark', '--button-outline-font-color-bg-dark', '--button-outline-hover-color-bg-dark', '--button-alternate-background-color-bg-dark', '--button-alternate-font-color-bg-dark'],
         'button-primary': ['--button-background-color-bg-dark', '--button-font-color-bg-dark'],
-        'button-outline': ['--button-outline-border-color-bg-dark', '--button-outline-font-color-bg-dark'],
+        'button-outline': ['--button-outline-border-color-bg-dark', '--button-outline-font-color-bg-dark', '--button-outline-hover-color-bg-dark'],
         'button-alternate': ['--button-alternate-background-color-bg-dark', '--button-alternate-font-color-bg-dark'],
         'button-secondary': ['--button-background-color-bg-dark', '--button-font-color-bg-dark'],
         'button-text': ['--button-font-color-bg-dark'],
@@ -1086,14 +774,51 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
     }
   }, [inspectorMode, iframeLoaded, inspectorScript]);
 
-  // Dynamically update CSS in iframe without re-rendering
+  // Sync Google Font <link> tags in the iframe <head>. Browsers ignore
+  // @import inside dynamically-injected body-level <style> tags, so
+  // <link rel="stylesheet"> in <head> is the only reliable way to pull
+  // Google Fonts into the preview document.
   useEffect(() => {
     if (!iframeLoaded || !iframeRef.current) return;
-    
     try {
       const iframeDoc = iframeRef.current.contentDocument;
       if (!iframeDoc) return;
-      
+      const head = iframeDoc.head || iframeDoc.querySelector('head');
+      if (!head) return;
+
+      const desired = new Set(googleFontUrls);
+      const existing = new Map<string, HTMLLinkElement>();
+      head.querySelectorAll<HTMLLinkElement>('link[data-customizer-google-font]').forEach(link => {
+        existing.set(link.href, link);
+      });
+
+      // Remove links that are no longer needed
+      existing.forEach((link, href) => {
+        if (!desired.has(href)) link.remove();
+      });
+
+      // Add links that don't exist yet
+      desired.forEach(href => {
+        if (existing.has(href)) return;
+        const link = iframeDoc.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        link.setAttribute('data-customizer-google-font', '');
+        head.appendChild(link);
+      });
+    } catch (e) {
+      console.warn('Could not update Google Font links in iframe:', e);
+    }
+  }, [googleFontUrls, iframeLoaded]);
+
+  // Dynamically update CSS in iframe without re-rendering
+  useEffect(() => {
+    if (!iframeLoaded || !iframeRef.current) return;
+
+    try {
+      const iframeDoc = iframeRef.current.contentDocument;
+      if (!iframeDoc) return;
+
       let styleEl = iframeDoc.getElementById('custom-variables') as HTMLStyleElement;
       
       if (!styleEl) {
@@ -1238,6 +963,27 @@ export function PreviewPane({ variables, previewHtml, customCssFiles = [], fontC
           )}
           <span className="ml-1">Load</span>
         </Button>
+        {/* Reset-to-default button. Only visible when the user has
+            navigated away from the bundled municipality template — it'd
+            be a no-op when already on the default. Clicking sets the
+            input back to the default URL and reloads the iframe. */}
+        {urlInput.trim() !== DEFAULT_TEMPLATE_URL && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setUrlInput(DEFAULT_TEMPLATE_URL);
+              loadTemplate(DEFAULT_TEMPLATE_URL);
+            }}
+            disabled={isLoading}
+            className="h-8"
+            title="Reset preview to the default V6 template"
+            data-testid="preview-reset-url"
+          >
+            <Home className="h-4 w-4" />
+            <span className="ml-1">Default</span>
+          </Button>
+        )}
       </div>
 
       {themeCompatibility === 'compiled-no-vars' && themeSwapped && !compatBannerDismissed && (

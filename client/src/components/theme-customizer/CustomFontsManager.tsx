@@ -21,6 +21,14 @@ export interface FontFile {
   type: string;
   size: number;
   blobUrl?: string; // For preview usage
+  /**
+   * For fonts that came from a legacy theme's `fonts/` folder, the
+   * relative path inside that folder (e.g. `founders-grotesk/regular.woff2`).
+   * On export, customFonts are written to `fonts/<originalPath>` if set,
+   * otherwise to `fonts/<name>`. Preserves subfolder structures the
+   * theme's @font-face declarations may reference.
+   */
+  originalPath?: string;
 }
 
 interface CustomFontsManagerProps {
@@ -29,7 +37,7 @@ interface CustomFontsManagerProps {
   onFontCssChange?: (css: string) => void; // Callback to update font-face CSS
 }
 
-const SUPPORTED_EXTENSIONS = ['ttf', 'woff', 'woff2', 'eot'];
+const SUPPORTED_EXTENSIONS = ['ttf', 'otf', 'woff', 'woff2', 'eot'];
 
 function getFileExtension(filename: string): string {
   return filename.split('.').pop()?.toLowerCase() || '';
@@ -50,6 +58,7 @@ function getFontTypeLabel(filename: string): string {
   const ext = getFileExtension(filename);
   switch (ext) {
     case 'ttf': return 'TrueType';
+    case 'otf': return 'OpenType';
     case 'woff': return 'WOFF';
     case 'woff2': return 'WOFF2';
     case 'eot': return 'EOT';
@@ -61,6 +70,7 @@ function getFontFormat(filename: string): string {
   const ext = getFileExtension(filename);
   switch (ext) {
     case 'ttf': return 'truetype';
+    case 'otf': return 'opentype';
     case 'woff': return 'woff';
     case 'woff2': return 'woff2';
     case 'eot': return 'embedded-opentype';
@@ -68,13 +78,113 @@ function getFontFormat(filename: string): string {
   }
 }
 
-function extractFontFamilyName(filename: string): string {
-  // Remove extension and clean up the name
+// Ordered from most specific to least so "semibold" is matched before "bold".
+const WEIGHT_MAP: { pattern: RegExp; weight: string }[] = [
+  { pattern: /thin|hairline|100/i,                   weight: '100' },
+  { pattern: /extralight|extra[-_]?light|200/i,      weight: '200' },
+  { pattern: /light|300/i,                           weight: '300' },
+  { pattern: /regular|normal|400/i,                  weight: '400' },
+  { pattern: /medium|500/i,                          weight: '500' },
+  { pattern: /semibold|semi[-_]?bold|demi|600/i,     weight: '600' },
+  { pattern: /extrabold|extra[-_]?bold|800/i,        weight: '800' },
+  { pattern: /black|heavy|900/i,                     weight: '900' },
+  { pattern: /bold|700/i,                            weight: '700' },
+];
+
+interface FontFaceAttrs {
+  family: string;
+  weight: string;
+  style: string;
+}
+
+// OpenType variable-font axis indicators that show up in Google Fonts
+// filenames like "PlusJakartaSans-VariableFont_wght.woff2" — they describe
+// which axes the font supports, not the typeface name, so they get stripped.
+const VARIABLE_FONT_NOISE = /^(VariableFont|wght|wdth|slnt|opsz|ital|GRAD|XOPQ|YOPQ|XTRA|YTAS|YTDE|YTLC|YTUC)$/i;
+
+/**
+ * Split a CamelCase / PascalCase string into separate words.
+ * "PlusJakartaSans" → ["Plus", "Jakarta", "Sans"]
+ * "OpenSans"        → ["Open", "Sans"]
+ * Already-spaced or all-lowercase tokens pass through unchanged.
+ */
+function splitCamelCase(token: string): string[] {
+  // Insert a space between a lowercase→uppercase boundary, then between
+  // an uppercase run and a following uppercase+lowercase (e.g. "ABCDef" →
+  // "ABC Def"). Then split on whitespace.
+  return token
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function parseFontAttrs(filename: string): FontFaceAttrs {
   const nameWithoutExt = filename.replace(/\.(ttf|woff|woff2|eot)$/i, '');
-  // Convert kebab-case or snake_case to Title Case, preserving weight indicators
-  return nameWithoutExt
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
+  // Split on delimiters (hyphen, underscore, space), then break each
+  // resulting token on CamelCase boundaries. So "PlusJakartaSans-VariableFont_wght-italic"
+  // becomes ["Plus","Jakarta","Sans","Variable","Font","wght","italic"].
+  const tokens = nameWithoutExt
+    .split(/[-_ ]+/)
+    .flatMap(splitCamelCase);
+
+  const styleTokens = new Set<number>();
+  let weight = '400';
+  let style = 'normal';
+
+  // Detect italic/oblique first (these are whole tokens)
+  tokens.forEach((t, i) => {
+    if (/^italic$/i.test(t)) { style = 'italic'; styleTokens.add(i); }
+    else if (/^oblique$/i.test(t)) { style = 'oblique'; styleTokens.add(i); }
+  });
+
+  // Strip variable-font axis indicators ("VariableFont", "wght", …) — these
+  // describe the file format, not the typeface, and would otherwise leak
+  // into the family name. "Variable" + "Font" arrive as separate tokens
+  // after CamelCase splitting, so check both forms.
+  tokens.forEach((t, i) => {
+    if (VARIABLE_FONT_NOISE.test(t)) styleTokens.add(i);
+    if (/^Variable$/i.test(t) && /^Font$/i.test(tokens[i + 1] || '')) {
+      styleTokens.add(i);
+      styleTokens.add(i + 1);
+    }
+  });
+
+  // Detect weight — scan the full name so compound tokens like "SemiBold" work
+  for (const { pattern, weight: w } of WEIGHT_MAP) {
+    if (pattern.test(nameWithoutExt)) {
+      weight = w;
+      // Mark the token(s) that carry the weight keyword so we can strip them
+      tokens.forEach((t, i) => { if (pattern.test(t)) styleTokens.add(i); });
+      break;
+    }
+  }
+
+  const remainingTokens = tokens.filter((_, i) => !styleTokens.has(i));
+
+  // Preserve the filename's separator style. CSS font-family names treat
+  // hyphens and spaces as DIFFERENT characters (case is ignored, but
+  // separators are not), so a CSS rule like
+  //   font-family: "founders-grotesk-web"
+  // won't match a @font-face declared as `'Founders Grotesk Web'`.
+  // Heuristic: if the filename is all-lowercase (typical for kebab-case
+  // foundry exports like `founders-grotesk-web-regular.woff2`), join the
+  // family tokens with hyphens and keep them lowercase. Otherwise — for
+  // CamelCase filenames typical of Google Fonts (`OpenSans-Regular.ttf`,
+  // `PlusJakartaSans-VariableFont_wght.woff2`) — join with spaces and
+  // Title Case each word, since those CSS values use Title Case + spaces.
+  const isKebabCaseFilename = !/[A-Z]/.test(nameWithoutExt);
+  const familyTokens = isKebabCaseFilename
+    ? remainingTokens.map(t => t.toLowerCase())
+    : remainingTokens.map(t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+
+  const family =
+    familyTokens.length === 0
+      ? nameWithoutExt
+      : isKebabCaseFilename
+        ? familyTokens.join('-')
+        : familyTokens.join(' ');
+  return { family, weight, style };
 }
 
 /**
@@ -82,18 +192,24 @@ function extractFontFamilyName(filename: string): string {
  */
 export function generateFontFaceCssForExport(fonts: FontFile[]): string {
   if (fonts.length === 0) return '';
-  
+
   const rules = fonts.map(font => {
-    const fontFamily = extractFontFamilyName(font.name);
+    const { family, weight, style } = parseFontAttrs(font.name);
     const format = getFontFormat(font.name);
-    
+    // Use originalPath (e.g. `founders-grotesk/regular.woff2`) when set,
+    // so the URL matches where the export actually writes the file. Falls
+    // back to the bare filename for newly-uploaded fonts.
+    const urlPath = font.originalPath || font.name;
+
     return `@font-face {
-  font-family: '${fontFamily}';
-  src: url('fonts/${font.name}') format('${format}');
+  font-family: '${family}';
+  src: url('../fonts/${urlPath}') format('${format}');
+  font-weight: ${weight};
+  font-style: ${style};
   font-display: swap;
 }`;
   });
-  
+
   return `/* Custom Fonts */\n${rules.join('\n\n')}`;
 }
 
@@ -102,20 +218,22 @@ export function generateFontFaceCssForExport(fonts: FontFile[]): string {
  */
 export function generateFontFaceCssForPreview(fonts: FontFile[]): string {
   if (fonts.length === 0) return '';
-  
+
   const rules = fonts.map(font => {
     if (!font.blobUrl) return '';
-    
-    const fontFamily = extractFontFamilyName(font.name);
+
+    const { family, weight, style } = parseFontAttrs(font.name);
     const format = getFontFormat(font.name);
-    
+
     return `@font-face {
-  font-family: '${fontFamily}';
+  font-family: '${family}';
   src: url('${font.blobUrl}') format('${format}');
+  font-weight: ${weight};
+  font-style: ${style};
   font-display: swap;
 }`;
   }).filter(Boolean);
-  
+
   return rules.join('\n\n');
 }
 

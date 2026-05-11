@@ -47,14 +47,19 @@
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem;
-  --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 2px 4px -1px hsl(0 0% 0% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 4px 6px -1px hsl(0 0% 0% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 8px 10px -1px hsl(0 0% 0% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
+  /* Subtle real shadows — original tokens shipped at 0% opacity which
+     left every dialog/popover/floating panel feeling perfectly flat.
+     Low-alpha layered shadows (close-in haze + wider soft cast) give
+     just enough elevation to read as "above the surface" without the
+     heavy material-design look. */
+  --shadow-2xs: 0px 1px 1px hsl(220 12% 10% / 0.03);
+  --shadow-xs: 0px 1px 2px hsl(220 12% 10% / 0.05);
+  --shadow-sm: 0px 1px 2px hsl(220 12% 10% / 0.04), 0px 2px 4px -1px hsl(220 12% 10% / 0.06);
+  --shadow: 0px 1px 2px hsl(220 12% 10% / 0.04), 0px 2px 6px -1px hsl(220 12% 10% / 0.08);
+  --shadow-md: 0px 2px 4px hsl(220 12% 10% / 0.05), 0px 4px 10px -2px hsl(220 12% 10% / 0.08);
+  --shadow-lg: 0px 4px 8px hsl(220 12% 10% / 0.06), 0px 8px 18px -4px hsl(220 12% 10% / 0.10);
+  --shadow-xl: 0px 8px 14px hsl(220 12% 10% / 0.06), 0px 14px 30px -6px hsl(220 12% 10% / 0.12);
+  --shadow-2xl: 0px 12px 24px hsl(220 12% 10% / 0.10), 0px 24px 50px -10px hsl(220 12% 10% / 0.18);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
@@ -95,13 +100,18 @@
   --elevate-2: rgba(255,255,255, .09);
   --background: 0 0% 8%;
   --foreground: 0 0% 95%;
-  --border: 0 0% 18%;
+  /* Dark-mode borders bumped from 14–18% lightness to 22–28%. The
+     original values sat too close to the 8–14% backgrounds — the
+     borders barely registered, so panels, cards, and popovers blurred
+     into the surrounding chrome. The new spread keeps the look subtle
+     while making dividers visibly trace the layout. */
+  --border: 0 0% 28%;
   --card: 0 0% 10%;
   --card-foreground: 0 0% 95%;
-  --card-border: 0 0% 14%;
+  --card-border: 0 0% 22%;
   --sidebar: 0 0% 12%;
   --sidebar-foreground: 0 0% 95%;
-  --sidebar-border: 0 0% 16%;
+  --sidebar-border: 0 0% 24%;
   --sidebar-primary: 217 91% 60%;
   --sidebar-primary-foreground: 0 0% 98%;
   --sidebar-accent: 217 15% 18%;
@@ -109,7 +119,7 @@
   --sidebar-ring: 217 91% 60%;
   --popover: 0 0% 14%;
   --popover-foreground: 0 0% 95%;
-  --popover-border: 0 0% 18%;
+  --popover-border: 0 0% 26%;
   --primary: 217 91% 60%;
   --primary-foreground: 0 0% 98%;
   --secondary: 0 0% 18%;
@@ -120,21 +130,23 @@
   --accent-foreground: 0 0% 95%;
   --destructive: 0 84% 45%;
   --destructive-foreground: 0 0% 98%;
-  --input: 0 0% 35%;
+  --input: 0 0% 42%;
   --ring: 217 91% 60%;
   --chart-1: 217 91% 70%;
   --chart-2: 160 84% 65%;
   --chart-3: 30 90% 65%;
   --chart-4: 280 70% 65%;
   --chart-5: 340 85% 65%;
-  --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 2px 4px -1px hsl(0 0% 0% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 4px 6px -1px hsl(0 0% 0% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 8px 10px -1px hsl(0 0% 0% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
+  /* Dark-mode shadows lean on slightly higher alpha — black-on-dark
+     reads less than black-on-light at the same opacity. */
+  --shadow-2xs: 0px 1px 1px hsl(0 0% 0% / 0.20);
+  --shadow-xs: 0px 1px 2px hsl(0 0% 0% / 0.25);
+  --shadow-sm: 0px 1px 2px hsl(0 0% 0% / 0.25), 0px 2px 4px -1px hsl(0 0% 0% / 0.30);
+  --shadow: 0px 1px 2px hsl(0 0% 0% / 0.25), 0px 2px 6px -1px hsl(0 0% 0% / 0.35);
+  --shadow-md: 0px 2px 4px hsl(0 0% 0% / 0.30), 0px 4px 10px -2px hsl(0 0% 0% / 0.40);
+  --shadow-lg: 0px 4px 8px hsl(0 0% 0% / 0.35), 0px 8px 18px -4px hsl(0 0% 0% / 0.45);
+  --shadow-xl: 0px 8px 14px hsl(0 0% 0% / 0.35), 0px 14px 30px -6px hsl(0 0% 0% / 0.50);
+  --shadow-2xl: 0px 12px 24px hsl(0 0% 0% / 0.50), 0px 24px 50px -10px hsl(0 0% 0% / 0.60);
 
 /* Fallback for older browsers */
   --sidebar-primary-border: hsl(var(--sidebar-primary));

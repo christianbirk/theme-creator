@@ -26,6 +26,26 @@ export function extractHexValue(value: string): string {
 }
 
 /**
+ * Return the first whitespace-separated token at the top level of `value`.
+ * Paren-aware: a `calc(…)` or `var(--foo, fallback)` containing internal
+ * spaces still counts as one token. Used when a V5 multi-axis shorthand
+ * (e.g. `32px 0`) needs to be reduced to a single value because the V6
+ * variable is consumed in a single-axis context (e.g. `padding-top`).
+ */
+export function firstTopLevelToken(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  let depth = 0;
+  for (let i = 0; i < trimmed.length; i++) {
+    const c = trimmed[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if (depth === 0 && /\s/.test(c)) return trimmed.slice(0, i);
+  }
+  return trimmed;
+}
+
+/**
  * Replace all predefined SCSS variables in a value with their fixed values.
  * Handles compound values like "$space-12 0" -> "12px 0".
  */
@@ -53,6 +73,17 @@ export function resolveVariableReference(
     if (refValue) {
       return resolveVariableReference(refValue, allVariables);
     }
+    // Fallback for V5's spacing convention. The framework declares
+    // $space-4/8/12/16/24/32/64 explicitly, but themes routinely use
+    // values from the rest of the scale ($space-40, $space-48, $space-72…)
+    // assuming the convention `$space-N → Npx`. Those tokens aren't in
+    // the V5 base defaults snapshot, so without this fallback the literal
+    // `$space-40` survives the import and shows up as raw text in the
+    // customizer (e.g. `Grid Box Padding: $space-40 24px 32px 24px`).
+    // Only fires when the theme didn't explicitly declare the token —
+    // a real `$space-40: 50px` override above wins via allVariables.
+    const spaceMatch = value.match(/^\$space-(\d+)$/);
+    if (spaceMatch) return `${spaceMatch[1]}px`;
   }
   return value;
 }
@@ -91,19 +122,96 @@ export function isNotSetSentinel(value: string | undefined): boolean {
  * pulling in Vite-specific imports.
  */
 export function wrapScssArithmeticInCalc(value: string): string {
-  if (!value || value.startsWith('calc(') || value.startsWith('var(')) return value;
+  if (!value) return value;
+
+  // Already a calc() — don't double-wrap.
+  const trimmed = value.trim();
+  if (trimmed.startsWith('calc(')) return value;
+
+  // A *standalone* var() reference has nothing to wrap (e.g. `var(--foo)`
+  // or `var(--foo, var(--bar))`). But we must NOT bail when there's
+  // trailing arithmetic like `var(--grid-gutter-desktop) * 2` — that needs
+  // to become `calc(var(--grid-gutter-desktop) * 2)` or Sass rejects the
+  // declaration during the export compile. Find the balanced close of the
+  // leading var() and check whether anything follows.
+  if (trimmed.startsWith('var(')) {
+    let depth = 0;
+    let end = -1;
+    for (let i = 0; i < trimmed.length; i++) {
+      const ch = trimmed[i];
+      if (ch === '(') depth++;
+      else if (ch === ')') {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    if (end !== -1) {
+      const tail = trimmed.slice(end + 1).trim();
+      if (tail === '') return value; // pure single var() — nothing to wrap
+      // Otherwise fall through to the parser below so any trailing
+      // `* 2` / `- 4px` arithmetic gets wrapped in calc().
+    }
+  }
 
   let result = value;
 
   const isCalcOperand = (s: string) => /[\d.]/.test(s) || s.startsWith('var(');
 
-  result = result.replace(/\(([^()]+)\)/g, (match, inner) => {
-    const trimmed = inner.trim();
-    if (/(?:[\d.]+[a-z%]*|var\([^)]+\))\s*[+\-*/]\s*(?:[\d.]+|var\()/.test(trimmed) && !trimmed.startsWith('calc(')) {
-      return `calc(${trimmed})`;
+  // Walk the string with a paren-depth counter and replace any balanced
+  // `(…arithmetic…)` with `calc(…arithmetic…)`. Doing this with a regex
+  // failed because `[^()]+` excludes the parens of nested `var(…)`, which
+  // meant `(16px - var(--foo))` was never matched and the second pass
+  // (whitespace-split) ended up wrapping the partial token `(16px` —
+  // producing `calc((16px - var(--foo)))` with stray double parens.
+  result = (() => {
+    let out = '';
+    let i = 0;
+    while (i < result.length) {
+      if (result[i] !== '(') {
+        out += result[i++];
+        continue;
+      }
+      // Find matching closing paren, tracking depth so nested var() is
+      // skipped over rather than confusing the scanner.
+      let depth = 1;
+      let j = i + 1;
+      while (j < result.length && depth > 0) {
+        if (result[j] === '(') depth++;
+        else if (result[j] === ')') depth--;
+        if (depth > 0) j++;
+      }
+      if (depth !== 0) {
+        // Unbalanced — leave the rest untouched and stop scanning.
+        out += result.slice(i);
+        break;
+      }
+      const inner = result.slice(i + 1, j).trim();
+      // Already a function call like `calc(…)` or `var(…)` — leave alone.
+      // Detect by whether `(` is preceded by an identifier character.
+      const prevChar = i > 0 ? result[i - 1] : '';
+      const isFunctionCall = /[a-zA-Z0-9_-]/.test(prevChar);
+      if (isFunctionCall) {
+        out += result.slice(i, j + 1);
+        i = j + 1;
+        continue;
+      }
+      // Top-level paren group. Treat as arithmetic only if a standalone
+      // operator token is present (so parens-wrapped color values like
+      // `(rgba(0,0,0,0.5))` aren't mistaken for math).
+      const tokens = inner.split(/\s+/);
+      const hasOperator = tokens.some((t) => /^[+\-*/]$/.test(t));
+      if (hasOperator) {
+        out += `calc(${inner})`;
+      } else {
+        out += result.slice(i, j + 1);
+      }
+      i = j + 1;
     }
-    return match;
-  });
+    return out;
+  })();
 
   if (!/\bcalc\(/.test(result)) {
     const parts = result.split(/\s+/);

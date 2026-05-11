@@ -7,17 +7,22 @@ import { Upload, FileArchive, FolderOpen, CheckCircle2, AlertCircle, Loader2 } f
 import { useToast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import { parseMappingCsv, parseScssFile, applyMapping, ParsedScssVariables, convertScssVariablesToCss } from '@/lib/legacy-import';
+import {
+  isNotSetSentinel,
+  resolveVariableReference,
+  wrapScssArithmeticInCalc,
+} from '@/lib/legacy-import-utils';
 
 export interface PreservedFolders {
   charts: Map<string, Uint8Array>;
   fonts: Map<string, Uint8Array>;
-  release: Map<string, Uint8Array>;
 }
 
 export interface CustomScssFile {
   id: string;
   name: string;
   content: string;
+  fromFontsFolder?: boolean;
 }
 
 export interface ImportedFontFile {
@@ -28,6 +33,20 @@ export interface ImportedFontFile {
   size: number;
   blobUrl?: string;
   originalPath?: string;
+}
+
+export interface ImportedGraphicFile {
+  id: string;
+  name: string; // path inside gfx/, e.g. "logo.svg" or "icons/star.svg"
+  data: Uint8Array;
+  type: string;
+  size: number;
+}
+
+export interface ImportedJsFile {
+  id: string;
+  name: string; // path inside js/, e.g. "main.js" or "utils/helpers.js"
+  content: string;
 }
 
 interface ImportResult {
@@ -46,6 +65,8 @@ interface ImportResult {
   scssFilesProcessed: number;
   customScssFiles: CustomScssFile[];
   fontFiles: ImportedFontFile[];
+  graphicFiles: ImportedGraphicFile[];
+  jsFiles: ImportedJsFile[];
 }
 
 interface LegacyImportModalProps {
@@ -209,19 +230,45 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       
       const scssVariables: ParsedScssVariables = {};
       let scssFilesProcessed = 0;
-      
+
+      // Themes occasionally redeclare the same variable in two files —
+      // notably BRK has `$header-background-color` in both
+      // `_header.scss` (the component's local file) and
+      // `_overwritable-variables.scss` (the theme's central override
+      // sheet). Convention: the overwritable file always wins. JSZip
+      // doesn't guarantee iteration order, so we collect files into two
+      // buckets and merge the overwritable bucket LAST so its values
+      // overwrite any duplicates from component-level files.
+      const overwritablePathRe = /(^|\/)_*overwritable[-_]variables\.scss$/i;
+      const variableFiles: Array<{ path: string; entry: JSZip.JSZipObject }> = [];
+      const overwritableFiles: Array<{ path: string; entry: JSZip.JSZipObject }> = [];
+
       for (const [path, zipEntry] of Object.entries(zip.files)) {
         if (zipEntry.dir) continue;
-        
+
         const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
         const lowerRelativePath = relativePath.toLowerCase();
-        
+
         if (lowerRelativePath.startsWith('css/variables/') && lowerRelativePath.endsWith('.scss')) {
-          const content = await zipEntry.async('string');
-          const parsed = parseScssFile(content);
-          Object.assign(scssVariables, parsed);
-          scssFilesProcessed++;
+          if (overwritablePathRe.test(lowerRelativePath)) {
+            overwritableFiles.push({ path: relativePath, entry: zipEntry });
+          } else {
+            variableFiles.push({ path: relativePath, entry: zipEntry });
+          }
         }
+      }
+
+      // Pass 1: component-level / partial variable files.
+      for (const { entry } of variableFiles) {
+        const content = await entry.async('string');
+        Object.assign(scssVariables, parseScssFile(content));
+        scssFilesProcessed++;
+      }
+      // Pass 2: overwritable-variables wins on key collision.
+      for (const { entry } of overwritableFiles) {
+        const content = await entry.async('string');
+        Object.assign(scssVariables, parseScssFile(content));
+        scssFilesProcessed++;
       }
       
       setStatusMessage('Applying variable mapping...');
@@ -255,11 +302,10 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       const preservedFolders: PreservedFolders = {
         charts: new Map(),
         fonts: new Map(),
-        release: new Map()
       };
       
       // Supported font extensions for Custom Fonts tab
-      const SUPPORTED_FONT_EXTENSIONS = ['ttf', 'woff', 'woff2', 'eot'];
+      const SUPPORTED_FONT_EXTENSIONS = ['ttf', 'otf', 'woff', 'woff2', 'eot'];
       const fontFiles: ImportedFontFile[] = [];
       let fontFileId = 1;
       
@@ -276,6 +322,7 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
       const getFontMimeType = (ext: string): string => {
         const mimeTypes: Record<string, string> = {
           'ttf': 'font/ttf',
+          'otf': 'font/otf',
           'woff': 'font/woff',
           'woff2': 'font/woff2',
           'eot': 'application/vnd.ms-fontobject'
@@ -321,83 +368,257 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
               originalPath: fontSubPath
             });
           }
-        } else if (lowerPath.startsWith('release/')) {
-          const data = await zipEntry.async('uint8array');
-          const normalizedPath = 'release/' + relativePath.slice(relativePath.indexOf('/') + 1);
-          preservedFolders.release.set(normalizedPath, data);
         }
+        // Note: legacy `release/` folder is intentionally skipped — V6
+        // doesn't ship per-theme releases anymore, so we drop it on
+        // import rather than carrying it forward to the export.
       }
-      
+
+      // Pull `gfx/` and `assets/` into a dedicated graphic-files list so
+      // the Custom Graphics tab can manage them. Both folder names are
+      // common in the legacy themes; we treat them identically and
+      // preserve each file's original sub-path in `name` so the export
+      // round-trips. (Files from `assets/` are namespaced under
+      // `assets/` in the resulting graphic name, so they don't collide
+      // with same-named files from `gfx/`.)
+      const graphicFiles: ImportedGraphicFile[] = [];
+      let graphicFileId = 1;
+      const GRAPHIC_PREFIXES = ['gfx/', 'assets/'];
+      for (const [path, zipEntry] of Object.entries(zip.files)) {
+        if (zipEntry.dir) continue;
+        const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
+        const lowerPath = relativePath.toLowerCase();
+        const matchedPrefix = GRAPHIC_PREFIXES.find((p) => lowerPath.startsWith(p));
+        if (!matchedPrefix) continue;
+        const data = await zipEntry.async('uint8array');
+        // Strip the matched prefix; keep the rest as-is. For assets/
+        // files, prefix the stored name with `assets/` so the export
+        // writes them back under their original folder name and they
+        // never collide with `gfx/` siblings of the same basename.
+        const innerPath = relativePath.slice(
+          relativePath.toLowerCase().indexOf(matchedPrefix) + matchedPrefix.length,
+        );
+        if (!innerPath) continue;
+        const storedName = matchedPrefix === 'assets/' ? `assets/${innerPath}` : innerPath;
+        const ext = innerPath.split('.').pop()?.toLowerCase() || '';
+        const mimeMap: Record<string, string> = {
+          svg: 'image/svg+xml',
+          png: 'image/png',
+          jpg: 'image/jpeg',
+          jpeg: 'image/jpeg',
+          gif: 'image/gif',
+          webp: 'image/webp',
+          avif: 'image/avif',
+          ico: 'image/x-icon',
+        };
+        graphicFiles.push({
+          id: `imported-gfx-${graphicFileId++}`,
+          name: storedName,
+          data,
+          type: mimeMap[ext] || 'application/octet-stream',
+          size: data.length,
+        });
+      }
+
       setStatusMessage('Extracting custom SCSS files...');
       setProgress(88);
       
-      // Helper to convert SCSS font URLs to blob URLs
+      // Helper to convert SCSS font URLs to blob URLs. Handles two
+      // patterns commonly seen in legacy themes:
+      //   1. `url($font_route + 'path/to/font.ext')` — V5 helper variable
+      //   2. `url('../fonts/path/to/font.ext')` — raw relative paths
+      // For both, we extract the part after the `fonts/` segment, look it
+      // up in the blob URL map, and substitute. Anything that doesn't
+      // resolve is left untouched.
       const convertFontUrls = (content: string): string => {
-        // Match patterns like: url($font_route + 'path/to/font.ext')
-        // and url($font-route + 'path/to/font.ext')
-        // and url($font_route+'path/to/font.ext') (no spaces)
-        const fontUrlPattern = /url\s*\(\s*\$font[-_]route\s*\+\s*['"]([^'"]+)['"]\s*\)/gi;
-        
-        return content.replace(fontUrlPattern, (match, fontPath) => {
-          // Normalize the path and look up in our blob URL map
-          const normalizedPath = fontPath.toLowerCase().replace(/^\/+/, '');
-          const blobUrl = fontBlobUrls.get(normalizedPath);
-          
-          if (blobUrl) {
-            return `url('${blobUrl}')`;
+        // Pattern 1: $font_route helper
+        content = content.replace(
+          /url\s*\(\s*\$font[-_]route\s*\+\s*['"]([^'"]+)['"]\s*\)/gi,
+          (match, fontPath) => {
+            const normalizedPath = fontPath.toLowerCase().replace(/^\/+/, '');
+            const blobUrl = fontBlobUrls.get(normalizedPath);
+            if (blobUrl) return `url('${blobUrl}')`;
+            console.warn(`Font not found for path: ${fontPath}`);
+            return match;
           }
-          
-          // If not found, leave as-is (will be handled during export)
-          console.warn(`Font not found for path: ${fontPath}`);
-          return match;
-        });
+        );
+        // Pattern 2: any url(...) whose path contains a `fonts/` segment.
+        // Matches `url('../fonts/foo.woff2')`, `url("fonts/sub/foo.ttf")`,
+        // even `url(../../fonts/foo.eot)` (unquoted). The blob URL map is
+        // keyed by the path *after* `fonts/`, so we strip the prefix.
+        content = content.replace(
+          /url\s*\(\s*['"]?([^'")]*?fonts\/[^'")]+)['"]?\s*\)/gi,
+          (match, fontPath) => {
+            const idx = fontPath.toLowerCase().lastIndexOf('fonts/');
+            if (idx < 0) return match;
+            const subPath = fontPath.slice(idx + 'fonts/'.length).toLowerCase().replace(/^\/+/, '');
+            const blobUrl = fontBlobUrls.get(subPath);
+            if (blobUrl) return `url('${blobUrl}')`;
+            return match;
+          }
+        );
+        return content;
       };
-      
+
       const customScssFiles: CustomScssFile[] = [];
       let customFileId = 1;
-      
+      const jsFiles: ImportedJsFile[] = [];
+      let jsFileId = 1;
+
       for (const [path, zipEntry] of Object.entries(zip.files)) {
         if (zipEntry.dir) continue;
-        
+
         const relativePath = rootPrefix ? path.replace(rootPrefix, '') : path;
         const lowerRelativePath = relativePath.toLowerCase();
-        
+
         // Look for files in css/custom/ or css/fonts/ folders
         const isCustomScss = lowerRelativePath.startsWith('css/custom/') && lowerRelativePath.endsWith('.scss');
         const isFontsScss = lowerRelativePath.startsWith('css/fonts/') && lowerRelativePath.endsWith('.scss');
-        
+        // Custom JS lives in a top-level js/ folder. Skip the .min.js
+        // bundles a few legacy themes ship alongside their source — those
+        // are derived artifacts, not editable source the user should
+        // round-trip through the customizer.
+        const isCustomJs =
+          lowerRelativePath.startsWith('js/') &&
+          lowerRelativePath.endsWith('.js') &&
+          !lowerRelativePath.endsWith('.min.js');
+
         if (isCustomScss || isFontsScss) {
           let content = await zipEntry.async('string');
-          
+
           // Convert SCSS variables using 3-tier resolution:
           // 1. Mapped variables -> var(--css-var)
           // 2. Unmapped but defined in zip -> literal value
           // 3. Unknown -> leave as-is
           content = convertScssVariablesToCss(content, mappings, scssVariables);
-          
-          // For font SCSS files, also convert font URLs to data URLs
-          if (isFontsScss) {
+
+          // Treat any custom SCSS that defines a @font-face the same as a
+          // dedicated css/fonts/ file: rewrite its font URLs to blob URLs
+          // and mark it so the consumer enables it by default. Some
+          // themes (e.g. RIG-v5) keep @font-face in css/custom/_fonts.scss
+          // instead of in a css/fonts/ folder.
+          const hasFontFace = /@font-face\s*\{/i.test(content);
+          if (isFontsScss || hasFontFace) {
             content = convertFontUrls(content);
           }
-          
+
           // Extract filename from path
           const pathParts = relativePath.split('/');
           const filename = pathParts[pathParts.length - 1];
-          
+
           customScssFiles.push({
             id: `imported-${customFileId++}`,
             name: filename,
-            content: content
+            content: content,
+            fromFontsFolder: isFontsScss || hasFontFace,
+          });
+        } else if (isCustomJs) {
+          const content = await zipEntry.async('string');
+          // Preserve the path inside js/ so subfolders survive the
+          // round-trip (e.g. `vendor/foo.js` keeps that prefix).
+          const insideJs = relativePath.replace(/^js\//i, '');
+          jsFiles.push({
+            id: `imported-js-${jsFileId++}`,
+            name: insideJs,
+            content,
           });
         }
       }
-      
+
+      // V5 sized the .logo img via SCSS variables ($logo-width and friends).
+      // V6 doesn't have those variables — the framework's logo rule is just
+      // `.logo img { width: 100%; height: auto }` and the CMS controls the
+      // size from there. To preserve the V5 visual on activation, emit a
+      // small CSS file with the resolved logo dimensions baked in. The CMS
+      // can still override via inline styles or its own image controls, and
+      // the user can disable / edit the file in the Custom CSS tab.
+      const resolveLogoValue = (varName: string): string | null => {
+        const raw = scssVariables[varName];
+        if (!raw || isNotSetSentinel(raw)) return null;
+        const resolved = resolveVariableReference(raw, scssVariables);
+        if (isNotSetSentinel(resolved)) return null;
+        // SCSS arithmetic like `$logo-width * 0.5` resolves to a string
+        // like `160px * 0.5` after substitution — wrap so the export
+        // produces valid CSS calc().
+        return wrapScssArithmeticInCalc(resolved.trim());
+      };
+      const logoWidth = resolveLogoValue('$logo-width');
+      const logoWidthTablet = resolveLogoValue('$logo-width-tablet');
+      const logoWidthMobile = resolveLogoValue('$logo-width-mobile');
+      const logoHeight = resolveLogoValue('$logo-height');
+      const logoHeightTablet = resolveLogoValue('$logo-height-tablet');
+      const logoHeightMobile = resolveLogoValue('$logo-height-mobile');
+      if (
+        logoWidth ||
+        logoWidthTablet ||
+        logoWidthMobile ||
+        logoHeight ||
+        logoHeightTablet ||
+        logoHeightMobile
+      ) {
+        const indent = (s: string) => `  ${s}`;
+        const lines: string[] = [
+          '/*',
+          ' * Logo dimensions imported from V5.',
+          ' * V6 has no logo-size variables — the CMS controls the logo image size.',
+          ' * These rules preserve the V5 visual when the theme is activated; the CMS',
+          ' * (or any later override in this file or another custom stylesheet) can',
+          ' * still override them. Disable in the Custom CSS tab if not needed.',
+          ' */',
+          '',
+        ];
+
+        const desktop: string[] = [];
+        if (logoWidth) desktop.push(`max-width: ${logoWidth};`);
+        if (logoHeight) desktop.push(`max-height: ${logoHeight};`);
+        if (desktop.length > 0) {
+          lines.push('.logo img {');
+          desktop.forEach((d) => lines.push(indent(d)));
+          lines.push('}');
+          lines.push('');
+        }
+
+        const tablet: string[] = [];
+        if (logoWidthTablet) tablet.push(`max-width: ${logoWidthTablet};`);
+        if (logoHeightTablet) tablet.push(`max-height: ${logoHeightTablet};`);
+        if (tablet.length > 0) {
+          lines.push('@media (min-width: 768px) and (max-width: 991px) {');
+          lines.push('  .logo img {');
+          tablet.forEach((d) => lines.push(`    ${d}`));
+          lines.push('  }');
+          lines.push('}');
+          lines.push('');
+        }
+
+        const mobile: string[] = [];
+        if (logoWidthMobile) mobile.push(`max-width: ${logoWidthMobile};`);
+        if (logoHeightMobile) mobile.push(`max-height: ${logoHeightMobile};`);
+        if (mobile.length > 0) {
+          lines.push('@media (max-width: 767px) {');
+          lines.push('  .logo img {');
+          mobile.forEach((d) => lines.push(`    ${d}`));
+          lines.push('  }');
+          lines.push('}');
+          lines.push('');
+        }
+
+        customScssFiles.push({
+          id: `imported-logo-widths`,
+          name: '_logo-widths.scss',
+          content: lines.join('\n'),
+          // Reuse the "enabled by default" hint that the consumer maps
+          // from `fromFontsFolder`. This file holds rendering rules the
+          // converted theme actually needs to look right on first load.
+          fromFontsFolder: true,
+        });
+      }
+
       setStatusMessage('Finishing import...');
       setProgress(95);
-      
+
       setProgress(100);
       setStatusMessage('Import complete!');
-      
+
       const result: ImportResult = {
         mappedVariables,
         clearedVariables,
@@ -406,7 +627,9 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
         preservedFolders,
         scssFilesProcessed,
         customScssFiles,
-        fontFiles
+        fontFiles,
+        graphicFiles,
+        jsFiles,
       };
       
       setImportResult(result);
@@ -553,7 +776,7 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
                 Must contain: css/, styles.xml
               </p>
               <p className="text-xs text-muted-foreground mb-4">
-                Optional: charts/, fonts/, release/
+                Optional: charts/, fonts/, gfx/
               </p>
               <div className="flex gap-2 justify-center">
                 <Button 
@@ -650,15 +873,22 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
                     <span className="font-medium">{importResult.customScssFiles.length}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-muted-foreground">Custom JS files:</span>
+                    <span className="font-medium">{importResult.jsFiles.length}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Font files:</span>
                     <span className="font-medium">{importResult.fontFiles.length}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-muted-foreground">Graphic files:</span>
+                    <span className="font-medium">{importResult.graphicFiles.length}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Preserved files:</span>
                     <span className="font-medium">
-                      {importResult.preservedFolders.charts.size + 
-                       importResult.preservedFolders.fonts.size + 
-                       importResult.preservedFolders.release.size}
+                      {importResult.preservedFolders.charts.size +
+                       importResult.preservedFolders.fonts.size}
                     </span>
                   </div>
                 </div>
@@ -666,10 +896,11 @@ export function LegacyImportModal({ open, onOpenChange, onImportComplete }: Lega
             </div>
 
             <p className="text-sm text-muted-foreground">
-              This will update the theme variables with values from your legacy theme. 
+              This will update the theme variables with values from your legacy theme.
               The styles.xml will be loaded into the CSS classes tab.
-              Font files will be added to the Custom Fonts tab. 
-              Charts and release folders will be included in the export.
+              Font files will be added to the Custom Fonts tab.
+              Graphics from gfx/ will be added to the Custom Graphics tab.
+              Charts will be included in the export.
             </p>
           </div>
         )}

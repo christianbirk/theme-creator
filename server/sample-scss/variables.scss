@@ -36,6 +36,7 @@
         --button-color: var(--color-neutral-f);
         --button-outline-color: var(--color-brand-a);
         --button-outline-border-color: var(--color-brand-a);
+        --button-outline-hover-color: var(--color-neutral-f);
         --button-alternate-background-color: var(--color-brand-b);
         --button-alternate-color: var(--color-neutral-f);
 
@@ -64,6 +65,7 @@
         --button-font-color-bg-dark: var(--color-brand-a);
         --button-outline-border-color-bg-dark: var(--color-neutral-f);
         --button-outline-font-color-bg-dark: var(--color-neutral-f);
+        --button-outline-hover-color-bg-dark: var(--color-brand-a);
         --button-alternate-background-color-bg-dark: var(--color-neutral-d);
         --button-alternate-font-color-bg-dark: var(--color-brand-a);
 
@@ -241,15 +243,6 @@
         /* Left Navigation */
         --left-menu-box-shadow: ;
         --left-menu-border-radius: var(--universal-border-radius);
-
-        /* Search */
-        --search-btn-border-radius: 50%;
-        --search-btn-background-color: var(--color-brand-a);
-        --search-btn-background-color-hover: color-mix(in srgb, var(--search-btn-background-color) 90%,black);
-        --search-text-color: var(--color-neutral-f);
-        --search-text-color-hover: var(--color-neutral-f);
-        --search-icon-color: var(--color-neutral-f);
-        --search-icon-color-hover: var(--color-neutral-f);
 
         /* --- Buttons --- */
         --button-universal-padding: 18px 26px;
