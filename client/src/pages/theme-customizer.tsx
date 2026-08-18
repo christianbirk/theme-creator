@@ -24,6 +24,11 @@ import { LegacyImportModal, PreservedFolders, CustomScssFile, ImportedFontFile, 
 import { BatchConvertModal } from '@/components/theme-customizer/BatchConvertModal';
 import type { CssClassesData } from '@shared/schema';
 import JSZip from 'jszip';
+import {
+  loadPersistedState,
+  schedulePersistedSave,
+  clearPersistedState,
+} from '@/lib/theme-persistence';
 
 export default function ThemeCustomizer() {
   const { toast } = useToast();
@@ -249,6 +254,10 @@ export default function ThemeCustomizer() {
     setScssFiles([]);
     setJsFiles([]);
     setCustomGraphics([]);
+    // Drop the persisted snapshot too — otherwise the debounced saver
+    // would just re-persist the freshly-reset state and it'd look like
+    // nothing happened after the next reload.
+    clearPersistedState();
     toast({
       title: 'Everything reset',
       description: 'All variables, custom fonts, custom graphics, custom CSS, and custom JS have been reset.',
@@ -440,11 +449,45 @@ export default function ThemeCustomizer() {
         }
       }
 
+      // Parse any @font-face rules the theme.scss ships with, so we can
+      // attach the theme-authored family/weight/style to each imported
+      // font file instead of guessing from the filename. Guessing goes
+      // wrong when the theme picks an arbitrary family name — most
+      // notably variable fonts whose filenames encode axis tags like
+      // `YTLC,opsz,wdth,wght` and whose declared family name doesn't
+      // reverse-map cleanly. Keyed by the basename of the font URL.
+      const themeFontFace = new Map<string, { family: string; weight?: string; style?: string }>();
+      if (themeScsFile) {
+        const themeScssContent = await themeScsFile.async('string');
+        // Match one @font-face block at a time; single-quoted, double-
+        // quoted, or unquoted family names all accepted. `src` is
+        // required (that's how we map to a file); weight/style are
+        // optional and fall back to filename-derived guesses.
+        const fontFaceRe = /@font-face\s*\{([^}]*)\}/gi;
+        let ffMatch: RegExpExecArray | null;
+        while ((ffMatch = fontFaceRe.exec(themeScssContent)) !== null) {
+          const body = ffMatch[1];
+          const familyMatch = body.match(/font-family\s*:\s*(?:'([^']+)'|"([^"]+)"|([^;,\n]+?))\s*(?:;|$)/i);
+          const srcMatch = body.match(/src\s*:[^;]*url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
+          if (!familyMatch || !srcMatch) continue;
+          const family = (familyMatch[1] || familyMatch[2] || familyMatch[3] || '').trim();
+          const src = srcMatch[1].trim();
+          const basename = src.split('/').pop() || src;
+          const weightMatch = body.match(/font-weight\s*:\s*([^;]+?)\s*;/i);
+          const styleMatch = body.match(/font-style\s*:\s*([^;]+?)\s*;/i);
+          themeFontFace.set(basename, {
+            family,
+            weight: weightMatch ? weightMatch[1].trim() : undefined,
+            style: styleMatch ? styleMatch[1].trim() : undefined,
+          });
+        }
+      }
+
       // Import fonts from fonts folder
       const fontsFolder = themeFolder.folder('fonts');
       if (fontsFolder) {
         const importedFonts: FontFile[] = [];
-        
+
         const fontPromises: Promise<void>[] = [];
         let fontIndex = 0;
         fontsFolder.forEach((relativePath, file) => {
@@ -460,18 +503,25 @@ export default function ThemeCustomizer() {
                   'woff2': 'font/woff2',
                   'eot': 'application/vnd.ms-fontobject'
                 };
+                const basename = relativePath.split('/').pop() || relativePath;
+                const themeDecl = themeFontFace.get(basename);
                 importedFonts.push({
                   id: `imported-font-${Date.now()}-${currentIndex}`,
                   name: relativePath,
                   data: uint8Data,
                   type: mimeTypes[ext] || 'font/ttf',
-                  size: uint8Data.length
+                  size: uint8Data.length,
+                  ...(themeDecl ? {
+                    family: themeDecl.family,
+                    weight: themeDecl.weight,
+                    style: themeDecl.style,
+                  } : {}),
                 });
               })
             );
           }
         });
-        
+
         await Promise.all(fontPromises);
         if (importedFonts.length > 0) {
           setCustomFonts(prev => [...prev, ...importedFonts]);
@@ -574,13 +624,44 @@ export default function ThemeCustomizer() {
     setIsLoading(false);
   }, [toast]);
 
-  // Load sample SCSS on mount
+  // Hydrate from localStorage if the user has a working session saved,
+  // otherwise fall back to loading the bundled sample. `hydratedRef`
+  // gates the auto-save effect below so we don't immediately overwrite
+  // the persisted snapshot with the initial-state stub during the very
+  // first render.
+  const hydratedRef = useRef(false);
   useEffect(() => {
-    handleLoadSample(false);
+    const persisted = loadPersistedState();
+    if (persisted) {
+      setVariables(persisted.variables);
+      setScssFiles(persisted.scssFiles);
+      setJsFiles(persisted.jsFiles);
+      setCssClassesData(persisted.cssClassesData);
+      setOriginalDefaults(new Map(persisted.originalDefaults));
+      setBaseScss(persisted.baseScss);
+      // Derive categories from the restored variables so the accordion
+      // groupings match the saved state.
+      const uniqueCategories = Array.from(new Set(persisted.variables.map(v => v.category)));
+      setCategories(uniqueCategories.map(catId => {
+        const existing = defaultCategories.find(c => c.id === catId);
+        return existing || {
+          id: catId,
+          name: catId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          icon: 'Circle',
+          variables: [],
+        };
+      }));
+      hydratedRef.current = true;
+      return;
+    }
+    handleLoadSample(false).then(() => { hydratedRef.current = true; });
   }, []);
 
-  // Load CSS classes data on mount (so it's available for export even if tab is not visited)
+  // Load CSS classes data on mount (so it's available for export even
+  // if tab is not visited). Skip when we already restored a saved
+  // session — the persisted copy is the source of truth then.
   useEffect(() => {
+    if (loadPersistedState()) return;
     const loadCssClasses = async () => {
       try {
         const response = await fetch('/api/styles-xml');
@@ -594,6 +675,22 @@ export default function ThemeCustomizer() {
     };
     loadCssClasses();
   }, []);
+
+  // Debounced auto-save of the working session. Fires whenever any of
+  // the persisted slices change, but not before the initial hydrate
+  // has completed (otherwise the empty first render would wipe the
+  // saved snapshot before restore).
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    schedulePersistedSave({
+      variables,
+      scssFiles,
+      jsFiles,
+      cssClassesData,
+      originalDefaults: Array.from(originalDefaults.entries()),
+      baseScss,
+    });
+  }, [variables, scssFiles, jsFiles, cssClassesData, originalDefaults, baseScss]);
 
   const handleLegacyImportComplete = useCallback(async (result: {
     mappedVariables: { name: string; value: string }[];

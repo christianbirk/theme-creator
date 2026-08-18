@@ -29,6 +29,19 @@ export interface FontFile {
    * theme's @font-face declarations may reference.
    */
   originalPath?: string;
+  /**
+   * Theme-authored @font-face overrides. When the source theme's
+   * `theme.scss` already declared this font (family/weight/style), the
+   * importer records them here so we emit the *same* declaration on
+   * preview and export instead of reverse-engineering it from the
+   * filename. Filename-derived guesses go wrong when the theme picks
+   * an arbitrary family name — most commonly variable fonts whose
+   * filenames encode axis tags like `YTLC,opsz,wdth,wght` and whose
+   * declared family name doesn't map back cleanly.
+   */
+  family?: string;
+  weight?: string;
+  style?: string;
 }
 
 interface CustomFontsManagerProps {
@@ -194,7 +207,10 @@ export function generateFontFaceCssForExport(fonts: FontFile[]): string {
   if (fonts.length === 0) return '';
 
   const rules = fonts.map(font => {
-    const { family, weight, style } = parseFontAttrs(font.name);
+    const parsed = parseFontAttrs(font.name);
+    const family = font.family ?? parsed.family;
+    const weight = font.weight ?? parsed.weight;
+    const style = font.style ?? parsed.style;
     const format = getFontFormat(font.name);
     // Use originalPath (e.g. `founders-grotesk/regular.woff2`) when set,
     // so the URL matches where the export actually writes the file. Falls
@@ -222,7 +238,10 @@ export function generateFontFaceCssForPreview(fonts: FontFile[]): string {
   const rules = fonts.map(font => {
     if (!font.blobUrl) return '';
 
-    const { family, weight, style } = parseFontAttrs(font.name);
+    const parsed = parseFontAttrs(font.name);
+    const family = font.family ?? parsed.family;
+    const weight = font.weight ?? parsed.weight;
+    const style = font.style ?? parsed.style;
     const format = getFontFormat(font.name);
 
     return `@font-face {
