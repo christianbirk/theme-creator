@@ -29,6 +29,13 @@ import {
   schedulePersistedSave,
   clearPersistedState,
 } from '@/lib/theme-persistence';
+import {
+  loadPersistedFonts,
+  loadPersistedGraphics,
+  scheduleFontsSave,
+  scheduleGraphicsSave,
+  clearPersistedBlobs,
+} from '@/lib/blob-persistence';
 
 export default function ThemeCustomizer() {
   const { toast } = useToast();
@@ -256,8 +263,11 @@ export default function ThemeCustomizer() {
     setCustomGraphics([]);
     // Drop the persisted snapshot too — otherwise the debounced saver
     // would just re-persist the freshly-reset state and it'd look like
-    // nothing happened after the next reload.
+    // nothing happened after the next reload. clearPersistedBlobs is
+    // best-effort and awaits internally; we don't need to block the
+    // reset on it, so it's fired unawaited.
     clearPersistedState();
+    void clearPersistedBlobs();
     toast({
       title: 'Everything reset',
       description: 'All variables, custom fonts, custom graphics, custom CSS, and custom JS have been reset.',
@@ -691,6 +701,34 @@ export default function ThemeCustomizer() {
       baseScss,
     });
   }, [variables, scssFiles, jsFiles, cssClassesData, originalDefaults, baseScss]);
+
+  // Rehydrate the Blob-backed slices (custom fonts and custom graphics)
+  // from IndexedDB on mount. Kept separate from the text hydrate above
+  // because IndexedDB is async — the text state doesn't have to wait
+  // on it. The dedicated `blobsHydratedRef` guards the blob auto-save
+  // effect below so we don't wipe the persisted binaries before restore.
+  const blobsHydratedRef = useRef(false);
+  useEffect(() => {
+    Promise.all([loadPersistedFonts(), loadPersistedGraphics()])
+      .then(([fonts, graphics]) => {
+        if (fonts.length > 0) setCustomFonts(fonts);
+        if (graphics.length > 0) setCustomGraphics(graphics);
+      })
+      .catch((err) => {
+        console.warn('Failed to restore fonts/graphics from IndexedDB:', err);
+      })
+      .finally(() => { blobsHydratedRef.current = true; });
+  }, []);
+
+  useEffect(() => {
+    if (!blobsHydratedRef.current) return;
+    scheduleFontsSave(customFonts);
+  }, [customFonts]);
+
+  useEffect(() => {
+    if (!blobsHydratedRef.current) return;
+    scheduleGraphicsSave(customGraphics);
+  }, [customGraphics]);
 
   const handleLegacyImportComplete = useCallback(async (result: {
     mappedVariables: { name: string; value: string }[];
